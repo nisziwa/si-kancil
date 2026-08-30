@@ -19,6 +19,14 @@
                     <x-nav-link :href="route('requests.index')" :active="request()->routeIs('requests.*')">
                         {{ __('Permintaan / FPA') }}
                     </x-nav-link>
+
+                    <x-nav-link :href="route('calendar.index')" :active="request()->routeIs('calendar.*')">
+                        {{ __('Kalender Kegiatan') }}
+                    </x-nav-link>
+
+                    <x-nav-link :href="route('templates.index')" :active="request()->routeIs('templates.*')">
+                        {{ __('Repository Template') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -73,6 +81,18 @@
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('requests.index')" :active="request()->routeIs('requests.*')">
+                {{ __('Permintaan / FPA') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('calendar.index')" :active="request()->routeIs('calendar.*')">
+                {{ __('Kalender Kegiatan') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('templates.index')" :active="request()->routeIs('templates.*')">
+                {{ __('Repository Template') }}
             </x-responsive-nav-link>
         </div>
 

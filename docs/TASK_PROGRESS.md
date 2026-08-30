@@ -61,6 +61,7 @@ Ringkasan Perubahan:
 ## Sprint 6 — Detail Dokumen & Upload File
 Status: Completed
 Tanggal Selesai: 2026-08-30
+Commit Hash: 813cffb
 Ringkasan Perubahan:
 - Implementasi penyimpanan detail dokumen terstruktur: Surat Tugas, SPD/SPPD, Pengeluaran Riil & Non-Kendaraan Dinas, Laporan Perjalanan
 - Implementasi FileUploadController dan upload file (Max 10MB; PDF, JPG, PNG, DOCX) untuk dokumen checklist SPJ
@@ -69,7 +70,16 @@ Ringkasan Perubahan:
 - Automated feature testing (DocumentDetailTest) untuk verifikasi upload & detail dokumen terstruktur
 
 ## Sprint 7 — Dashboard, Kanban FPA, Kalender & Template
-Status: Pending
+Status: Completed
+Tanggal Selesai: 2026-08-30
+Commit Hash: 8864213
+Ringkasan Perubahan:
+- Pembuatan DashboardController dengan 6 cards statistik, filter bulan/tahun/keyword, dan tabel ringkasan FPA
+- Pembuatan 6-Kolom Kanban FPA interaktif dengan integrasi SortableJS dan live AJAX status change (`PATCH /requests/{id}/status-ajax`)
+- Pembuatan CalendarController dan integrasi FullCalendar 6 dengan endpoint JSON events (`GET /calendar/events`), modal detail event, dan drag-select tanggal
+- Pembuatan TemplateController untuk CRUD Repository Template Dokumen (upload file max 20MB, filter kategori, download, status aktif)
+- Penambahan menu navigasi lengkap: Dashboard, Permintaan / FPA, Kalender Kegiatan, Repository Template
+- Automated feature testing (Sprint7FeatureTest) untuk Dashboard, Calendar API, dan Template CRUD workflow
 
 ## Sprint 8 — Layout, UI Polish & Testing
 Status: Pending

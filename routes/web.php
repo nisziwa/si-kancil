@@ -7,9 +7,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -29,6 +29,14 @@ Route::middleware('auth')->group(function () {
     // Status SPJ Routes
     Route::post('/requests/{id}/status', [App\Http\Controllers\RequestStatusController::class, 'update'])->name('requests.status.update');
     Route::patch('/requests/{id}/status-ajax', [App\Http\Controllers\RequestStatusController::class, 'updateAjax'])->name('requests.status.ajax');
+
+    // Calendar Routes
+    Route::get('/calendar', [App\Http\Controllers\CalendarController::class, 'index'])->name('calendar.index');
+    Route::get('/calendar/events', [App\Http\Controllers\CalendarController::class, 'events'])->name('calendar.events');
+
+    // Repository Template Routes
+    Route::get('/templates/{id}/download', [App\Http\Controllers\TemplateController::class, 'download'])->name('templates.download');
+    Route::resource('templates', App\Http\Controllers\TemplateController::class);
 });
 
 require __DIR__.'/auth.php';
