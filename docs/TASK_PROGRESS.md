@@ -3,6 +3,7 @@
 ## Sprint 1 — Setup, Auth & Migrasi Database
 Status: Completed
 Tanggal Selesai: 2026-08-30
+Commit Hash: ceb9138
 Ringkasan Perubahan:
 - Setup Laravel Breeze (blade) dan hapus halaman register.
 - Konfigurasi `.env` dan pembuatan database MySQL (`si_kancil`).

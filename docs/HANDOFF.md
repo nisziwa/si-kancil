@@ -29,4 +29,4 @@ Keputusan penting:
 - Business rules: Kanban FPA interaktif drag and drop (mengubah status FPA dan mencatat riwayat)
 
 ## Last Commit
-Commit terakhir: feat(sprint-1): complete initial setup auth database migration and seeders (hash pending setelah commit)
+Commit terakhir: ceb9138 - feat(sprint-1): complete initial setup auth database migration and seeders
