@@ -71,7 +71,7 @@
                 selectable: true,
                 selectMirror: true,
                 events: '{{ route("calendar.events") }}',
-                
+
                 // Drag-Select Range Tanggal untuk membuat FPA baru
                 select: function(info) {
                     var startDate = info.startStr;
@@ -111,3 +111,4 @@
         }
     </script>
 </x-app-layout>
+

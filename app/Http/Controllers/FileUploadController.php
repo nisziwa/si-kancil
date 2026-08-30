@@ -45,3 +45,4 @@ class FileUploadController extends Controller
         return Storage::disk('public')->download($checklist->file_path);
     }
 }
+

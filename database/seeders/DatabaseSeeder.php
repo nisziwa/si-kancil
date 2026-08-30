@@ -9,6 +9,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             ExpenseTypeSeeder::class,
             DocumentTemplateSeeder::class,
+            DummyDataSeeder::class,
         ]);
     }
 }

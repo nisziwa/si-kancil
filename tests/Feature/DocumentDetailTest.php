@@ -139,3 +139,4 @@ class DocumentDetailTest extends TestCase
         ]);
     }
 }
+

@@ -82,4 +82,12 @@ Ringkasan Perubahan:
 - Automated feature testing (Sprint7FeatureTest) untuk Dashboard, Calendar API, dan Template CRUD workflow
 
 ## Sprint 8 — Layout, UI Polish & Testing
-Status: Pending
+Status: Completed
+Tanggal Selesai: 2026-08-30
+Commit Hash: d0d8da2
+Ringkasan Perubahan:
+- Desain ulang halaman landing page (`welcome.blade.php`) dengan branding SI-KANCIL dan alur bisnis interaktif
+- Pembuatan DummyDataSeeder lengkap (template dokumen, multi-status FPA, checklist otomatis, detail dokumen, status history)
+- Integrasi DummyDataSeeder ke DatabaseSeeder
+- Automated feature test untuk verifikasi DatabaseSeeder
+- Verifikasi menyeluruh: seluruh 34 unit & feature tests berhasil 100% (PASS)

@@ -118,3 +118,4 @@ class TemplateController extends Controller
         return Storage::disk('public')->download($template->file);
     }
 }
+

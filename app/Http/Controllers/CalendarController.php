@@ -29,13 +29,13 @@ class CalendarController extends Controller
         $events = [];
 
         foreach ($fpaList as $fpa) {
-            $startDate = $fpa->tanggal_mulai 
-                ? $fpa->tanggal_mulai->format('Y-m-d') 
+            $startDate = $fpa->tanggal_mulai
+                ? $fpa->tanggal_mulai->format('Y-m-d')
                 : $fpa->created_at->format('Y-m-d');
 
             // FullCalendar end date is exclusive for all-day events
-            $endDate = $fpa->tanggal_selesai 
-                ? $fpa->tanggal_selesai->copy()->addDay()->format('Y-m-d') 
+            $endDate = $fpa->tanggal_selesai
+                ? $fpa->tanggal_selesai->copy()->addDay()->format('Y-m-d')
                 : $startDate;
 
             $events[] = [
@@ -60,3 +60,4 @@ class CalendarController extends Controller
         return response()->json($events);
     }
 }
+

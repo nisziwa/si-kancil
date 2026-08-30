@@ -25,7 +25,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/checklists/{id}/status', [App\Http\Controllers\ChecklistKanbanController::class, 'updateStatus'])->name('checklists.status');
     Route::post('/checklists/{id}/upload', [App\Http\Controllers\FileUploadController::class, 'upload'])->name('checklists.upload');
     Route::get('/checklists/{id}/download', [App\Http\Controllers\FileUploadController::class, 'download'])->name('checklists.download');
-    
+
     // Status SPJ Routes
     Route::post('/requests/{id}/status', [App\Http\Controllers\RequestStatusController::class, 'update'])->name('requests.status.update');
     Route::patch('/requests/{id}/status-ajax', [App\Http\Controllers\RequestStatusController::class, 'updateAjax'])->name('requests.status.ajax');
