@@ -9,10 +9,10 @@ Status pekerjaan terakhir: Selesai setup dokumentasi dan persiapan untuk mengerj
 ## Completed
 Daftar pekerjaan yang sudah selesai:
 - Sprint 1 Setup, Auth & Database Migration
+- Sprint 2 Master Jenis Pengeluaran & Modul Permintaan/FPA
 
 ## Remaining Tasks
 Daftar pekerjaan yang belum selesai:
-- Sprint 2 Master Jenis Pengeluaran & Modul Permintaan/FPA
 - Sprint 3 Checklist SPJ & Template Checklist
 - Sprint 4 Kanban Checklist & History
 - Sprint 5 Workflow Status SPJ & History
@@ -29,4 +29,4 @@ Keputusan penting:
 - Business rules: Kanban FPA interaktif drag and drop (mengubah status FPA dan mencatat riwayat)
 
 ## Last Commit
-Commit terakhir: ceb9138 - feat(sprint-1): complete initial setup auth database migration and seeders
+Commit terakhir: 45cdcde - feat(sprint-2): implement expense type and FPA management module

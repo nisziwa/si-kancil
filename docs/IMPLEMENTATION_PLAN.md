@@ -111,3 +111,4 @@ travel_reports         (id, checklist_id, nama_pelaksana, tujuan, uraian_kegiata
 templates              (id, nama_template, kategori, versi, file, status_aktif)
 users                  (default Laravel users table)
 ```
+

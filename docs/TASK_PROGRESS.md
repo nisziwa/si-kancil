@@ -13,7 +13,17 @@ Ringkasan Perubahan:
 - Eksekusi `php artisan migrate:fresh --seed` berhasil.
 
 ## Sprint 2 — Master Jenis Pengeluaran & Modul Permintaan/FPA
-Status: Pending
+Status: Completed
+Tanggal Selesai: 2026-08-30
+Commit Hash: 45cdcde
+Ringkasan Perubahan:
+- Pembuatan RequestController untuk FPA
+- Pembuatan Views untuk requests (index, create, edit, show)
+- Konfigurasi validasi pada requests form
+- Integrasi Jenis Pengeluaran pada form FPA
+- Pencarian dan filter status FPA di halaman index
+- Penambahan link navigasi FPA di layout utama
+- Mendaftarkan resource route requests di web.php
 
 ## Sprint 3 — Checklist SPJ & Template Checklist
 Status: Pending
