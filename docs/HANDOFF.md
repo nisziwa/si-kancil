@@ -11,10 +11,10 @@ Daftar pekerjaan yang sudah selesai:
 - Sprint 1 Setup, Auth & Database Migration
 - Sprint 2 Master Jenis Pengeluaran & Modul Permintaan/FPA
 - Sprint 3 Checklist SPJ & Template Checklist
+- Sprint 4 Kanban Checklist & History
 
 ## Remaining Tasks
 Daftar pekerjaan yang belum selesai:
-- Sprint 4 Kanban Checklist & History
 - Sprint 5 Workflow Status SPJ & History
 - Sprint 6 Detail Dokumen & Upload File
 - Sprint 7 Dashboard, Kanban FPA, Kalender & Template
@@ -29,4 +29,4 @@ Keputusan penting:
 - Business rules: Kanban FPA interaktif drag and drop (mengubah status FPA dan mencatat riwayat)
 
 ## Last Commit
-Commit terakhir: cdc307a - feat(sprint-3): implement SPJ checklist template and auto generation
+Commit terakhir: 0f5f107 - feat(sprint-4): implement checklist kanban and history tracking

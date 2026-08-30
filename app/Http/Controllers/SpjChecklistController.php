@@ -22,7 +22,20 @@ class SpjChecklistController extends Controller
             'catatan' => 'nullable|string',
         ]);
 
+        $oldStatus = $checklist->status;
+        $newStatus = $validated['status'];
+
         $checklist->update($validated);
+
+        if ($oldStatus !== $newStatus) {
+            \App\Models\ChecklistHistory::create([
+                'checklist_id' => $checklist->id,
+                'status_lama' => $oldStatus,
+                'status_baru' => $newStatus,
+                'catatan' => $validated['catatan'] ?? null,
+                'user_id' => \Illuminate\Support\Facades\Auth::id(),
+            ]);
+        }
 
         return redirect()->route('requests.show', $checklist->request_id)
             ->with('success', 'Checklist berhasil diperbarui.');

@@ -10,11 +10,11 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                
+
                 <form action="{{ route('checklists.update', $checklist->id) }}" method="POST">
                     @csrf
                     @method('PUT')
-                    
+
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700">Nama Dokumen</label>
                         <p class="mt-1 text-gray-900 font-semibold">{{ $checklist->nama_dokumen }}</p>
@@ -45,3 +45,4 @@
         </div>
     </div>
 </x-app-layout>
+

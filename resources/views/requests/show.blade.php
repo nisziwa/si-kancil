@@ -15,7 +15,7 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            
+
             @if(session('success'))
                 <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
                     <span class="block sm:inline">{{ session('success') }}</span>
@@ -32,13 +32,13 @@
                     <div>
                         <p class="text-sm text-gray-500">Status SPJ</p>
                         <p>
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                @if($fpaRequest->status_spj == 'Persiapan') bg-gray-100 text-gray-800 
-                                @elseif($fpaRequest->status_spj == 'Pelaksanaan') bg-blue-100 text-blue-800 
-                                @elseif($fpaRequest->status_spj == 'Pengumpulan SPJ') bg-yellow-100 text-yellow-800 
-                                @elseif($fpaRequest->status_spj == 'Dikirim ke PPK') bg-indigo-100 text-indigo-800 
-                                @elseif($fpaRequest->status_spj == 'Perbaikan') bg-red-100 text-red-800 
-                                @elseif($fpaRequest->status_spj == 'Selesai') bg-green-100 text-green-800 
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                @if($fpaRequest->status_spj == 'Persiapan') bg-gray-100 text-gray-800
+                                @elseif($fpaRequest->status_spj == 'Pelaksanaan') bg-blue-100 text-blue-800
+                                @elseif($fpaRequest->status_spj == 'Pengumpulan SPJ') bg-yellow-100 text-yellow-800
+                                @elseif($fpaRequest->status_spj == 'Dikirim ke PPK') bg-indigo-100 text-indigo-800
+                                @elseif($fpaRequest->status_spj == 'Perbaikan') bg-red-100 text-red-800
+                                @elseif($fpaRequest->status_spj == 'Selesai') bg-green-100 text-green-800
                                 @endif">
                                 {{ $fpaRequest->status_spj }}
                             </span>
@@ -63,8 +63,8 @@
                     <div>
                         <p class="text-sm text-gray-500">Tanggal Mulai - Selesai</p>
                         <p class="font-semibold">
-                            {{ $fpaRequest->tanggal_mulai ? $fpaRequest->tanggal_mulai->format('d/m/Y') : '-' }} 
-                            s/d 
+                            {{ $fpaRequest->tanggal_mulai ? $fpaRequest->tanggal_mulai->format('d/m/Y') : '-' }}
+                            s/d
                             {{ $fpaRequest->tanggal_selesai ? $fpaRequest->tanggal_selesai->format('d/m/Y') : '-' }}
                         </p>
                     </div>
@@ -79,53 +79,43 @@
                 </div>
             </div>
 
-            <!-- Sprint 3: Checklist SPJ -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
-                <h3 class="text-lg font-bold mb-4 border-b pb-2">Checklist Dokumen SPJ</h3>
-                @if($fpaRequest->checklists->count() > 0)
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Dokumen</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catatan</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($fpaRequest->checklists as $index => $checklist)
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $index + 1 }}</td>
-                                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $checklist->nama_dokumen }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                @if($checklist->status == 'Belum Ada') bg-gray-100 text-gray-800 
-                                                @elseif($checklist->status == 'Belum Lengkap') bg-yellow-100 text-yellow-800 
-                                                @elseif($checklist->status == 'Lengkap') bg-green-100 text-green-800 
-                                                @elseif($checklist->status == 'Perlu Perbaikan') bg-red-100 text-red-800 
-                                                @endif">
-                                                {{ $checklist->status }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-500">{{ $checklist->catatan ?: '-' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <a href="{{ route('checklists.edit', $checklist->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    <p class="text-gray-500 italic">Belum ada checklist untuk FPA ini.</p>
-                @endif
-            </div>
+            <!-- Sprint 4: Kanban Checklist SPJ & History -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                <!-- Kanban Area (3/4) -->
+                <div class="lg:col-span-3 bg-white shadow-sm sm:rounded-lg p-6">
+                    <h3 class="text-lg font-bold mb-4 border-b pb-2">Kanban Checklist Dokumen</h3>
+                    @if($fpaRequest->checklists->count() > 0)
+                        @include('partials.kanban-checklist', ['fpaRequest' => $fpaRequest])
+                    @else
+                        <p class="text-gray-500 italic">Belum ada checklist untuk FPA ini.</p>
+                    @endif
+                </div>
 
-            <!-- Placeholder untuk Sprint 4 dan 5 (Kanban Checklist & History) -->
-            <div class="bg-gray-50 overflow-hidden shadow-sm sm:rounded-lg p-6 border-dashed border-2 border-gray-300">
-                <p class="text-center text-gray-500 italic">Area Kanban Checklist & History akan ditambahkan pada Sprint selanjutnya.</p>
+                <!-- History Sidebar (1/4) -->
+                <div class="bg-gray-50 shadow-sm sm:rounded-lg p-6 border border-gray-200 h-[600px] overflow-y-auto">
+                    <h3 class="text-md font-bold mb-4 border-b pb-2 text-gray-700">Riwayat Perubahan Status</h3>
+                    
+                    <ul id="history-list" class="space-y-2">
+                        @php
+                            // Ambil history dari relasi checklist yang ada (lewat checklist_histories)
+                            // Karena relasi langsung dari request tidak ada, kita query lewat model
+                            $histories = \App\Models\ChecklistHistory::whereIn('checklist_id', $fpaRequest->checklists->pluck('id'))
+                                        ->with(['checklist', 'user'])
+                                        ->orderByDesc('created_at')
+                                        ->get();
+                        @endphp
+
+                        @forelse($histories as $history)
+                            <li class="mb-2 text-sm pb-2 border-b">
+                                <span class="font-semibold text-gray-800">{{ $history->checklist->nama_dokumen ?? 'Dokumen' }}</span> 
+                                diubah ke <span class="text-blue-600">{{ $history->status_baru }}</span> 
+                                <br><span class="text-xs text-gray-500">Oleh {{ $history->user->name ?? '-' }} pada {{ $history->created_at->format('d/m/Y H:i') }}</span>
+                            </li>
+                        @empty
+                            <li class="text-xs text-gray-500 italic" id="empty-history">Belum ada riwayat perubahan.</li>
+                        @endforelse
+                    </ul>
+                </div>
             </div>
 
         </div>

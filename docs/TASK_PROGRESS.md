@@ -37,7 +37,14 @@ Ringkasan Perubahan:
 - Menambahkan route dan aksi terkait checklist di detail FPA
 
 ## Sprint 4 — Kanban Checklist & History
-Status: Pending
+Status: Completed
+Tanggal Selesai: 2026-08-30
+Commit Hash: 0f5f107
+Ringkasan Perubahan:
+- Pembuatan ChecklistKanbanController untuk menerima request AJAX PATCH perubahan status checklist
+- Integrasi SortableJS untuk Kanban 4 kolom di halaman detail FPA
+- Pencatatan history ke dalam tabel checklist_histories setiap kali card dipindahkan
+- Penambahan area History Sidebar pada detail FPA untuk menampilkan riwayat perubahan
 
 ## Sprint 5 — Workflow Status SPJ & History
 Status: Pending
