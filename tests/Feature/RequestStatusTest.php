@@ -101,3 +101,4 @@ class RequestStatusTest extends TestCase
         ]);
     }
 }
+

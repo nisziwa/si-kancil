@@ -19,8 +19,15 @@
                         @if($item->catatan)
                             <p class="mt-1 text-xs text-gray-500 truncate">{{ $item->catatan }}</p>
                         @endif
+                        @if($item->file_path)
+                            <div class="mt-1">
+                                <a href="{{ asset('storage/' . $item->file_path) }}" target="_blank" class="inline-flex items-center text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200 hover:underline">
+                                    📎 File Dokumen
+                                </a>
+                            </div>
+                        @endif
                         <div class="mt-2 text-right">
-                            <a href="{{ route('checklists.edit', $item->id) }}" class="text-xs text-blue-600 hover:underline">Edit Detail</a>
+                            <a href="{{ route('checklists.edit', $item->id) }}" class="text-xs text-blue-600 font-medium hover:underline">Edit & Kelola Detail →</a>
                         </div>
                     </div>
                 @endforeach

@@ -1,10 +1,10 @@
 # SI-KANCIL Agent Handoff
 
 ## Current Sprint
-Sprint aktif: Sprint 6 — Detail Dokumen & Upload File (Pending)
+Sprint aktif: Sprint 7 — Dashboard, Kanban FPA, Kalender & Template (In Progress)
 
 ## Current Status
-Sprint 5 (Workflow Status SPJ & History) telah selesai diimplementasikan dan diverifikasi dengan automated test. Menunggu konfirmasi user untuk memulai Sprint 6.
+Sprint 6 telah selesai. Melanjutkan langsung ke implementasi Sprint 7 (Dashboard, Kanban FPA, Kalender, Repository Template).
 
 ## Completed
 Daftar pekerjaan yang sudah selesai:
@@ -13,10 +13,10 @@ Daftar pekerjaan yang sudah selesai:
 - Sprint 3 Checklist SPJ & Template Checklist
 - Sprint 4 Kanban Checklist & History
 - Sprint 5 Workflow Status SPJ & History
+- Sprint 6 Detail Dokumen & Upload File
 
 ## Remaining Tasks
 Daftar pekerjaan yang belum selesai:
-- Sprint 6 Detail Dokumen & Upload File
 - Sprint 7 Dashboard, Kanban FPA, Kalender & Template
 - Sprint 8 Layout, UI Polish & Testing
 

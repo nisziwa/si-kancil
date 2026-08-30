@@ -59,7 +59,14 @@ Ringkasan Perubahan:
 - Automated feature testing (RequestStatusTest) untuk semua skenario validasi dan riwayat status
 
 ## Sprint 6 — Detail Dokumen & Upload File
-Status: Pending
+Status: Completed
+Tanggal Selesai: 2026-08-30
+Ringkasan Perubahan:
+- Implementasi penyimpanan detail dokumen terstruktur: Surat Tugas, SPD/SPPD, Pengeluaran Riil & Non-Kendaraan Dinas, Laporan Perjalanan
+- Implementasi FileUploadController dan upload file (Max 10MB; PDF, JPG, PNG, DOCX) untuk dokumen checklist SPJ
+- Pembaruan view edit checklist (`checklists/edit.blade.php`) dengan form kondisional dan download link file tersimpan
+- Penambahan badge file dan direct edit link pada kanban card
+- Automated feature testing (DocumentDetailTest) untuk verifikasi upload & detail dokumen terstruktur
 
 ## Sprint 7 — Dashboard, Kanban FPA, Kalender & Template
 Status: Pending

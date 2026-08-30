@@ -23,6 +23,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/checklists/{id}/edit', [App\Http\Controllers\SpjChecklistController::class, 'edit'])->name('checklists.edit');
     Route::put('/checklists/{id}', [App\Http\Controllers\SpjChecklistController::class, 'update'])->name('checklists.update');
     Route::patch('/checklists/{id}/status', [App\Http\Controllers\ChecklistKanbanController::class, 'updateStatus'])->name('checklists.status');
+    Route::post('/checklists/{id}/upload', [App\Http\Controllers\FileUploadController::class, 'upload'])->name('checklists.upload');
+    Route::get('/checklists/{id}/download', [App\Http\Controllers\FileUploadController::class, 'download'])->name('checklists.download');
     
     // Status SPJ Routes
     Route::post('/requests/{id}/status', [App\Http\Controllers\RequestStatusController::class, 'update'])->name('requests.status.update');
