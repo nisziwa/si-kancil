@@ -26,7 +26,7 @@
             @endif
 
             <!-- 1. STATISTIC CARDS -->
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
                     <p class="text-xs text-gray-500 font-semibold uppercase">Total FPA</p>
                     <p class="text-2xl font-extrabold text-gray-900 mt-1">{{ $stats['total'] }}</p>
@@ -34,10 +34,6 @@
                 <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-gray-400">
                     <p class="text-xs text-gray-500 font-semibold uppercase">Persiapan</p>
                     <p class="text-2xl font-extrabold text-gray-700 mt-1">{{ $stats['persiapan'] }}</p>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-amber-500">
-                    <p class="text-xs text-gray-500 font-semibold uppercase">Pengumpulan SPJ</p>
-                    <p class="text-2xl font-extrabold text-amber-600 mt-1">{{ $stats['pengumpulan_spj'] }}</p>
                 </div>
                 <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-indigo-500">
                     <p class="text-xs text-gray-500 font-semibold uppercase">Dikirim ke PPK</p>
@@ -94,12 +90,12 @@
                 </form>
             </div>
 
-            <!-- 3. KANBAN 6 KOLOM FPA INTERAKTIF -->
+            <!-- 3. KANBAN 4 KOLOM FPA INTERAKTIF -->
             <div class="bg-white p-6 rounded-lg shadow-sm">
                 <div class="flex justify-between items-center mb-4 border-b pb-3">
                     <div>
                         <h3 class="text-lg font-bold text-gray-800">Kanban Monitoring Posisi SPJ</h3>
-                        <p class="text-xs text-gray-500">Geser card FPA antar kolom untuk mengubah status SPJ secara langsung.</p>
+                        <p class="text-xs text-gray-500">Geser card FPA antar kolom sesuai alur status yang diperbolehkan.</p>
                     </div>
                     <span id="ajax-toast" class="hidden text-xs bg-green-100 text-green-800 px-3 py-1 rounded font-semibold transition-all"></span>
                 </div>
@@ -107,15 +103,13 @@
                 @php
                     $columnColors = [
                         'Persiapan' => 'bg-gray-100 border-gray-300 text-gray-700',
-                        'Pelaksanaan' => 'bg-blue-50 border-blue-200 text-blue-800',
-                        'Pengumpulan SPJ' => 'bg-amber-50 border-amber-200 text-amber-800',
                         'Dikirim ke PPK' => 'bg-indigo-50 border-indigo-200 text-indigo-800',
                         'Perbaikan' => 'bg-red-50 border-red-200 text-red-800',
                         'Selesai' => 'bg-green-50 border-green-200 text-green-800',
                     ];
                 @endphp
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3" id="fpa-kanban-board">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3" id="fpa-kanban-board">
                     @foreach($statuses as $status)
                         <div class="fpa-kanban-column flex flex-col rounded-lg {{ $columnColors[$status] }} border p-2 min-h-[400px]" data-status="{{ $status }}">
                             <div class="flex justify-between items-center mb-2 px-1">
@@ -129,10 +123,17 @@
                                 @foreach($fpaRequests->where('status_spj', $status) as $fpa)
                                     @php
                                         $progress = $fpa->checklist_progress;
+                                        $priority = $fpa->priority_info;
                                     @endphp
                                     <div class="fpa-card bg-white p-3 rounded shadow-xs border border-gray-200 cursor-move hover:shadow-md transition-shadow" data-id="{{ $fpa->id }}">
                                         <div class="flex justify-between items-start">
-                                            <span class="text-xs font-bold text-blue-600">{{ $fpa->nomor_fpa }}</span>
+                                            <span class="text-xs font-bold text-blue-600">
+                                                @if($fpa->has_nomor_fpa)
+                                                    {{ $fpa->nomor_fpa }}
+                                                @else
+                                                    <span class="text-gray-400 italic">Belum ada nomor FPA</span>
+                                                @endif
+                                            </span>
                                             <span class="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
                                                 {{ $fpa->expenseType->nama ?? '-' }}
                                             </span>
@@ -142,21 +143,22 @@
                                             {{ $fpa->deskripsi_permintaan }}
                                         </p>
 
-                                        @if($fpa->deadline_spj)
-                                            <p class="text-[11px] text-red-600 mt-1">
-                                                ⏳ DL: {{ $fpa->deadline_spj->format('d/m/Y') }}
-                                            </p>
-                                        @endif
-
-                                        <!-- Progress Bar Checklist -->
+                                        <!-- Prioritas SPJ (bukan checklist) -->
                                         <div class="mt-2 pt-2 border-t">
-                                            <div class="flex justify-between text-[10px] text-gray-500 mb-1">
-                                                <span>Checklist: {{ $progress['lengkap'] }}/{{ $progress['total'] }}</span>
-                                                <span class="font-bold">{{ $progress['persen'] }}%</span>
+                                            <div class="flex items-center justify-between text-[10px]">
+                                                <span class="font-semibold
+                                                    @if($priority['level'] === 'danger') text-red-700
+                                                    @elseif($priority['level'] === 'warning') text-amber-700
+                                                    @else text-gray-600 @endif">
+                                                    ⚑ {{ $priority['label'] }}
+                                                </span>
                                             </div>
-                                            <div class="w-full bg-gray-200 rounded-full h-1.5">
-                                                <div class="bg-blue-600 h-1.5 rounded-full" style="width: {{ $progress['persen'] }}%"></div>
-                                            </div>
+                                            @if($fpa->deadline_spj)
+                                                <div class="text-[10px] text-gray-500 mt-0.5">
+                                                    Deadline: {{ $fpa->deadline_spj->format('d/m/Y') }}
+                                                    @if($priority['terlambat']) <span class="text-red-600 font-bold">(Terlambat)</span> @endif
+                                                </div>
+                                            @endif
                                         </div>
 
                                         <div class="mt-2 text-right">
@@ -192,15 +194,19 @@
                             @forelse($fpaRequests as $fpa)
                                 @php $progress = $fpa->checklist_progress; @endphp
                                 <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-3 font-semibold text-blue-600 whitespace-nowrap">{{ $fpa->nomor_fpa }}</td>
+                                    <td class="px-4 py-3 font-semibold text-blue-600 whitespace-nowrap">
+                                        @if($fpa->has_nomor_fpa)
+                                            {{ $fpa->nomor_fpa }}
+                                        @else
+                                            <span class="text-gray-400 italic">Belum ada nomor FPA</span>
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-3 font-medium text-gray-900">{{ $fpa->deskripsi_permintaan }}</td>
                                     <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ $fpa->expenseType->nama ?? '-' }}</td>
                                     <td class="px-4 py-3 text-red-600 whitespace-nowrap">{{ $fpa->deadline_spj ? $fpa->deadline_spj->format('d/m/Y') : '-' }}</td>
                                     <td class="px-4 py-3 whitespace-nowrap">
                                         <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold
                                             @if($fpa->status_spj == 'Persiapan') bg-gray-100 text-gray-800
-                                            @elseif($fpa->status_spj == 'Pelaksanaan') bg-blue-100 text-blue-800
-                                            @elseif($fpa->status_spj == 'Pengumpulan SPJ') bg-amber-100 text-amber-800
                                             @elseif($fpa->status_spj == 'Dikirim ke PPK') bg-indigo-100 text-indigo-800
                                             @elseif($fpa->status_spj == 'Perbaikan') bg-red-100 text-red-800
                                             @elseif($fpa->status_spj == 'Selesai') bg-green-100 text-green-800
@@ -269,14 +275,28 @@
                             if (data.success) {
                                 toast.textContent = `Status FPA diubah ke: ${newStatus}`;
                                 toast.classList.remove('hidden');
+                                toast.classList.remove('bg-red-100', 'text-red-800');
+                                toast.classList.add('bg-green-100', 'text-green-800');
                                 setTimeout(() => toast.classList.add('hidden'), 3000);
                             } else {
-                                alert('Gagal mengubah status FPA.');
+                                // Tampilkan peringatan jika status diblokir (mis. belum lengkap dokumen)
+                                toast.textContent = data.message || 'Status tidak dapat diubah.';
+                                toast.classList.remove('hidden');
+                                toast.classList.remove('bg-green-100', 'text-green-800');
+                                toast.classList.add('bg-red-100', 'text-red-800');
+                                setTimeout(() => toast.classList.add('hidden'), 6000);
+                                // Kembalikan card ke kolom asal
+                                location.reload();
                             }
                         })
                         .catch(err => {
                             console.error(err);
-                            alert('Terjadi kesalahan koneksi.');
+                            toast.textContent = 'Terjadi kesalahan koneksi.';
+                            toast.classList.remove('hidden');
+                            toast.classList.remove('bg-green-100', 'text-green-800');
+                            toast.classList.add('bg-red-100', 'text-red-800');
+                            setTimeout(() => toast.classList.add('hidden'), 4000);
+                            location.reload();
                         });
                     }
                 });

@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('travel_reports', function (Blueprint $table) {
+        Schema::create('surat_tugas_pelaksanas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('checklist_id')->constrained('spj_checklists')->onDelete('cascade');
+            $table->foreignId('surat_tugas_detail_id')->constrained('surat_tugas_details')->onDelete('cascade');
             $table->string('nama_pelaksana');
-            $table->string('tujuan');
-            $table->text('uraian_kegiatan');
-            $table->date('tanggal_kegiatan');
-            $table->string('dokumentasi')->nullable();
+            $table->string('nomor_surat')->nullable();
+            $table->integer('urutan')->default(0);
             $table->timestamps();
         });
     }
@@ -28,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('travel_reports');
+        Schema::dropIfExists('surat_tugas_pelaksanas');
     }
 };

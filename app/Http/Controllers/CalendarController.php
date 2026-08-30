@@ -19,8 +19,6 @@ class CalendarController extends Controller
 
         $statusColors = [
             'Persiapan' => '#6b7280',
-            'Pelaksanaan' => '#2563eb',
-            'Pengumpulan SPJ' => '#d97706',
             'Dikirim ke PPK' => '#4f46e5',
             'Perbaikan' => '#dc2626',
             'Selesai' => '#16a34a',

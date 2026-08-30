@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-        public function up(): void
+    public function up(): void
     {
         Schema::create('spj_checklists', function (Blueprint $table) {
             $table->id();
@@ -19,7 +19,7 @@ return new class extends Migration
                 'Belum Ada',
                 'Belum Lengkap',
                 'Lengkap',
-                'Perlu Perbaikan'
+                'Perlu Perbaikan',
             ])->default('Belum Ada');
             $table->text('catatan')->nullable();
             $table->string('file_path')->nullable();

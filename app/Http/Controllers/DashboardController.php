@@ -18,8 +18,6 @@ class DashboardController extends Controller
         $stats = [
             'total' => FpaRequest::count(),
             'persiapan' => FpaRequest::where('status_spj', 'Persiapan')->count(),
-            'pelaksanaan' => FpaRequest::where('status_spj', 'Pelaksanaan')->count(),
-            'pengumpulan_spj' => FpaRequest::where('status_spj', 'Pengumpulan SPJ')->count(),
             'dikirim_ppk' => FpaRequest::where('status_spj', 'Dikirim ke PPK')->count(),
             'perbaikan' => FpaRequest::where('status_spj', 'Perbaikan')->count(),
             'selesai' => FpaRequest::where('status_spj', 'Selesai')->count(),

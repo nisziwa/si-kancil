@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-        public function up(): void
+    public function up(): void
     {
         Schema::create('templates', function (Blueprint $table) {
             $table->id();
@@ -20,7 +20,7 @@ return new class extends Migration
                 'Laporan Perjalanan',
                 'Visum',
                 'Superkendis',
-                'Dokumen SPJ'
+                'Dokumen SPJ',
             ]);
             $table->string('versi')->nullable();
             $table->string('file')->nullable();

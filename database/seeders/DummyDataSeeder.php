@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\ChecklistHistory;
 use App\Models\DocumentTemplate;
 use App\Models\ExpenseType;
 use App\Models\RealExpenseDetail;
@@ -10,6 +9,7 @@ use App\Models\Request as FpaRequest;
 use App\Models\RequestStatusHistory;
 use App\Models\SpjChecklist;
 use App\Models\SuratTugasDetail;
+use App\Models\SuratTugasPelaksana;
 use App\Models\Template;
 use App\Models\TravelDetail;
 use App\Models\TravelReport;
@@ -22,7 +22,7 @@ class DummyDataSeeder extends Seeder
     public function run(): void
     {
         $user = User::first();
-        if (!$user) {
+        if (! $user) {
             return;
         }
 
@@ -64,7 +64,7 @@ class DummyDataSeeder extends Seeder
                 'tanggal_selesai' => Carbon::now()->subDays(5)->format('Y-m-d'),
                 'lokasi' => 'Kabupaten Sukamaju',
                 'deadline_spj' => Carbon::now()->addDays(5)->format('Y-m-d'),
-                'status_spj' => 'Pengumpulan SPJ',
+                'status_spj' => 'Persiapan',
             ],
             [
                 'nomor_fpa' => 'FPA/2026/08/002',
@@ -121,7 +121,7 @@ class DummyDataSeeder extends Seeder
                 'tanggal_selesai' => Carbon::now()->addDays(2)->format('Y-m-d'),
                 'lokasi' => 'Pasar Sentral',
                 'deadline_spj' => Carbon::now()->addDays(8)->format('Y-m-d'),
-                'status_spj' => 'Pelaksanaan',
+                'status_spj' => 'Persiapan',
             ],
         ];
 
@@ -168,8 +168,6 @@ class DummyDataSeeder extends Seeder
                         $status = 'Lengkap';
                     } elseif ($fpa->status_spj === 'Dikirim ke PPK') {
                         $status = 'Lengkap';
-                    } elseif ($fpa->status_spj === 'Pengumpulan SPJ') {
-                        $status = $idx % 2 === 0 ? 'Lengkap' : 'Belum Lengkap';
                     } elseif ($fpa->status_spj === 'Perbaikan') {
                         $status = $idx === 0 ? 'Perlu Perbaikan' : 'Lengkap';
                     }
@@ -184,20 +182,30 @@ class DummyDataSeeder extends Seeder
 
                     // Seed detail jika Surat Tugas
                     if (str_contains($t->nama_dokumen, 'Surat Tugas')) {
-                        SuratTugasDetail::create([
+                        $stDetail = SuratTugasDetail::create([
                             'checklist_id' => $chk->id,
-                            'nomor_surat_tugas' => 'ST/0' . $fpa->id . '/VIII/2026',
+                            'nomor_surat_tugas' => 'B-1027/75040/KP.650/2026',
                             'tanggal_surat_tugas' => $fpa->tanggal_mulai,
                             'pelaksana' => 'Budi Santoso, Siti Rahma',
-                            'isi_tugas' => 'Pelaksanaan tugas penugasan lapangan kegiatan ' . $fpa->deskripsi_permintaan,
+                            'isi_tugas' => 'Pelaksanaan tugas penugasan lapangan kegiatan '.$fpa->deskripsi_permintaan,
                         ]);
+
+                        $pelaksanas = [['Budi Santoso', 1], ['Siti Rahma', 2]];
+                        foreach ($pelaksanas as $p) {
+                            SuratTugasPelaksana::create([
+                                'surat_tugas_detail_id' => $stDetail->id,
+                                'nama_pelaksana' => $p[0],
+                                'nomor_surat' => 'B-1027.'.$p[1].'/75040/KP.650/2026',
+                                'urutan' => $p[1],
+                            ]);
+                        }
                     }
 
                     // Seed detail jika SPD
                     if (str_contains($t->nama_dokumen, 'SPD')) {
                         TravelDetail::create([
                             'checklist_id' => $chk->id,
-                            'nomor_spd' => 'SPD/0' . $fpa->id . '/2026',
+                            'nomor_spd' => 'SPD/0'.$fpa->id.'/2026',
                             'nama_pelaksana' => 'Budi Santoso',
                             'maksud_perjalanan' => $fpa->deskripsi_permintaan,
                             'tempat_berangkat' => 'Kantor BPS',
@@ -212,7 +220,7 @@ class DummyDataSeeder extends Seeder
                     if (str_contains($t->nama_dokumen, 'Pengeluaran Riil')) {
                         RealExpenseDetail::create([
                             'checklist_id' => $chk->id,
-                            'nomor_surat_tugas' => 'ST/0' . $fpa->id . '/VIII/2026',
+                            'nomor_surat_tugas' => 'ST/0'.$fpa->id.'/VIII/2026',
                             'tanggal_surat_tugas' => $fpa->tanggal_mulai,
                             'nama_pelaksana' => 'Budi Santoso',
                             'jabatan' => 'Statistisi Ahli Pertama',
@@ -230,7 +238,7 @@ class DummyDataSeeder extends Seeder
                             'nama_pelaksana' => 'Budi Santoso',
                             'tujuan' => $fpa->lokasi ?: 'Lokasi Kegiatan',
                             'tanggal_kegiatan' => $fpa->tanggal_selesai,
-                            'uraian_kegiatan' => 'Telah selesai melaksanakan tugas ' . $fpa->deskripsi_permintaan . ' dengan lancar dan tertib.',
+                            'uraian_kegiatan' => 'Telah selesai melaksanakan tugas '.$fpa->deskripsi_permintaan.' dengan lancar dan tertib.',
                         ]);
                     }
                 }

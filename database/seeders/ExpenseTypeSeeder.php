@@ -1,7 +1,10 @@
 <?php
+
 namespace Database\Seeders;
+
 use App\Models\ExpenseType;
 use Illuminate\Database\Seeder;
+
 class ExpenseTypeSeeder extends Seeder
 {
     public function run(): void

@@ -100,7 +100,7 @@
                     </div>
                     <h3 class="text-lg font-bold text-gray-900">Kanban & Timeline Monitoring</h3>
                     <p class="text-sm text-gray-600 leading-relaxed">
-                        Pantau posisi SPJ (Persiapan, Pelaksanaan, Pengumpulan SPJ, Dikirim ke PPK, Perbaikan, Selesai) secara visual dan interaktif.
+                        Pantau posisi SPJ (Persiapan, Dikirim ke PPK, Perbaikan, Selesai) secara visual dan interaktif.
                     </p>
                 </div>
             </div>

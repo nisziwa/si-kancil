@@ -1,13 +1,22 @@
 <?php
 
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ChecklistKanbanController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FileUploadController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RequestController;
+use App\Http\Controllers\RequestStatusController;
+use App\Http\Controllers\SpjChecklistController;
+use App\Http\Controllers\SuperkendisController;
+use App\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])
+Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
@@ -17,26 +26,33 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // FPA / Permintaan Routes
-    Route::resource('requests', App\Http\Controllers\RequestController::class);
+    Route::get('/requests/check-nomor-fpa', [RequestController::class, 'checkNomorFpa'])->name('requests.check-nomor-fpa');
+    Route::resource('requests', RequestController::class);
 
     // Checklist SPJ Routes
-    Route::get('/checklists/{id}/edit', [App\Http\Controllers\SpjChecklistController::class, 'edit'])->name('checklists.edit');
-    Route::put('/checklists/{id}', [App\Http\Controllers\SpjChecklistController::class, 'update'])->name('checklists.update');
-    Route::patch('/checklists/{id}/status', [App\Http\Controllers\ChecklistKanbanController::class, 'updateStatus'])->name('checklists.status');
-    Route::post('/checklists/{id}/upload', [App\Http\Controllers\FileUploadController::class, 'upload'])->name('checklists.upload');
-    Route::get('/checklists/{id}/download', [App\Http\Controllers\FileUploadController::class, 'download'])->name('checklists.download');
+    Route::get('/checklists/{id}/edit', [SpjChecklistController::class, 'edit'])->name('checklists.edit');
+    Route::put('/checklists/{id}', [SpjChecklistController::class, 'update'])->name('checklists.update');
+    Route::patch('/checklists/{id}/status', [ChecklistKanbanController::class, 'updateStatus'])->name('checklists.status');
+    Route::post('/checklists/{id}/upload', [FileUploadController::class, 'upload'])->name('checklists.upload');
+    Route::get('/checklists/{id}/download', [FileUploadController::class, 'download'])->name('checklists.download');
 
     // Status SPJ Routes
-    Route::post('/requests/{id}/status', [App\Http\Controllers\RequestStatusController::class, 'update'])->name('requests.status.update');
-    Route::patch('/requests/{id}/status-ajax', [App\Http\Controllers\RequestStatusController::class, 'updateAjax'])->name('requests.status.ajax');
+    Route::post('/requests/{id}/status', [RequestStatusController::class, 'update'])->name('requests.status.update');
+    Route::patch('/requests/{id}/status-ajax', [RequestStatusController::class, 'updateAjax'])->name('requests.status.ajax');
+
+    // Superkendis Routes
+    Route::get('/requests/{requestId}/superkendis', [SuperkendisController::class, 'index'])->name('requests.superkendis');
+    Route::post('/requests/{requestId}/superkendis/generate/{pelaksanaId}', [SuperkendisController::class, 'generate'])->name('requests.superkendis.generate');
+    Route::post('/requests/{requestId}/superkendis/bulk-separate', [SuperkendisController::class, 'bulkSeparate'])->name('requests.superkendis.bulk-separate');
+    Route::post('/requests/{requestId}/superkendis/bulk-merged', [SuperkendisController::class, 'bulkMerged'])->name('requests.superkendis.bulk-merged');
 
     // Calendar Routes
-    Route::get('/calendar', [App\Http\Controllers\CalendarController::class, 'index'])->name('calendar.index');
-    Route::get('/calendar/events', [App\Http\Controllers\CalendarController::class, 'events'])->name('calendar.events');
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    Route::get('/calendar/events', [CalendarController::class, 'events'])->name('calendar.events');
 
     // Repository Template Routes
-    Route::get('/templates/{id}/download', [App\Http\Controllers\TemplateController::class, 'download'])->name('templates.download');
-    Route::resource('templates', App\Http\Controllers\TemplateController::class);
+    Route::get('/templates/{id}/download', [TemplateController::class, 'download'])->name('templates.download');
+    Route::resource('templates', TemplateController::class);
 });
 
 require __DIR__.'/auth.php';

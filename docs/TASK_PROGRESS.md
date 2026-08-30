@@ -91,3 +91,21 @@ Ringkasan Perubahan:
 - Integrasi DummyDataSeeder ke DatabaseSeeder
 - Automated feature test untuk verifikasi DatabaseSeeder
 - Verifikasi menyeluruh: seluruh 34 unit & feature tests berhasil 100% (PASS)
+
+## Sprint 9 — Finalisasi Status SPJ, FPA, Surat Tugas Multi-Pelaksana & Superkendis
+Status: Completed
+Tanggal Selesai: 2026-08-31
+Ringkasan Perubahan:
+- Finalisasi status SPJ menjadi 4 status (`Persiapan`, `Dikirim ke PPK`, `Perbaikan`, `Selesai`); status lama `Pelaksanaan` & `Pengumpulan SPJ` dihapus
+- Validasi transisi workflow (Perbaikan opsional): Persiapan→Dikirim ke PPK→(Perbaikan)→Selesai
+- "Dikirim ke PPK" wajib punya nomor FPA dan seluruh checklist `is_required=true` Lengkap; pesan blokir standar
+- SPJ progress = indikator prioritas (deadline/sisa hari/keterlambatan), bukan progress checklist
+- `nomor_fpa` nullable; tampilan abu-abu "Belum ada nomor FPA"; cek duplikat nomor FPA live via AJAX
+- Kalender: pilih tanggal langsung membuka form FPA dengan deadline otomatis (end+3 hari, editable) tanpa alert/confirm
+- FPA form: input `lokasi` & `periode` teks dihapus; periode diganti toggle (Bulanan/Triwulanan/Subround/Semester/Tahunan)
+- Surat Tugas multi-pelaksana: tabel baru `surat_tugas_pelaksanas` dengan nomor sub otomatis (`B-1027.1/...`, `.2/...`)
+- Superkendis (SuperkendisController): generate DOCX/PDF per pelaksana di detail FPA, NIP opsional (kosong → "-"), bulk Pisah file (ZIP) & Gabung satu file
+- Tabel & seeder baru `sk_rate_perjalanan` (kecamatan, besaran biaya transport)
+- Library baru: `phpoffice/phpword` & `dompdf/dompdf`
+- Automated feature testing (RequestStatusTest, DocumentDetailTest, SuperkendisTest) untuk workflow status, FPA tanpa nomor, pelaksana sub-nomor, pengecekan nomor FPA live (AJAX) & Superkendis DOCX/PDF
+- Verifikasi menyeluruh: seluruh 48 unit & feature tests berhasil 100% (PASS)

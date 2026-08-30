@@ -21,8 +21,6 @@
             <div class="bg-white p-4 rounded-lg shadow-sm flex flex-wrap items-center gap-4 text-xs font-semibold">
                 <span class="text-gray-500 font-bold uppercase">Petunjuk Warna:</span>
                 <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-gray-500"></span> Persiapan</span>
-                <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-600"></span> Pelaksanaan</span>
-                <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-600"></span> Pengumpulan SPJ</span>
                 <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-indigo-600"></span> Dikirim ke PPK</span>
                 <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-600"></span> Perbaikan</span>
                 <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-green-600"></span> Selesai</span>
@@ -72,7 +70,7 @@
                 selectMirror: true,
                 events: '{{ route("calendar.events") }}',
 
-                // Drag-Select Range Tanggal untuk membuat FPA baru
+                // Drag-Select Range Tanggal: langsung menampilkan form FPA (tanpa alert/confirm)
                 select: function(info) {
                     var startDate = info.startStr;
                     // FullCalendar end date is exclusive, subtract 1 day for inclusive end date
@@ -80,9 +78,13 @@
                     end.setDate(end.getDate() - 1);
                     var endDate = end.toISOString().split('T')[0];
 
-                    if (confirm('Buat FPA baru untuk rentang tanggal ' + startDate + ' s/d ' + endDate + '?')) {
-                        window.location.href = '{{ route("requests.create") }}?tanggal_mulai=' + startDate + '&tanggal_selesai=' + endDate;
-                    }
+                    // Tambahkan 3 hari untuk deadline otomatis
+                    var deadline = new Date(endDate);
+                    deadline.setDate(deadline.getDate() + 3);
+                    var deadlineDate = deadline.toISOString().split('T')[0];
+
+                    // Langsung menuju form FPA dengan tanggal terisi & deadline otomatis
+                    window.location.href = '{{ route("requests.create") }}?tanggal_mulai=' + startDate + '&tanggal_selesai=' + endDate + '&deadline_spj=' + deadlineDate;
                     calendar.unselect();
                 },
 

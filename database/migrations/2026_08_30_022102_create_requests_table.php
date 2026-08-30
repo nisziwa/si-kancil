@@ -9,11 +9,11 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-        public function up(): void
+    public function up(): void
     {
         Schema::create('requests', function (Blueprint $table) {
             $table->id();
-            $table->string('nomor_fpa')->unique();
+            $table->string('nomor_fpa')->nullable()->unique();
             $table->text('deskripsi_permintaan');
             $table->foreignId('jenis_pengeluaran_id')->constrained('expense_types')->onDelete('restrict');
             $table->string('periode')->nullable();
@@ -23,11 +23,9 @@ return new class extends Migration
             $table->date('deadline_spj')->nullable();
             $table->enum('status_spj', [
                 'Persiapan',
-                'Pelaksanaan',
-                'Pengumpulan SPJ',
                 'Dikirim ke PPK',
                 'Perbaikan',
-                'Selesai'
+                'Selesai',
             ])->default('Persiapan');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->date('tanggal_kirim_ppk')->nullable();

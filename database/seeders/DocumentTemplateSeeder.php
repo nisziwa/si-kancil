@@ -1,8 +1,11 @@
 <?php
+
 namespace Database\Seeders;
+
 use App\Models\DocumentTemplate;
 use App\Models\ExpenseType;
 use Illuminate\Database\Seeder;
+
 class DocumentTemplateSeeder extends Seeder
 {
     public function run(): void
@@ -18,13 +21,15 @@ class DocumentTemplateSeeder extends Seeder
         DocumentTemplate::truncate();
         foreach ($templates as $kode => $docs) {
             $expenseType = ExpenseType::where('kode', $kode)->first();
-            if (!$expenseType) continue;
+            if (! $expenseType) {
+                continue;
+            }
             foreach ($docs as $urutan => $nama) {
                 DocumentTemplate::create([
                     'expense_type_id' => $expenseType->id,
-                    'nama_dokumen'    => $nama,
-                    'is_required'     => true,
-                    'urutan'          => $urutan + 1,
+                    'nama_dokumen' => $nama,
+                    'is_required' => true,
+                    'urutan' => $urutan + 1,
                 ]);
             }
         }

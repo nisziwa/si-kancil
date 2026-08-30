@@ -53,18 +53,22 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                             @forelse($requests as $item)
                                 <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $item->nomor_fpa }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        @if($item->has_nomor_fpa)
+                                            {{ $item->nomor_fpa }}
+                                        @else
+                                            <span class="text-gray-400 italic">Belum ada nomor FPA</span>
+                                        @endif
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $item->expenseType->nama ?? '-' }}</td>
                                     <td class="px-6 py-4 text-sm text-gray-500">{{ Str::limit($item->deskripsi_permintaan, 50) }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $item->periode }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                            @if($item->status_spj == 'Persiapan') bg-gray-100 text-gray-800 
-                                            @elseif($item->status_spj == 'Pelaksanaan') bg-blue-100 text-blue-800 
-                                            @elseif($item->status_spj == 'Pengumpulan SPJ') bg-yellow-100 text-yellow-800 
-                                            @elseif($item->status_spj == 'Dikirim ke PPK') bg-indigo-100 text-indigo-800 
-                                            @elseif($item->status_spj == 'Perbaikan') bg-red-100 text-red-800 
-                                            @elseif($item->status_spj == 'Selesai') bg-green-100 text-green-800 
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                            @if($item->status_spj == 'Persiapan') bg-gray-100 text-gray-800
+                                            @elseif($item->status_spj == 'Dikirim ke PPK') bg-indigo-100 text-indigo-800
+                                            @elseif($item->status_spj == 'Perbaikan') bg-red-100 text-red-800
+                                            @elseif($item->status_spj == 'Selesai') bg-green-100 text-green-800
                                             @endif">
                                             {{ $item->status_spj }}
                                         </span>

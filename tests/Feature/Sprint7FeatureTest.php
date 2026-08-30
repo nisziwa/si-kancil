@@ -35,12 +35,11 @@ class Sprint7FeatureTest extends TestCase
             'nomor_fpa' => 'FPA-DASH-001',
             'deskripsi_permintaan' => 'Rapat Evaluasi Triwulan',
             'jenis_pengeluaran_id' => $this->expenseType->id,
-            'periode' => 'Agustus 2026',
+            'periode' => 'Triwulanan',
             'user_id' => $this->user->id,
-            'status_spj' => 'Pengumpulan SPJ',
+            'status_spj' => 'Persiapan',
             'tanggal_mulai' => '2026-08-25',
             'tanggal_selesai' => '2026-08-26',
-            'lokasi' => 'Aula BPS',
             'deadline_spj' => '2026-08-31',
         ]);
     }

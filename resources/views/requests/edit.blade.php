@@ -1,14 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Edit Permintaan / FPA') }} - {{ $fpaRequest->nomor_fpa }}
+            {{ __('Edit Permintaan / FPA') }} - {{ $fpaRequest->nomor_fpa ?: 'Belum ada nomor FPA' }}
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                
+
                 @if ($errors->any())
                     <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
                         <strong class="font-bold">Ada kesalahan!</strong>
@@ -20,15 +20,16 @@
                     </div>
                 @endif
 
-                <form action="{{ route('requests.update', $fpaRequest->id) }}" method="POST">
+                <form action="{{ route('requests.update', $fpaRequest->id) }}" method="POST" id="fpa-form">
                     @csrf
                     @method('PUT')
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Nomor FPA -->
+                        <!-- Nomor FPA (opsional) -->
                         <div>
-                            <label for="nomor_fpa" class="block text-sm font-medium text-gray-700">Nomor FPA *</label>
-                            <input type="text" name="nomor_fpa" id="nomor_fpa" value="{{ old('nomor_fpa', $fpaRequest->nomor_fpa) }}" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <label for="nomor_fpa" class="block text-sm font-medium text-gray-700">Nomor FPA <span class="text-gray-400">(opsional)</span></label>
+                            <input type="text" name="nomor_fpa" id="nomor_fpa" value="{{ old('nomor_fpa', $fpaRequest->nomor_fpa) }}" placeholder="Kosongkan jika belum ada" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <p id="nomor-fpa-feedback" class="hidden mt-1 text-sm font-semibold"></p>
                         </div>
 
                         <!-- Jenis Pengeluaran -->
@@ -50,16 +51,20 @@
                             <textarea name="deskripsi_permintaan" id="deskripsi_permintaan" rows="3" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">{{ old('deskripsi_permintaan', $fpaRequest->deskripsi_permintaan) }}</textarea>
                         </div>
 
-                        <!-- Periode -->
-                        <div>
-                            <label for="periode" class="block text-sm font-medium text-gray-700">Periode Kegiatan *</label>
-                            <input type="text" name="periode" id="periode" value="{{ old('periode', $fpaRequest->periode) }}" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        </div>
-
-                        <!-- Lokasi -->
-                        <div>
-                            <label for="lokasi" class="block text-sm font-medium text-gray-700">Lokasi</label>
-                            <input type="text" name="lokasi" id="lokasi" value="{{ old('lokasi', $fpaRequest->lokasi) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <!-- Periode (Pilihan Tombol) -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700">Periode Kegiatan *</label>
+                            <div id="periode-buttons" class="mt-2 flex flex-wrap gap-2">
+                                @foreach(\App\Models\Request::PERIOD_LIST as $period)
+                                    <button type="button" data-value="{{ $period }}"
+                                        class="periode-btn px-4 py-2 rounded-md border text-sm font-medium
+                                        {{ old('periode', $fpaRequest->periode) === $period ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200' }}">
+                                        {{ $period }}
+                                    </button>
+                                @endforeach
+                            </div>
+                            <input type="hidden" name="periode" id="periode" value="{{ old('periode', $fpaRequest->periode ?? \App\Models\Request::PERIOD_LIST[0]) }}">
+                            @error('periode') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <!-- Tanggal Mulai -->
@@ -78,6 +83,7 @@
                         <div>
                             <label for="deadline_spj" class="block text-sm font-medium text-gray-700">Deadline SPJ</label>
                             <input type="date" name="deadline_spj" id="deadline_spj" value="{{ old('deadline_spj', $fpaRequest->deadline_spj?->format('Y-m-d')) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <p class="text-xs text-gray-500 mt-1">Penyesuaian tanggal dapat dilakukan manual.</p>
                         </div>
                     </div>
 
@@ -90,4 +96,70 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const buttons = document.querySelectorAll('.periode-btn');
+            const periodeInput = document.getElementById('periode');
+            buttons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    buttons.forEach(b => {
+                        b.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+                        b.classList.add('bg-gray-100', 'text-gray-700', 'border-gray-300');
+                    });
+                    btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+                    btn.classList.remove('bg-gray-100', 'text-gray-700', 'border-gray-300');
+                    periodeInput.value = btn.dataset.value;
+                });
+            });
+
+            const fpaInput = document.getElementById('nomor_fpa');
+            const feedback = document.getElementById('nomor-fpa-feedback');
+            let timer;
+
+            fpaInput.addEventListener('input', function () {
+                clearTimeout(timer);
+                const value = fpaInput.value.trim();
+                if (value === '') {
+                    feedback.classList.add('hidden');
+                    return;
+                }
+                timer = setTimeout(function () {
+                    fetch('{{ route("requests.check-nomor-fpa") }}?nomor=' + encodeURIComponent(value) + '&ignore_id={{ $fpaRequest->id }}', {
+                        headers: { 'Accept': 'application/json' }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        feedback.classList.remove('hidden');
+                        if (data.available) {
+                            feedback.className = 'hidden mt-1 text-sm font-semibold';
+                        } else {
+                            feedback.textContent = data.message;
+                            feedback.className = 'mt-1 text-sm font-semibold text-red-600';
+                        }
+                    })
+                    .catch(err => console.error(err));
+                }, 300);
+            });
+
+            document.getElementById('fpa-form').addEventListener('submit', function (e) {
+                const value = fpaInput.value.trim();
+                if (value === '') return;
+                e.preventDefault();
+                fetch('{{ route("requests.check-nomor-fpa") }}?nomor=' + encodeURIComponent(value) + '&ignore_id={{ $fpaRequest->id }}', {
+                    headers: { 'Accept': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.available) {
+                        feedback.textContent = data.message;
+                        feedback.className = 'mt-1 text-sm font-semibold text-red-600';
+                        return;
+                    }
+                    e.target.submit();
+                })
+                .catch(() => e.target.submit());
+            });
+        });
+    </script>
 </x-app-layout>

@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\ExpenseType;
 use App\Models\Request as FpaRequest;
 use App\Models\SpjChecklist;
+use App\Models\SuratTugasDetail;
+use App\Models\SuratTugasPelaksana;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -16,10 +18,15 @@ class DocumentDetailTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected FpaRequest $fpaRequest;
+
     protected SpjChecklist $stChecklist;
+
     protected SpjChecklist $spdChecklist;
+
     protected SpjChecklist $realChecklist;
+
     protected SpjChecklist $reportChecklist;
 
     protected function setUp(): void
@@ -75,9 +82,9 @@ class DocumentDetailTest extends TestCase
         $response = $this->actingAs($this->user)->put(route('checklists.update', $this->stChecklist->id), [
             'status' => 'Lengkap',
             'catatan' => 'ST sudah ditandatangani',
-            'nomor_surat_tugas' => 'ST/001/VIII/2026',
+            'nomor_surat_tugas' => 'B-1027/75040/KP.650/2026',
             'tanggal_surat_tugas' => '2026-08-25',
-            'pelaksana' => 'Budi, Siti',
+            'pelaksana_nama' => ['Budi Santoso', 'Siti Rahma'],
             'isi_tugas' => 'Melakukan survei lapangan',
             'file_dokumen' => $file,
         ]);
@@ -90,11 +97,21 @@ class DocumentDetailTest extends TestCase
             'catatan' => 'ST sudah ditandatangani',
         ]);
 
+        $stDetail = SuratTugasDetail::where('checklist_id', $this->stChecklist->id)->first();
+        $this->assertNotNull($stDetail);
         $this->assertDatabaseHas('surat_tugas_details', [
             'checklist_id' => $this->stChecklist->id,
-            'nomor_surat_tugas' => 'ST/001/VIII/2026',
-            'pelaksana' => 'Budi, Siti',
+            'nomor_surat_tugas' => 'B-1027/75040/KP.650/2026',
         ]);
+
+        // Selain itu, nomor sub otomatis untuk setiap pelaksana
+        $pelaksanas = SuratTugasPelaksana::where('surat_tugas_detail_id', $stDetail->id)
+            ->orderBy('urutan')
+            ->get();
+        $this->assertCount(2, $pelaksanas);
+        $this->assertEquals('B-1027.1/75040/KP.650/2026', $pelaksanas[0]->nomor_surat);
+        $this->assertEquals('Budi Santoso', $pelaksanas[0]->nama_pelaksana);
+        $this->assertEquals('B-1027.2/75040/KP.650/2026', $pelaksanas[1]->nomor_surat);
 
         $this->stChecklist->refresh();
         $this->assertNotNull($this->stChecklist->file_path);
@@ -139,4 +156,3 @@ class DocumentDetailTest extends TestCase
         ]);
     }
 }
-

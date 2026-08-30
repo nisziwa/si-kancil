@@ -48,7 +48,7 @@ Aplikasi web Laravel untuk membantu Sekretaris Tim mengontrol proses administras
 #### Fitur
 - CRUD permintaan
 - Search FPA
-- Field `status_spj` enum: `Persiapan`, `Pelaksanaan`, `Pengumpulan SPJ`, `Dikirim ke PPK`, `Perbaikan`, `Selesai`
+- Field `status_spj` enum: `Persiapan`, `Dikirim ke PPK`, `Perbaikan`, `Selesai`
 
 ### Sprint 3 — Checklist SPJ & Template Checklist
 #### Models & Controllers
@@ -84,7 +84,7 @@ Aplikasi web Laravel untuk membantu Sekretaris Tim mengontrol proses administras
 - `FileUploadController` untuk storage lokal (`storage/app/spj-files/`) dengan Max size 10MB (PDF, JPG, PNG, DOCX)
 
 ### Sprint 7 — Dashboard Kanban FPA, Kalender & Repository Template
-- `DashboardController`: Cards statistik, tabel FPA, Kanban FPA (6 kolom interaktif)
+- `DashboardController`: Cards statistik, tabel FPA, Kanban FPA (4 kolom interaktif)
 - `CalendarController`: FullCalendar 6 dengan drag-select range tanggal
 - `TemplateController`: CRUD template dokumen (KAK, Surat Tugas, Laporan Perjalanan, Visum, Superkendis, Dokumen SPJ)
 
@@ -94,17 +94,29 @@ Aplikasi web Laravel untuk membantu Sekretaris Tim mengontrol proses administras
 - Seed data dummy
 - Final testing
 
+### Sprint 9 — Finalisasi Status SPJ, FPA, Surat Tugas Multi-Pelaksana & Superkendis
+- Finalisasi status SPJ menjadi 4 status + validasi transisi workflow (Perbaikan opsional)
+- Dukungan FPA tanpa nomor (nullable `nomor_fpa`); nomor diwajibkan saat "Dikirim ke PPK"; validasi checklist `is_required` Lengkap; cek nomor FPA live via AJAX
+- Kalender: pilih tanggal → form FPA dengan deadline otomatis (end + 3 hari, editable)
+- FPA form: periode via toggle (Bulanan/Triwulanan/Subround/Semester/Tahunan)
+- Surat Tugas multi-pelaksana dengan nomor sub otomatis (`B-1027.1/...`, `.2/...`) via tabel `surat_tugas_pelaksanas`
+- Superkendis: generate DOCX/PDF di detail FPA (hanya jika checklist Surat Tugas Lengkap), NIP opsional → "-", bulk Pisah file (ZIP) & Gabung satu file
+- Tabel `sk_rate_perjalanan` (kecamatan + besaran biaya transport)
+- Library baru: `phpoffice/phpword`, `dompdf/dompdf`
+
 ---
 
 ## Struktur Database Final
 ```
 expense_types          (id, nama, kode, keterangan, is_active)
 document_templates     (id, expense_type_id, nama_dokumen, is_required, urutan)
-requests               (id, nomor_fpa, deskripsi_permintaan, jenis_pengeluaran_id, periode, tanggal_mulai, tanggal_selesai, lokasi, deadline_spj, status_spj, user_id, tanggal_kirim_ppk, tanggal_selesai_spj)
-spj_checklists         (id, request_id, nama_dokumen, status, catatan, file_path, urutan)
+requests               (id, nomor_fpa [nullable], deskripsi_permintaan, jenis_pengeluaran_id, periode, tanggal_mulai, tanggal_selesai, lokasi [hapus], deadline_spj, status_spj [4 status], user_id, tanggal_kirim_ppk, tanggal_selesai_spj)
+spj_checklists         (id, request_id, nama_dokumen, status, catatan, file_path, urutan, is_required)
 checklist_histories    (id, checklist_id, status_lama, status_baru, catatan, user_id)
 request_status_histories (id, request_id, status_lama, status_baru, catatan, file_bukti, user_id)
-surat_tugas_details    (id, checklist_id, nomor_surat_tugas, tanggal_surat_tugas, pelaksana, isi_tugas)
+surat_tugas_details    (id, checklist_id, nomor_surat_tugas, tanggal_surat_tugas, pelaksana [nullable/legacy], isi_tugas)
+surat_tugas_pelaksanas (id, surat_tugas_detail_id, nama_pelaksana, nomor_surat, urutan)
+sk_rate_perjalanan     (id, kecamatan, besaran_biaya_transport, keterangan)
 travel_details         (id, checklist_id, nomor_spd, nama_pelaksana, maksud_perjalanan, tempat_berangkat, tempat_tujuan, tanggal_berangkat, tanggal_kembali, transportasi)
 real_expense_details   (id, checklist_id, nomor_surat_tugas, tanggal_surat_tugas, nama_pelaksana, jabatan, tanggal_kegiatan, uraian_pengeluaran, jumlah_pengeluaran, keterangan)
 travel_reports         (id, checklist_id, nama_pelaksana, tujuan, uraian_kegiatan, tanggal_kegiatan, dokumentasi)

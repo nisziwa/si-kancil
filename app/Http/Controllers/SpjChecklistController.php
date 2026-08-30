@@ -6,6 +6,7 @@ use App\Models\ChecklistHistory;
 use App\Models\RealExpenseDetail;
 use App\Models\SpjChecklist;
 use App\Models\SuratTugasDetail;
+use App\Models\SuratTugasPelaksana;
 use App\Models\TravelDetail;
 use App\Models\TravelReport;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class SpjChecklistController extends Controller
     {
         $checklist = SpjChecklist::with([
             'request',
-            'suratTugasDetail',
+            'suratTugasDetail.pelaksanas',
             'travelDetail',
             'realExpenseDetail',
             'travelReport',
@@ -43,8 +44,9 @@ class SpjChecklistController extends Controller
         if (str_contains($docName, 'Surat Tugas')) {
             $rules['nomor_surat_tugas'] = 'nullable|string';
             $rules['tanggal_surat_tugas'] = 'nullable|date';
-            $rules['pelaksana'] = 'nullable|string';
             $rules['isi_tugas'] = 'nullable|string';
+            $rules['pelaksana_nama'] = 'nullable|array';
+            $rules['pelaksana_nama.*'] = 'nullable|string';
         }
 
         if (str_contains($docName, 'SPD') || str_contains($docName, 'SPPD')) {
@@ -97,15 +99,17 @@ class SpjChecklistController extends Controller
 
         // Simpan Surat Tugas Detail jika relevan
         if (str_contains($docName, 'Surat Tugas')) {
-            SuratTugasDetail::updateOrCreate(
+            $stDetail = SuratTugasDetail::updateOrCreate(
                 ['checklist_id' => $checklist->id],
                 [
                     'nomor_surat_tugas' => $request->input('nomor_surat_tugas') ?? '',
                     'tanggal_surat_tugas' => $request->input('tanggal_surat_tugas'),
-                    'pelaksana' => $request->input('pelaksana') ?? '',
                     'isi_tugas' => $request->input('isi_tugas') ?? '',
                 ]
             );
+
+            // Simpan banyak pelaksana + nomor sub otomatis
+            $this->syncPelaksana($stDetail, $request->input('nomor_surat_tugas') ?? '', $request->input('pelaksana_nama', []));
         }
 
         // Simpan Travel Detail jika relevan
@@ -174,5 +178,44 @@ class SpjChecklistController extends Controller
 
         return redirect()->route('requests.show', $checklist->request_id)
             ->with('success', 'Detail dokumen dan checklist berhasil diperbarui.');
+    }
+
+    /**
+     * Simpan daftar pelaksana Surat Tugas dan bangun nomor sub otomatis.
+     *
+     * Nomor utama: B-1027/75040/KP.650/2026
+     * Diubah menjadi: B-1027.1/..., B-1027.2/..., B-1027.3/...
+     */
+    protected function syncPelaksana(SuratTugasDetail $stDetail, string $nomorUtama, array $namaPelaksana)
+    {
+        // Hapus semua pelaksana lama
+        SuratTugasPelaksana::where('surat_tugas_detail_id', $stDetail->id)->delete();
+
+        $namaFiltered = array_values(array_filter(array_map('trim', $namaPelaksana), fn($n) => $n !== ''));
+
+        foreach ($namaFiltered as $index => $nama) {
+            $nomorSub = $this->buildSuratSubNumber($nomorUtama, $index + 1);
+            SuratTugasPelaksana::create([
+                'surat_tugas_detail_id' => $stDetail->id,
+                'nama_pelaksana' => $nama,
+                'nomor_surat' => $nomorSub,
+                'urutan' => $index + 1,
+            ]);
+        }
+    }
+
+    protected function buildSuratSubNumber(string $nomorUtama, int $sub): string
+    {
+        if ($nomorUtama === '') {
+            return '';
+        }
+
+        // Format: XXXX<base>.N<remainder>
+        // Cari titik sebelum tanda "/" (nomor utama), contoh B-1027/75040/KP.650/2026
+        if (preg_match('/^(.*?)(\.\d+)?(\/.*)$/u', $nomorUtama, $m)) {
+            return $m[1] . '.' . $sub . $m[3];
+        }
+
+        return $nomorUtama . '.' . $sub;
     }
 }

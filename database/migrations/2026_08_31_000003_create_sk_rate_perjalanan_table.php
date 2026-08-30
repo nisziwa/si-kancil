@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('document_templates', function (Blueprint $table) {
+        Schema::create('sk_rate_perjalanan', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('expense_type_id')->constrained('expense_types')->onDelete('cascade');
-            $table->string('nama_dokumen');
-            $table->boolean('is_required')->default(true);
-            $table->integer('urutan')->default(0);
+            $table->string('kecamatan');
+            $table->decimal('besaran_biaya_transport', 15, 2)->default(0);
+            $table->text('keterangan')->nullable();
             $table->timestamps();
         });
     }
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('document_templates');
+        Schema::dropIfExists('sk_rate_perjalanan');
     }
 };

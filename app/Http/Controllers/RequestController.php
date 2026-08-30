@@ -41,22 +41,22 @@ class RequestController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nomor_fpa' => 'required|string|unique:requests,nomor_fpa',
+            'nomor_fpa' => 'nullable|string|unique:requests,nomor_fpa',
             'deskripsi_permintaan' => 'required|string',
             'jenis_pengeluaran_id' => 'required|exists:expense_types,id',
-            'periode' => 'required|string',
+            'periode' => 'required|string|in:' . implode(',', FpaRequest::PERIOD_LIST),
             'tanggal_mulai' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
-            'lokasi' => 'nullable|string',
             'deadline_spj' => 'nullable|date',
         ]);
 
         $validated['user_id'] = Auth::id();
         $validated['status_spj'] = 'Persiapan';
+        $validated['nomor_fpa'] = $request->filled('nomor_fpa') ? $request->input('nomor_fpa') : null;
 
         $fpaRequest = FpaRequest::create($validated);
 
-        // Sprint 3: Auto-generate Checklist SPJ dari DocumentTemplate
+        // Auto-generate Checklist SPJ dari DocumentTemplate
         $templates = \App\Models\DocumentTemplate::where('expense_type_id', $fpaRequest->jenis_pengeluaran_id)
             ->orderBy('urutan')
             ->get();
@@ -66,6 +66,7 @@ class RequestController extends Controller
                 'request_id'   => $fpaRequest->id,
                 'nama_dokumen' => $template->nama_dokumen,
                 'status'       => 'Belum Ada',
+                'is_required'  => $template->is_required,
                 'urutan'       => $template->urutan,
             ]);
         }
@@ -76,7 +77,7 @@ class RequestController extends Controller
 
     public function show($id)
     {
-        $fpaRequest = FpaRequest::with(['expenseType', 'user', 'checklists', 'statusHistories.user'])->findOrFail($id);
+        $fpaRequest = FpaRequest::with(['expenseType', 'user', 'checklists.suratTugasDetail.pelaksanas', 'statusHistories.user'])->findOrFail($id);
         return view('requests.show', compact('fpaRequest'));
     }
 
@@ -93,15 +94,16 @@ class RequestController extends Controller
         $fpaRequest = FpaRequest::findOrFail($id);
 
         $validated = $request->validate([
-            'nomor_fpa' => 'required|string|unique:requests,nomor_fpa,' . $id,
+            'nomor_fpa' => 'nullable|string|unique:requests,nomor_fpa,' . $id,
             'deskripsi_permintaan' => 'required|string',
             'jenis_pengeluaran_id' => 'required|exists:expense_types,id',
-            'periode' => 'required|string',
+            'periode' => 'required|string|in:' . implode(',', FpaRequest::PERIOD_LIST),
             'tanggal_mulai' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
-            'lokasi' => 'nullable|string',
             'deadline_spj' => 'nullable|date',
         ]);
+
+        $validated['nomor_fpa'] = $request->filled('nomor_fpa') ? $request->input('nomor_fpa') : null;
 
         $fpaRequest->update($validated);
 
@@ -121,5 +123,31 @@ class RequestController extends Controller
 
         return redirect()->route('requests.index')
             ->with('success', 'FPA berhasil dihapus.');
+    }
+
+    /**
+     * Pengecekan nomor FPA secara langsung (live) via AJAX.
+     */
+    public function checkNomorFpa(Request $request)
+    {
+        $request->validate(['nomor' => 'nullable|string']);
+
+        $nomor = trim($request->input('nomor', ''));
+        $ignoreId = $request->input('ignore_id');
+
+        if ($nomor === '') {
+            return response()->json(['available' => true, 'message' => '']);
+        }
+
+        $query = FpaRequest::where('nomor_fpa', $nomor);
+        if ($ignoreId) {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        $exists = $query->exists();
+        return response()->json([
+            'available' => !$exists,
+            'message' => $exists ? 'Nomor FPA sudah digunakan.' : '',
+        ]);
     }
 }

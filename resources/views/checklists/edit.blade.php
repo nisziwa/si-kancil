@@ -88,13 +88,58 @@
                             </div>
 
                             <div class="md:col-span-2">
-                                <label for="pelaksana" class="block text-sm font-medium text-gray-700">Nama Pelaksana</label>
-                                <textarea name="pelaksana" id="pelaksana" rows="2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm" placeholder="Nama-nama pelaksana tugas...">{{ old('pelaksana', $checklist->suratTugasDetail->pelaksana ?? '') }}</textarea>
-                            </div>
-
-                            <div class="md:col-span-2">
                                 <label for="isi_tugas" class="block text-sm font-medium text-gray-700">Isi Tugas / Uraian Penugasan</label>
                                 <textarea name="isi_tugas" id="isi_tugas" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm" placeholder="Maksud dan uraian penugasan...">{{ old('isi_tugas', $checklist->suratTugasDetail->isi_tugas ?? '') }}</textarea>
+                            </div>
+
+                            <!-- Daftar Pelaksana (banyak) + Nomor Sub Otomatis -->
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700">Daftar Pelaksana Surat Tugas</label>
+                                <p class="text-xs text-gray-500 mb-2">Nomor sub pelaksana dihasilkan otomatis dari nomor surat utama. Contoh: B-1027/... → B-1027.1/..., B-1027.2/...</p>
+
+                                <table class="min-w-full divide-y divide-gray-200 text-sm" id="pelaksana-table">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">No</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nama Pelaksana</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nomor Surat Sub</th>
+                                            <th class="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        @php
+                                            $existingPelaksanas = $checklist->suratTugasDetail && $checklist->suratTugasDetail->pelaksanas
+                                                ? $checklist->suratTugasDetail->pelaksanas
+                                                : collect();
+                                        @endphp
+                                        @if($existingPelaksanas->count() > 0)
+                                            @foreach($existingPelaksanas as $idx => $p)
+                                                <tr>
+                                                    <td class="px-3 py-2 text-gray-500">{{ $idx + 1 }}</td>
+                                                    <td class="px-3 py-2">
+                                                        <input type="text" name="pelaksana_nama[]" value="{{ old('pelaksana_nama.'.$idx, $p->nama_pelaksana) }}" class="block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+                                                    </td>
+                                                    <td class="px-3 py-2 text-gray-500">{{ $p->nomor_surat ?: '-' }}</td>
+                                                    <td class="px-3 py-2 text-center">
+                                                        <button type="button" class="remove-pelaksana text-red-600 hover:text-red-800 font-semibold text-xs">Hapus</button>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        @else
+                                            <tr>
+                                                <td class="px-3 py-2 text-gray-500 pel-urutan">1</td>
+                                                <td class="px-3 py-2">
+                                                    <input type="text" name="pelaksana_nama[]" value="{{ old('pelaksana_nama.0') }}" class="block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+                                                </td>
+                                                <td class="px-3 py-2 text-gray-400">-</td>
+                                                <td class="px-3 py-2 text-center">
+                                                    <button type="button" class="remove-pelaksana text-red-600 hover:text-red-800 font-semibold text-xs">Hapus</button>
+                                                </td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
+                                <button type="button" id="add-pelaksana" class="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-800">+ Tambah Pelaksana</button>
                             </div>
                         </div>
                     </div>
@@ -248,4 +293,47 @@
 
         </div>
     </div>
+
+    @if(str_contains($checklist->nama_dokumen, 'Surat Tugas'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const tbody = document.querySelector('#pelaksana-table tbody');
+
+                function updateNumbering() {
+                    const rows = tbody.querySelectorAll('tr');
+                    rows.forEach(function (row, i) {
+                        const noCell = row.querySelector('.pel-urutan');
+                        if (noCell) noCell.textContent = i + 1;
+                    });
+                }
+
+                function bindRemove() {
+                    tbody.querySelectorAll('.remove-pelaksana').forEach(function (btn) {
+                        btn.addEventListener('click', function () {
+                            const rows = tbody.querySelectorAll('tr');
+                            if (rows.length <= 1) return;
+                            btn.closest('tr').remove();
+                            updateNumbering();
+                        });
+                    });
+                }
+
+                document.getElementById('add-pelaksana').addEventListener('click', function () {
+                    const count = tbody.querySelectorAll('tr').length;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-3 py-2 text-gray-500 pel-urutan">${count + 1}</td>
+                        <td class="px-3 py-2"><input type="text" name="pelaksana_nama[]" class="block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"></td>
+                        <td class="px-3 py-2 text-gray-400">-</td>
+                        <td class="px-3 py-2 text-center"><button type="button" class="remove-pelaksana text-red-600 hover:text-red-800 font-semibold text-xs">Hapus</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                    bindRemove();
+                    updateNumbering();
+                });
+
+                bindRemove();
+            });
+        </script>
+    @endif
 </x-app-layout>
