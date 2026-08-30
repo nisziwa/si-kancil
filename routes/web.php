@@ -22,7 +22,6 @@ Route::middleware('auth')->group(function () {
     // Checklist SPJ Routes
     Route::get('/checklists/{id}/edit', [App\Http\Controllers\SpjChecklistController::class, 'edit'])->name('checklists.edit');
     Route::put('/checklists/{id}', [App\Http\Controllers\SpjChecklistController::class, 'update'])->name('checklists.update');
-    Route::patch('/checklists/{id}/status', [App\Http\Controllers\ChecklistKanbanController::class, 'updateStatus'])->name('checklists.status');
 });
 
 require __DIR__.'/auth.php';

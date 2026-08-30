@@ -7,17 +7,17 @@
     ];
 @endphp
 
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="kanban-board">
+<div class="grid grid-cols-1 gap-4 md:grid-cols-4" id="kanban-board">
     @foreach($columns as $status => $bgClass)
         <div class="kanban-column flex flex-col rounded-md {{ $bgClass }} p-3 min-h-[300px]" data-status="{{ $status }}">
-            <h4 class="font-bold text-gray-700 text-center mb-3">{{ $status }}</h4>
-            
-            <div class="kanban-items flex-1 space-y-2">
+            <h4 class="mb-3 font-bold text-center text-gray-700">{{ $status }}</h4>
+
+            <div class="flex-1 space-y-2 kanban-items">
                 @foreach($fpaRequest->checklists->where('status', $status) as $item)
-                    <div class="kanban-item bg-white p-3 rounded shadow-sm border border-gray-200 cursor-move" data-id="{{ $item->id }}">
-                        <p class="font-semibold text-sm">{{ $item->nama_dokumen }}</p>
+                    <div class="p-3 bg-white border border-gray-200 rounded shadow-sm cursor-move kanban-item" data-id="{{ $item->id }}">
+                        <p class="text-sm font-semibold">{{ $item->nama_dokumen }}</p>
                         @if($item->catatan)
-                            <p class="text-xs text-gray-500 mt-1 truncate">{{ $item->catatan }}</p>
+                            <p class="mt-1 text-xs text-gray-500 truncate">{{ $item->catatan }}</p>
                         @endif
                         <div class="mt-2 text-right">
                             <a href="{{ route('checklists.edit', $item->id) }}" class="text-xs text-blue-600 hover:underline">Edit Detail</a>
@@ -34,14 +34,14 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const columns = document.querySelectorAll('.kanban-items');
-        
+
         columns.forEach(function(column) {
             new Sortable(column, {
-                group: 'shared', 
+                group: 'shared',
                 animation: 150,
                 ghostClass: 'opacity-50',
                 onEnd: function (evt) {
-                    const itemEl = evt.item; 
+                    const itemEl = evt.item;
                     const newColumn = itemEl.closest('.kanban-column');
                     const newStatus = newColumn.getAttribute('data-status');
                     const itemId = itemEl.getAttribute('data-id');
@@ -67,8 +67,8 @@
                                 const newLi = document.createElement('li');
                                 newLi.className = 'mb-2 text-sm pb-2 border-b';
                                 newLi.innerHTML = `
-                                    <span class="font-semibold text-gray-800">${data.history.document}</span> 
-                                    diubah ke <span class="text-blue-600">${data.history.status_baru}</span> 
+                                    <span class="font-semibold text-gray-800">${data.history.document}</span>
+                                    diubah ke <span class="text-blue-600">${data.history.status_baru}</span>
                                     <br><span class="text-xs text-gray-500">Oleh ${data.history.user} pada ${data.history.time}</span>
                                 `;
                                 historyList.prepend(newLi);
@@ -86,3 +86,4 @@
         });
     });
 </script>
+

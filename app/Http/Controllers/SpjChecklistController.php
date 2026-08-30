@@ -16,7 +16,7 @@ class SpjChecklistController extends Controller
     public function update(Request $request, $id)
     {
         $checklist = SpjChecklist::findOrFail($id);
-        
+
         $validated = $request->validate([
             'status' => 'required|in:Belum Ada,Belum Lengkap,Lengkap,Perlu Perbaikan',
             'catatan' => 'nullable|string',

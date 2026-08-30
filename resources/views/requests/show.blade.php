@@ -94,7 +94,7 @@
                 <!-- History Sidebar (1/4) -->
                 <div class="bg-gray-50 shadow-sm sm:rounded-lg p-6 border border-gray-200 h-[600px] overflow-y-auto">
                     <h3 class="text-md font-bold mb-4 border-b pb-2 text-gray-700">Riwayat Perubahan Status</h3>
-                    
+
                     <ul id="history-list" class="space-y-2">
                         @php
                             // Ambil history dari relasi checklist yang ada (lewat checklist_histories)
@@ -107,8 +107,8 @@
 
                         @forelse($histories as $history)
                             <li class="mb-2 text-sm pb-2 border-b">
-                                <span class="font-semibold text-gray-800">{{ $history->checklist->nama_dokumen ?? 'Dokumen' }}</span> 
-                                diubah ke <span class="text-blue-600">{{ $history->status_baru }}</span> 
+                                <span class="font-semibold text-gray-800">{{ $history->checklist->nama_dokumen ?? 'Dokumen' }}</span>
+                                diubah ke <span class="text-blue-600">{{ $history->status_baru }}</span>
                                 <br><span class="text-xs text-gray-500">Oleh {{ $history->user->name ?? '-' }} pada {{ $history->created_at->format('d/m/Y H:i') }}</span>
                             </li>
                         @empty
