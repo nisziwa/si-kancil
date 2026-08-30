@@ -79,9 +79,53 @@
                 </div>
             </div>
 
+            <!-- Sprint 3: Checklist SPJ -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-bold mb-4 border-b pb-2">Checklist Dokumen SPJ</h3>
+                @if($fpaRequest->checklists->count() > 0)
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Dokumen</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catatan</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach($fpaRequest->checklists as $index => $checklist)
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $index + 1 }}</td>
+                                        <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $checklist->nama_dokumen }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                @if($checklist->status == 'Belum Ada') bg-gray-100 text-gray-800 
+                                                @elseif($checklist->status == 'Belum Lengkap') bg-yellow-100 text-yellow-800 
+                                                @elseif($checklist->status == 'Lengkap') bg-green-100 text-green-800 
+                                                @elseif($checklist->status == 'Perlu Perbaikan') bg-red-100 text-red-800 
+                                                @endif">
+                                                {{ $checklist->status }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-500">{{ $checklist->catatan ?: '-' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <a href="{{ route('checklists.edit', $checklist->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <p class="text-gray-500 italic">Belum ada checklist untuk FPA ini.</p>
+                @endif
+            </div>
+
             <!-- Placeholder untuk Sprint 4 dan 5 (Kanban Checklist & History) -->
             <div class="bg-gray-50 overflow-hidden shadow-sm sm:rounded-lg p-6 border-dashed border-2 border-gray-300">
-                <p class="text-center text-gray-500 italic">Area ini akan diisi Kanban Checklist Dokumen pada Sprint selanjutnya.</p>
+                <p class="text-center text-gray-500 italic">Area Kanban Checklist & History akan ditambahkan pada Sprint selanjutnya.</p>
             </div>
 
         </div>

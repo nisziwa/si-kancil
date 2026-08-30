@@ -56,8 +56,22 @@ class RequestController extends Controller
 
         $fpaRequest = FpaRequest::create($validated);
 
+        // Sprint 3: Auto-generate Checklist SPJ dari DocumentTemplate
+        $templates = \App\Models\DocumentTemplate::where('expense_type_id', $fpaRequest->jenis_pengeluaran_id)
+            ->orderBy('urutan')
+            ->get();
+
+        foreach ($templates as $template) {
+            \App\Models\SpjChecklist::create([
+                'request_id'   => $fpaRequest->id,
+                'nama_dokumen' => $template->nama_dokumen,
+                'status'       => 'Belum Ada',
+                'urutan'       => $template->urutan,
+            ]);
+        }
+
         return redirect()->route('requests.show', $fpaRequest->id)
-            ->with('success', 'FPA berhasil dibuat. Checklist sedang di-generate.');
+            ->with('success', 'FPA berhasil dibuat dan Checklist Dokumen otomatis digenerate.');
     }
 
     public function show($id)

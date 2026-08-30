@@ -18,6 +18,10 @@ Route::middleware('auth')->group(function () {
     
     // FPA / Permintaan Routes
     Route::resource('requests', App\Http\Controllers\RequestController::class);
+    
+    // Checklist SPJ Routes
+    Route::get('/checklists/{id}/edit', [App\Http\Controllers\SpjChecklistController::class, 'edit'])->name('checklists.edit');
+    Route::put('/checklists/{id}', [App\Http\Controllers\SpjChecklistController::class, 'update'])->name('checklists.update');
 });
 
 require __DIR__.'/auth.php';

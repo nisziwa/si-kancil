@@ -26,7 +26,15 @@ Ringkasan Perubahan:
 - Mendaftarkan resource route requests di web.php
 
 ## Sprint 3 — Checklist SPJ & Template Checklist
-Status: Pending
+Status: Completed
+Tanggal Selesai: 2026-08-30
+Commit Hash: cdc307a
+Ringkasan Perubahan:
+- Logic auto-generate Checklist SPJ dari DocumentTemplate saat pembuatan FPA
+- Tampilan list checklist pada halaman Detail FPA
+- Pembuatan SpjChecklistController
+- Pembuatan view edit untuk mengelola checklist secara individual
+- Menambahkan route dan aksi terkait checklist di detail FPA
 
 ## Sprint 4 — Kanban Checklist & History
 Status: Pending
