@@ -1,16 +1,10 @@
 # SI-KANCIL Agent Handoff
 
 ## Current Sprint
-Sprint aktif: Sprint 5 — Workflow Status SPJ & History (In Progress)
+Sprint aktif: Sprint 6 — Detail Dokumen & Upload File (Pending)
 
 ## Current Status
-Implementasi workflow status SPJ sedang berjalan.
-
-Komponen yang sudah dibuat:
-- RequestStatusController
-- status workflow partial
-- route perubahan status
-- integrasi pada halaman detail FPA
+Sprint 5 (Workflow Status SPJ & History) telah selesai diimplementasikan dan diverifikasi dengan automated test. Menunggu konfirmasi user untuk memulai Sprint 6.
 
 ## Completed
 Daftar pekerjaan yang sudah selesai:
@@ -18,12 +12,10 @@ Daftar pekerjaan yang sudah selesai:
 - Sprint 2 Master Jenis Pengeluaran & Modul Permintaan/FPA
 - Sprint 3 Checklist SPJ & Template Checklist
 - Sprint 4 Kanban Checklist & History
+- Sprint 5 Workflow Status SPJ & History
 
 ## Remaining Tasks
 Daftar pekerjaan yang belum selesai:
-- Menyelesaikan validasi workflow status Sprint 5
-- Update history status
-- Commit Sprint 5
 - Sprint 6 Detail Dokumen & Upload File
 - Sprint 7 Dashboard, Kanban FPA, Kalender & Template
 - Sprint 8 Layout, UI Polish & Testing
@@ -37,4 +29,4 @@ Keputusan penting:
 - Business rules: Kanban FPA interaktif drag and drop (mengubah status FPA dan mencatat riwayat)
 
 ## Last Commit
-Commit terakhir: cdc307a - feat(sprint-3): implement SPJ checklist template and auto generation
+Commit terakhir: 05f4d54 - feat(sprint-5): implement SPJ status workflow and history tracking

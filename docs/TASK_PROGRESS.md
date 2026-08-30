@@ -47,14 +47,16 @@ Ringkasan Perubahan:
 - Penambahan area History Sidebar pada detail FPA untuk menampilkan riwayat perubahan
 
 ## Sprint 5 — Workflow Status SPJ & History
-Status: In Progress
-Tanggal mulai: 2026-08-30
-Ringkasan sementara:
-- Membuat RequestStatusController
-- Membuat komponen status workflow
-- Menambahkan route perubahan status SPJ
-- Integrasi workflow pada detail FPA
-- Testing dasar berhasil
+Status: Completed
+Tanggal Selesai: 2026-08-30
+Commit Hash: 05f4d54
+Ringkasan Perubahan:
+- Pembuatan RequestStatusController untuk workflow perubahan status SPJ (form & AJAX)
+- Validasi input mandatory sesuai status tujuan (tanggal_kirim_ppk, tanggal_selesai_spj, catatan, file bukti)
+- Pembuatan partial status-workflow dengan visual step indicator dan form dinamis
+- Menampilkan timeline riwayat perubahan status SPJ beserta file bukti
+- Menghubungkan storage symlink untuk public upload dokumen bukti
+- Automated feature testing (RequestStatusTest) untuk semua skenario validasi dan riwayat status
 
 ## Sprint 6 — Detail Dokumen & Upload File
 Status: Pending
