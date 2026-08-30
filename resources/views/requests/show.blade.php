@@ -79,6 +79,20 @@
                 </div>
             </div>
 
+            @if ($errors->any())
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                    <strong class="font-bold">Ada kesalahan!</strong>
+                    <ul class="list-disc pl-5 mt-2">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <!-- Sprint 5: Status Workflow SPJ & History -->
+            @include('partials.status-workflow', ['fpaRequest' => $fpaRequest])
+
             <!-- Sprint 4: Kanban Checklist SPJ & History -->
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
                 <!-- Kanban Area (3/4) -->

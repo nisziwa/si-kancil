@@ -47,7 +47,14 @@ Ringkasan Perubahan:
 - Penambahan area History Sidebar pada detail FPA untuk menampilkan riwayat perubahan
 
 ## Sprint 5 — Workflow Status SPJ & History
-Status: Pending
+Status: In Progress
+Tanggal mulai: 2026-08-30
+Ringkasan sementara:
+- Membuat RequestStatusController
+- Membuat komponen status workflow
+- Menambahkan route perubahan status SPJ
+- Integrasi workflow pada detail FPA
+- Testing dasar berhasil
 
 ## Sprint 6 — Detail Dokumen & Upload File
 Status: Pending

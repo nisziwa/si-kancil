@@ -1,21 +1,29 @@
 # SI-KANCIL Agent Handoff
 
 ## Current Sprint
-Sprint aktif: Sprint 2 (Pending)
+Sprint aktif: Sprint 5 — Workflow Status SPJ & History (In Progress)
 
 ## Current Status
-Status pekerjaan terakhir: Selesai setup dokumentasi dan persiapan untuk mengerjakan Sprint 2.
+Implementasi workflow status SPJ sedang berjalan.
+
+Komponen yang sudah dibuat:
+- RequestStatusController
+- status workflow partial
+- route perubahan status
+- integrasi pada halaman detail FPA
 
 ## Completed
 Daftar pekerjaan yang sudah selesai:
 - Sprint 1 Setup, Auth & Database Migration
 - Sprint 2 Master Jenis Pengeluaran & Modul Permintaan/FPA
 - Sprint 3 Checklist SPJ & Template Checklist
+- Sprint 4 Kanban Checklist & History
 
 ## Remaining Tasks
 Daftar pekerjaan yang belum selesai:
-- Sprint 4 Kanban Checklist & History
-- Sprint 5 Workflow Status SPJ & History
+- Menyelesaikan validasi workflow status Sprint 5
+- Update history status
+- Commit Sprint 5
 - Sprint 6 Detail Dokumen & Upload File
 - Sprint 7 Dashboard, Kanban FPA, Kalender & Template
 - Sprint 8 Layout, UI Polish & Testing
