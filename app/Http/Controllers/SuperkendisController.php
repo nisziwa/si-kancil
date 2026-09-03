@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\ChecklistHistory;
-use App\Models\SpjChecklist;
 use App\Models\Request as FpaRequest;
 use App\Models\SkRatePerjalanan;
 use App\Models\Superkendis;
@@ -15,6 +14,7 @@ use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\Shared\ZipArchive;
 use PhpOffice\PhpWord\TemplateProcessor;
+use PhpOffice\PhpWord\Writer\PDF;
 
 class SuperkendisController extends Controller
 {
@@ -98,7 +98,7 @@ class SuperkendisController extends Controller
         // Tandai checklist integrasi menjadi Lengkap bila seluruh pelaksana sudah digenerate.
         $this->markIntegrasiChecklistLengkap($requestModel);
 
-        $filename = 'Superkendis_' . $this->slug($pelaksana->nama_pelaksana) . '.' . $format;
+        $filename = 'Superkendis_'.$this->slug($pelaksana->nama_pelaksana).'.'.$format;
 
         return response()->download($stored['local_path'], $filename);
     }
@@ -140,7 +140,8 @@ class SuperkendisController extends Controller
 
         // Satu pelaksana -> langsung download file DOCX (tanpa ZIP / merge).
         if ($pelaksanas->count() === 1) {
-            $filename = 'Superkendis_' . $this->slug($pelaksanas->first()->nama_pelaksana) . '.' . $format;
+            $filename = 'Superkendis_'.$this->slug($pelaksanas->first()->nama_pelaksana).'.'.$format;
+
             return response()->download($stored[0]['local_path'], $filename);
         }
 
@@ -156,21 +157,21 @@ class SuperkendisController extends Controller
      */
     protected function buildSeparateStored(array $stored, string $format)
     {
-        $tmpDir = storage_path('app/superkendis-tmp/' . uniqid());
+        $tmpDir = storage_path('app/superkendis-tmp/'.uniqid());
         if (! is_dir($tmpDir)) {
             mkdir($tmpDir, 0777, true);
         }
 
         $files = [];
         foreach ($stored as $item) {
-            $name = 'Superkendis_' . $this->slug($item['pelaksana']->nama_pelaksana) . '.' . $format;
-            $target = $tmpDir . '/' . $name;
+            $name = 'Superkendis_'.$this->slug($item['pelaksana']->nama_pelaksana).'.'.$format;
+            $target = $tmpDir.'/'.$name;
             copy($item['local_path'], $target);
             $files[] = $target;
         }
 
         $zip = new ZipArchive;
-        $zipFile = storage_path('app/superkendis-tmp/superkendis-' . uniqid() . '.zip');
+        $zipFile = storage_path('app/superkendis-tmp/superkendis-'.uniqid().'.zip');
         if ($zip->open($zipFile, ZipArchive::CREATE) !== true) {
             abort(500, 'Gagal membuat arsip ZIP.');
         }
@@ -194,7 +195,7 @@ class SuperkendisController extends Controller
      */
     protected function storeGeneratedFile($pelaksana, array $data, string $format): array
     {
-        $relative = 'spj-files/superkendis/' . $data['nomor_surat'] . '_' . $this->slug($pelaksana->nama_pelaksana) . '.' . $format;
+        $relative = 'spj-files/superkendis/'.$data['nomor_surat'].'_'.$this->slug($pelaksana->nama_pelaksana).'.'.$format;
         $localPath = Storage::disk('public')->path($relative);
 
         // Pastikan direktori ada.
@@ -292,12 +293,12 @@ class SuperkendisController extends Controller
 
         $sources = [];
         foreach ($datas as $item) {
-            $tmp = storage_path('app/superkendis-filled-' . uniqid() . '.docx');
+            $tmp = storage_path('app/superkendis-filled-'.uniqid().'.docx');
             $this->fillTemplate($item['data'], $tmp);
             $sources[] = $tmp;
         }
 
-        $merged = storage_path('app/superkendis-merged-' . uniqid() . '.docx');
+        $merged = storage_path('app/superkendis-merged-'.uniqid().'.docx');
 
         $baseXml = $this->readEntry($sources[0], $documentXml);
         if ($baseXml === null) {
@@ -320,7 +321,7 @@ class SuperkendisController extends Controller
             @unlink($s);
         }
 
-        $filename = 'Superkendis_Gabungan.' . $format;
+        $filename = 'Superkendis_Gabungan.'.$format;
 
         return $this->downloadFinal($merged, $filename, $format, 'docx');
     }
@@ -350,28 +351,19 @@ class SuperkendisController extends Controller
         $content = $m[1];
 
         // Setiap Superkendis pelaksana WAJIB dimulai pada halaman baru.
-        // Template memakai <w:type w:val="continuous"/>, yang membuat dokumen
-        // berikutnya menempel di halaman yang sama. Ubah menjadi nextPage
-        // sehingga antar pelaksana selalu dipisah halaman baru tanpa merusak
-        // tabel/border/tanda tangan (struktur XML lainnya dipertahankan utuh).
-        $sectPr = $m[2] ?? '';
-        if ($sectPr !== '') {
-            $sectPr = preg_replace(
-                '#<w:type w:val="[^"]*"/?>#',
-                '<w:type w:val="nextPage"/>',
-                $sectPr,
-                1
-            );
-        } else {
-            // Fallback: page break eksplisit bila sumber tidak memiliki sectPr.
-            $sectPr = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
-        }
+        // Catatan: <w:sectPr> tidak valid jika diletakkan di tengah <w:body>
+        // (hanya boleh di akhir body atau di dalam <w:pPr> paragraf), sehingga
+        // pendekatan section-break di tengah sering diabaikan Word. Solusi paling
+        // andal adalah menyisipkan paragraf page-break eksplisit DI ANTARA konten
+        // pelaksana, sehingga pelaksana berikutnya (termasuk judulnya) mulai di
+        // halaman baru tanpa merusak tabel/border/tanda tangan.
+        $pageBreak = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
 
-        $content .= $sectPr;
+        $insert = $pageBreak.$content;
 
         return preg_replace(
             '#(<w:body>)(.*?)(<w:sectPr\b[^>]*>.*?</w:sectPr>)(</w:body>)#s',
-            '$1$2' . $content . '$3$4',
+            '$1$2'.$insert.'$3$4',
             $baseXml,
             1
         );
@@ -407,7 +399,7 @@ class SuperkendisController extends Controller
     protected function buildDataForPelaksana(Request $request, FpaRequest $requestModel, $pelaksana, ?int $pelaksanaId): array
     {
         // Dukungan payload array per pelaksana (checkbox) dan flat (legacy).
-        $input = $request->input('pelaksana.' . $pelaksanaId, $request->all());
+        $input = $request->input('pelaksana.'.$pelaksanaId, $request->all());
 
         $kecamatan = trim((string) ($input['kecamatan'] ?? ''));
         $rate = $kecamatan !== ''
@@ -430,7 +422,7 @@ class SuperkendisController extends Controller
             'kecamatan' => $kecamatan,
             'tanggal_perjalanan' => (string) ($input['tanggal_perjalanan'] ?? ''),
             'besaran_biaya' => $rate ? number_format($besaran, 0, ',', '.') : '-',
-            'terbilang' => $rate ? ucwords(Terbilang::convert($besaran)) . ' Rupiah' : '-',
+            'terbilang' => $rate ? ucwords(Terbilang::convert($besaran)).' Rupiah' : '-',
             'jenis_kegiatan' => $jenisKegiatan,
             'jabatan' => $this->jabatanUntukKegiatan($jenisKegiatan),
             'nomor_surat' => $pelaksana->nomor_surat ?: '-',
@@ -470,7 +462,7 @@ class SuperkendisController extends Controller
 
         $bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-        return date('j', $ts) . ' ' . $bulan[(int) date('n', $ts) - 1] . ' ' . date('Y', $ts);
+        return date('j', $ts).' '.$bulan[(int) date('n', $ts) - 1].' '.date('Y', $ts);
     }
 
     protected function selectedPelaksanas(Request $request, FpaRequest $requestModel)
@@ -501,7 +493,7 @@ class SuperkendisController extends Controller
     protected function ensureValidForExport(Request $request, $pelaksanas)
     {
         foreach ($pelaksanas as $pelaksana) {
-            $input = $request->input('pelaksana.' . $pelaksana->id, $request->all());
+            $input = $request->input('pelaksana.'.$pelaksana->id, $request->all());
             if (trim((string) ($input['kecamatan'] ?? '')) === '' || (string) ($input['tanggal_perjalanan'] ?? '') === '') {
                 abort(422, 'Kecamatan tujuan dan tanggal perjalanan wajib diisi untuk setiap pelaksana yang dipilih.');
             }
@@ -514,7 +506,7 @@ class SuperkendisController extends Controller
      */
     protected function buildDocument(array $data, string $format, string $filename)
     {
-        $tempDocx = storage_path('app/superkendis-generated-' . uniqid() . '.docx');
+        $tempDocx = storage_path('app/superkendis-generated-'.uniqid().'.docx');
         $this->fillTemplate($data, $tempDocx);
 
         return $this->downloadFinal($tempDocx, $filename, $format, 'docx');
@@ -566,7 +558,7 @@ class SuperkendisController extends Controller
 
     protected function templatePath(): string
     {
-        $path = storage_path('app/public/' . self::TEMPLATE_PATH);
+        $path = storage_path('app/public/'.self::TEMPLATE_PATH);
         if (file_exists($path)) {
             return $path;
         }
@@ -588,6 +580,7 @@ class SuperkendisController extends Controller
         $xml = $zip->getFromName('word/document.xml');
         if ($xml === false) {
             $zip->close();
+
             return;
         }
 
@@ -614,7 +607,7 @@ class SuperkendisController extends Controller
         ];
 
         foreach ($map as $key => $replacement) {
-            $pattern = '#\{\{\s*' . preg_quote($key, '#') . '\s*\}\}#u';
+            $pattern = '#\{\{\s*'.preg_quote($key, '#').'\s*\}\}#u';
             $xml = preg_replace($pattern, $replacement, $xml);
         }
 
@@ -645,8 +638,8 @@ class SuperkendisController extends Controller
     {
         if ($format === 'pdf') {
             $this->configurePdfRenderer();
-            $writer = IOFactory::createWriter(IOFactory::load($path), 'PDF');
-            $pdf = storage_path('app/superkendis-' . uniqid() . '.pdf');
+            $writer = $this->pdfWriter($path);
+            $pdf = storage_path('app/superkendis-'.uniqid().'.pdf');
             $writer->save($pdf);
             @unlink($path);
 
@@ -658,19 +651,58 @@ class SuperkendisController extends Controller
 
     protected function writeDocument(array $data, string $format, string $path)
     {
-        $tempDocx = storage_path('app/superkendis-generated-' . uniqid() . '.docx');
+        $tempDocx = storage_path('app/superkendis-generated-'.uniqid().'.docx');
         $this->fillTemplate($data, $tempDocx);
 
         if ($format === 'pdf') {
             $this->configurePdfRenderer();
-            $writer = IOFactory::createWriter(IOFactory::load($tempDocx), 'PDF');
+            $writer = $this->pdfWriter($tempDocx);
             $writer->save($path);
             @unlink($tempDocx);
+
             return;
         }
 
         copy($tempDocx, $path);
         @unlink($tempDocx);
+    }
+
+    /**
+     * Bangun writer PDF dari DOCX yang sudah terisi. Menggunakan API resmi
+     * editCallback PhpWord untuk menghapus CSS border default tebal (table/td
+     * 1px solid black) yang disuntikkan writer HTML, sehingga border PDF
+     * mengikuti template DOCX (hanya tabel yang memang perlu garis).
+     */
+    protected function pdfWriter(string $docxPath): PDF
+    {
+        $writer = IOFactory::createWriter(IOFactory::load($docxPath), 'PDF');
+        $writer->setEditCallback(fn (string $html): string => $this->stripDefaultTableBorders($html));
+
+        return $writer;
+    }
+
+    /**
+     * Hapus CSS global bawaan PhpWord yang memberi border tebal ke SEMUA tabel
+     * dan sel: `table {border: 1px solid black; ...}` dan `td {border: 1px solid
+     * black;}`. Perbaiki juga agar border sel menyatu (collapse) seperti di Word.
+     */
+    protected function stripDefaultTableBorders(string $html): string
+    {
+        // table: buang `border: 1px solid black;`, aktifkan collapse.
+        $html = preg_replace(
+            '/table\s*\{[^}]*border\s*:\s*1px\s+solid\s+black;[^}]*\}/i',
+            'table { border-collapse: collapse; border-spacing: 0px; width: 100%; }',
+            $html
+        );
+
+        // td: buang border default sama sekali.
+        $html = preg_replace(
+            '/td\s*\{[^}]*border\s*:\s*1px\s+solid\s+black;[^}]*\}/i',
+            'td { }',
+            $html
+        );
+
+        return $html;
     }
 
     protected function configurePdfRenderer(): void

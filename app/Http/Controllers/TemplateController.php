@@ -17,7 +17,7 @@ class TemplateController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('nama_template', 'like', '%' . $request->search . '%');
+            $query->where('nama_template', 'like', '%'.$request->search.'%');
         }
 
         $templates = $query->orderBy('kategori')->orderBy('nama_template')->paginate(15)->withQueryString();
@@ -29,6 +29,7 @@ class TemplateController extends Controller
     public function create()
     {
         $kategoriList = Template::KATEGORI_LIST;
+
         return view('templates.create', compact('kategoriList'));
     }
 
@@ -36,7 +37,7 @@ class TemplateController extends Controller
     {
         $validated = $request->validate([
             'nama_template' => 'required|string|max:255',
-            'kategori' => 'required|in:' . implode(',', Template::KATEGORI_LIST),
+            'kategori' => 'required|in:'.implode(',', Template::KATEGORI_LIST),
             'versi' => 'nullable|string|max:50',
             'file' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,zip|max:20480',
             'status_aktif' => 'nullable|boolean',
@@ -70,7 +71,7 @@ class TemplateController extends Controller
 
         $validated = $request->validate([
             'nama_template' => 'required|string|max:255',
-            'kategori' => 'required|in:' . implode(',', Template::KATEGORI_LIST),
+            'kategori' => 'required|in:'.implode(',', Template::KATEGORI_LIST),
             'versi' => 'nullable|string|max:50',
             'file' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,zip|max:20480',
             'status_aktif' => 'nullable|boolean',
@@ -111,11 +112,10 @@ class TemplateController extends Controller
     {
         $template = Template::findOrFail($id);
 
-        if (!$template->file || !Storage::disk('public')->exists($template->file)) {
+        if (! $template->file || ! Storage::disk('public')->exists($template->file)) {
             return back()->with('error', 'File template tidak ditemukan.');
         }
 
         return Storage::disk('public')->download($template->file);
     }
 }
-

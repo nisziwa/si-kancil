@@ -16,7 +16,9 @@ class Sprint7FeatureTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected ExpenseType $expenseType;
+
     protected FpaRequest $fpaRequest;
 
     protected function setUp(): void
@@ -66,7 +68,7 @@ class Sprint7FeatureTest extends TestCase
         $eventsResponse->assertOk();
         $eventsResponse->assertJsonFragment([
             'id' => $this->fpaRequest->id,
-            'title' => "FPA-DASH-001 - Rapat Evaluasi Triwulan",
+            'title' => 'FPA-DASH-001 - Rapat Evaluasi Triwulan',
         ]);
     }
 
@@ -126,4 +128,3 @@ class Sprint7FeatureTest extends TestCase
         ]);
     }
 }
-

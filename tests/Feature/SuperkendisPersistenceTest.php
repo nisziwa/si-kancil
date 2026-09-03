@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\ChecklistHistory;
 use App\Models\ExpenseType;
 use App\Models\Request as FpaRequest;
 use App\Models\SkRatePerjalanan;
@@ -186,7 +185,7 @@ class SuperkendisPersistenceTest extends TestCase
     {
         $pelaksana = SuratTugasPelaksana::first();
 
-        $this->actingAs($this->user)->get(route('requests.superkendis', $this->fpaRequest->id) . '?pelaksana=' . $pelaksana->id)->assertOk();
-        $this->actingAs($this->user)->get(route('requests.superkendis', $this->fpaRequest->id) . '?pelaksana[]=' . $pelaksana->id)->assertOk();
+        $this->actingAs($this->user)->get(route('requests.superkendis', $this->fpaRequest->id).'?pelaksana='.$pelaksana->id)->assertOk();
+        $this->actingAs($this->user)->get(route('requests.superkendis', $this->fpaRequest->id).'?pelaksana[]='.$pelaksana->id)->assertOk();
     }
 }

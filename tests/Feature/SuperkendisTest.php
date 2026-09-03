@@ -7,6 +7,7 @@ use App\Models\ExpenseType;
 use App\Models\Request as FpaRequest;
 use App\Models\SkRatePerjalanan;
 use App\Models\SpjChecklist;
+use App\Models\Superkendis;
 use App\Models\SuratTugasDetail;
 use App\Models\SuratTugasPelaksana;
 use App\Models\User;
@@ -90,10 +91,44 @@ class SuperkendisTest extends TestCase
         $response->assertSee('Budi Santoso');
     }
 
+    public function test_index_autochecks_pelaksana_with_stored_superkendis_and_prefills(): void
+    {
+        $pelaksana1 = SuratTugasPelaksana::where('urutan', 1)->first();
+        $pelaksana2 = SuratTugasPelaksana::where('urutan', 2)->first();
+
+        Superkendis::create([
+            'surat_tugas_pelaksana_id' => $pelaksana1->id,
+            'kecamatan' => 'Kecamatan Muara',
+            'tanggal_perjalanan' => '2026-08-26',
+            'jenis_kegiatan' => 'Pendataan Lapangan',
+            'nip' => '198001012010011001',
+            'jabatan' => 'Pelaksana',
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('requests.superkendis', $this->fpaRequest->id));
+        $response->assertOk();
+
+        $html = $response->getContent();
+
+        // Pelaksana 1 (punya Superkendis) otomatis tercentang.
+        $this->assertMatchesRegularExpression(
+            '/name="pelaksana\['.$pelaksana1->id.'\]\[selected\]" value="1"\s+class="pelaksana-check[^"]*"\s+checked/i',
+            $html
+        );
+        // Nilainya terisi dari record Superkendis.
+        $this->assertStringContainsString('value="198001012010011001"', $html);
+        $this->assertStringContainsString('value="2026-08-26"', $html);
+
+        // Pelaksana 2 (belum punya Superkendis) tidak tercentang.
+        $this->assertDoesNotMatchRegularExpression(
+            '/name="pelaksana\['.$pelaksana2->id.'\]\[selected\]" value="1"\s+class="pelaksana-check[^"]*"\s+checked/i',
+            $html
+        );
+    }
+
     public function test_generate_superkendis_docx(): void
     {
         $pelaksana = SuratTugasPelaksana::first();
-
         $response = $this->actingAs($this->user)->post(
             route('requests.superkendis.generate', ['requestId' => $this->fpaRequest->id, 'pelaksanaId' => $pelaksana->id]),
             [
@@ -201,10 +236,18 @@ class SuperkendisTest extends TestCase
 
         $merged = $method->invokeArgs($controller, [$base, $src]);
 
-        $this->assertStringContainsString('w:val="nextPage"', $merged, 'Section break harus berpindah halaman.');
-        $this->assertStringNotContainsString('w:val="continuous"', $merged, 'Section continuous harus diubah menjadi nextPage.');
+        $this->assertStringContainsString('w:type="page"', $merged, 'Harus ada page break eksplisit.');
         // Struktur isi pelaksana 2 tetap dipertahankan.
         $this->assertStringContainsString('Pelaksana 2', $merged);
+
+        // Page break harus muncul SEBELUM konten pelaksana berikutnya, agar
+        // judul/isi pelaksana 2 dimulai pada halaman baru (bukan menempel di bawah
+        // pelaksana 1).
+        $posBreak = strpos($merged, 'w:type="page"');
+        $posP2 = strpos($merged, 'Pelaksana 2');
+        $this->assertNotFalse($posBreak);
+        $this->assertNotFalse($posP2);
+        $this->assertLessThan($posP2, $posBreak, 'Page break harus mendahului konten pelaksana berikutnya.');
 
         // Fallback saat sumber tidak memiliki sectPr: gunakan page break eksplisit.
         $srcNoSect = '<w:body><w:p>Pelaksana 3</w:p></w:body>';

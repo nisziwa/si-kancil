@@ -87,7 +87,7 @@ class SuratTugasService
     /**
      * Bangun pesan kelengkapan dari daftar requirement yang hilang.
      *
-     * @param array<string> $missing
+     * @param  array<string>  $missing
      */
     public static function completenessMessage(array $missing): string
     {
@@ -95,7 +95,7 @@ class SuratTugasService
             return '';
         }
 
-        return 'Surat Tugas belum lengkap. Lengkapi ' . implode(', ', $missing) . '.';
+        return 'Surat Tugas belum lengkap. Lengkapi '.implode(', ', $missing).'.';
     }
 
     /**

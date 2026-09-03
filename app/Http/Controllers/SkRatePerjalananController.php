@@ -15,9 +15,9 @@ class SkRatePerjalananController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('kecamatan', 'like', '%' . $search . '%')
-                    ->orWhere('ibukota_kecamatan', 'like', '%' . $search . '%')
-                    ->orWhere('keterangan', 'like', '%' . $search . '%');
+                $q->where('kecamatan', 'like', '%'.$search.'%')
+                    ->orWhere('ibukota_kecamatan', 'like', '%'.$search.'%')
+                    ->orWhere('keterangan', 'like', '%'.$search.'%');
             });
         }
 

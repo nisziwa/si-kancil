@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SpjChecklist;
 use App\Models\ChecklistHistory;
+use App\Models\SpjChecklist;
 use App\Models\TravelReportPelaksana;
 use App\Services\SuratTugasService;
 use Illuminate\Http\Request;
@@ -65,14 +65,14 @@ class ChecklistKanbanController extends Controller
                     'status_baru' => $newStatus,
                     'user' => Auth::user()->name,
                     'time' => now()->format('d/m/Y H:i'),
-                    'document' => $checklist->nama_dokumen
-                ]
+                    'document' => $checklist->nama_dokumen,
+                ],
             ]);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Status tidak berubah'
+            'message' => 'Status tidak berubah',
         ]);
     }
 
@@ -116,7 +116,7 @@ class ChecklistKanbanController extends Controller
             'report_status' => 'nullable|array',
             'report_status.selected' => 'nullable|array',
             'report_status.selected.*' => 'nullable|integer',
-            'report_status.status.*' => 'nullable|in:' . implode(',', TravelReportPelaksana::STATUS_LIST),
+            'report_status.status.*' => 'nullable|in:'.implode(',', TravelReportPelaksana::STATUS_LIST),
         ]);
 
         $checklist = SpjChecklist::with('suratTugasDetail.pelaksanas')->findOrFail($id);

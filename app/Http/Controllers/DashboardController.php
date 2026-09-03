@@ -29,23 +29,23 @@ class DashboardController extends Controller
         if ($currentMonth && $currentMonth !== 'all') {
             $query->where(function ($q) use ($currentMonth) {
                 $q->whereMonth('created_at', $currentMonth)
-                  ->orWhereMonth('tanggal_mulai', $currentMonth);
+                    ->orWhereMonth('tanggal_mulai', $currentMonth);
             });
         }
 
         if ($currentYear && $currentYear !== 'all') {
             $query->where(function ($q) use ($currentYear) {
                 $q->whereYear('created_at', $currentYear)
-                  ->orWhereYear('tanggal_mulai', $currentYear);
+                    ->orWhereYear('tanggal_mulai', $currentYear);
             });
         }
 
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('nomor_fpa', 'like', "%{$search}%")
-                  ->orWhere('deskripsi_permintaan', 'like', "%{$search}%")
-                  ->orWhere('lokasi', 'like', "%{$search}%")
-                  ->orWhere('periode', 'like', "%{$search}%");
+                    ->orWhere('deskripsi_permintaan', 'like', "%{$search}%")
+                    ->orWhere('lokasi', 'like', "%{$search}%")
+                    ->orWhere('periode', 'like', "%{$search}%");
             });
         }
 
@@ -62,4 +62,3 @@ class DashboardController extends Controller
         ));
     }
 }
-

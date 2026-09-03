@@ -29,7 +29,7 @@ class FpaStatusServiceBulkTest extends TestCase
         ]);
     }
 
-    private function makeRequest(string $nomor = null, string $status = 'Persiapan'): FpaRequest
+    private function makeRequest(?string $nomor = null, string $status = 'Persiapan'): FpaRequest
     {
         return FpaRequest::create([
             'nomor_fpa' => $nomor,

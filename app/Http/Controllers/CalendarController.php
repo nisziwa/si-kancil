@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Request as FpaRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class CalendarController extends Controller
 {
@@ -58,4 +57,3 @@ class CalendarController extends Controller
         return response()->json($events);
     }
 }
-

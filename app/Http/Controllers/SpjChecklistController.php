@@ -61,7 +61,7 @@ class SpjChecklistController extends Controller
 
         if (str_contains($docName, 'Laporan Perjalanan')) {
             $rules['report_status'] = 'nullable|array';
-            $rules['report_status.*'] = 'nullable|in:' . implode(',', \App\Models\TravelReportPelaksana::STATUS_LIST);
+            $rules['report_status.*'] = 'nullable|in:'.implode(',', TravelReportPelaksana::STATUS_LIST);
         }
 
         $validated = $request->validate($rules);
@@ -155,7 +155,7 @@ class SpjChecklistController extends Controller
         // Hapus semua pelaksana lama
         SuratTugasPelaksana::where('surat_tugas_detail_id', $stDetail->id)->delete();
 
-        $namaFiltered = array_values(array_filter(array_map('trim', $namaPelaksana), fn($n) => $n !== ''));
+        $namaFiltered = array_values(array_filter(array_map('trim', $namaPelaksana), fn ($n) => $n !== ''));
 
         foreach ($namaFiltered as $index => $nama) {
             $nomorSub = $this->buildSuratSubNumber($nomorUtama, $index + 1);
@@ -177,10 +177,10 @@ class SpjChecklistController extends Controller
         // Format: XXXX<base>.N<remainder>
         // Cari titik sebelum tanda "/" (nomor utama), contoh B-1027/75040/KP.650/2026
         if (preg_match('/^(.*?)(\.\d+)?(\/.*)$/u', $nomorUtama, $m)) {
-            return $m[1] . '.' . $sub . $m[3];
+            return $m[1].'.'.$sub.$m[3];
         }
 
-        return $nomorUtama . '.' . $sub;
+        return $nomorUtama.'.'.$sub;
     }
 
     /**

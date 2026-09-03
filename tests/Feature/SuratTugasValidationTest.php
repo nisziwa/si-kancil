@@ -224,7 +224,7 @@ class SuratTugasValidationTest extends TestCase
             SuratTugasPelaksana::create([
                 'surat_tugas_detail_id' => $detail->id,
                 'nama_pelaksana' => $nama,
-                'nomor_surat' => 'B-1027.' . ($i + 1) . '/75040/KP.650/2026',
+                'nomor_surat' => 'B-1027.'.($i + 1).'/75040/KP.650/2026',
                 'urutan' => $i + 1,
             ]);
         }

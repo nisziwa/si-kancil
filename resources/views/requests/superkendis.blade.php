@@ -106,7 +106,9 @@
                                             $presetTanggal = old('pelaksana.'.$pelaksana->id.'.tanggal_perjalanan', $sk && $sk->tanggal_perjalanan ? $sk->tanggal_perjalanan->format('Y-m-d') : '');
                                             $presetJenis = old('pelaksana.'.$pelaksana->id.'.jenis_kegiatan', $sk->jenis_kegiatan ?? 'Pendataan Lapangan');
                                             $presetNip = old('pelaksana.'.$pelaksana->id.'.nip', $sk && $sk->nip ? $sk->nip : '');
-                                            $checked = in_array((int) $pelaksana->id, $selectedPelaksanaIds, true);
+                                            // Centang otomatis pelaksana yang sudah punya Superkendis tersimpan,
+                                            // agar isian sebelumnya (kecamatan, tanggal, jenis, NIP) langsung tampil.
+                                            $checked = in_array((int) $pelaksana->id, $selectedPelaksanaIds, true) || $sk !== null;
                                         @endphp
                                         <tr class="pelaksana-row hover:bg-gray-50">
                                             <td class="px-4 py-3 text-center">
@@ -282,9 +284,11 @@
                 }
 
                 form.addEventListener('submit', function (e) {
+                    // Selalu cegah submit normal (navigate) agar tidak dobel download.
+                    e.preventDefault();
+
                     const anyChecked = Array.from(document.querySelectorAll('.pelaksana-check')).some(function (c) { return c.checked; });
                     if (!anyChecked) {
-                        e.preventDefault();
                         showFeedback('Pilih minimal satu pelaksana untuk generate Superkendis.', true);
                         return;
                     }
@@ -301,7 +305,6 @@
                         }
                     });
                     if (missing) {
-                        e.preventDefault();
                         showFeedback('Kecamatan tujuan dan tanggal perjalanan wajib diisi untuk setiap pelaksana yang dipilih.', true);
                         return;
                     }
@@ -310,17 +313,24 @@
                     submitBtn.textContent = 'Memproses...';
                     showFeedback('Mohon tunggu, Superkendis sedang diproses.', false);
 
-                    // Kirim via AJAX agar kita dapat tahu kapan respons (download) selesai,
-                    // lalu reset tombol kembali ke kondisi awal.
                     const formData = new FormData(form);
-                    const originalLabel = 'Generate Superkendis';
 
                     function resetButton(isError, message) {
                         submitBtn.disabled = false;
-                        submitBtn.textContent = originalLabel;
-                        showFeedback(message, isError);
-                        form.reset();
-                        rows.forEach(row => syncRow(row));
+                        submitBtn.textContent = 'Generate Superkendis';
+                        if (isError) {
+                            showFeedback(message, true);
+                        } else {
+                            showFeedback(message, false);
+                        }
+                    }
+
+                    function refreshAfterSuccess(message, delayMs) {
+                        // Simpan pesan agar tampil setelah reload, lalu muat ulang halaman agar
+                        // status setiap pelaksana langsung menjadi "Generated" tanpa refresh manual.
+                        try { sessionStorage.setItem('superkendis_success', message); } catch (e) {}
+                        resetButton(false, message);
+                        setTimeout(function () { location.reload(); }, delayMs);
                     }
 
                     fetch(form.action, {
@@ -334,7 +344,8 @@
                             const disposition = res.headers.get('Content-Disposition') || '';
                             const blob = await res.blob();
                             if (disposition.indexOf('attachment') !== -1 || res.headers.get('Content-Type') === 'application/zip') {
-                                // Respons berupa file untuk diunduh -> picu download + feedback sukses.
+                                // Respons berupa file untuk diunduh -> picu download, beri waktu browser
+                                // mengantrekan file, lalu reload agar status ter-update langsung.
                                 const filename = (disposition.match(/filename="?([^"]+)"?/) || [null, 'Superkendis'])[1];
                                 const url = URL.createObjectURL(blob);
                                 const a = document.createElement('a');
@@ -343,23 +354,17 @@
                                 document.body.appendChild(a);
                                 a.click();
                                 document.body.removeChild(a);
-                                URL.revokeObjectURL(url);
-                                resetButton(false, 'Generate berhasil. File sudah siap diunduh.');
+                                setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+                                refreshAfterSuccess('Generate berhasil. File sudah siap diunduh dan status telah diperbarui.', 1500);
                             } else {
-                                const text = await blob.text();
-                                try {
-                                    const json = JSON.parse(text);
-                                    resetButton(false, json.message || json.results ? 'Generate berhasil. File sudah siap diunduh.' : 'Generate selesai.');
-                                } catch (err) {
-                                    resetButton(false, 'Generate selesai. Periksa file yang dihasilkan.');
-                                }
+                                refreshAfterSuccess('Generate selesai.', 300);
                             }
                         } else {
                             const ct = res.headers.get('Content-Type') || '';
                             let text = await res.text();
                             let message = 'Terjadi kesalahan saat memproses.';
                             if (ct.indexOf('json') !== -1) {
-                                try { message = JSON.parse(text).message || message; } catch (e) {}
+                                try { message = JSON.parse(text).message || message; } catch (errMsg) {}
                             } else if (text) {
                                 const m = text.match(/<div[^>]*>\s*([^<\/]{20,200})<\/div>/i);
                                 if (m) message = m[1].replace(/<[^>]+>/g, '').trim();
@@ -371,6 +376,15 @@
                         resetButton(true, 'Terjadi kesalahan koneksi. Silakan coba lagi.');
                     });
                 });
+
+                // Tampilkan pesan sukses tersimpan pada sessionStorage setelah reload.
+                try {
+                    const msg = sessionStorage.getItem('superkendis_success');
+                    if (msg) {
+                        sessionStorage.removeItem('superkendis_success');
+                        showFeedback(msg, false);
+                    }
+                } catch (e) {}
             });
         </script>
     @endif

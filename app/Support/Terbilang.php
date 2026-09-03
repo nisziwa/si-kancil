@@ -18,7 +18,7 @@ class Terbilang
         $number = (int) round((float) $number);
 
         if ($number < 0) {
-            return 'minus ' . self::convert(abs($number));
+            return 'minus '.self::convert(abs($number));
         }
 
         if ($number < 12) {
@@ -28,25 +28,27 @@ class Terbilang
         }
 
         if ($number < 20) {
-            return self::convert($number - 10) . ' belas';
+            return self::convert($number - 10).' belas';
         }
 
         if ($number < 100) {
             $puluhan = intdiv($number, 10);
             $sisa = $number % 10;
-            return ($puluhan === 1 ? 'sepuluh' : self::$satuan[$puluhan] . ' puluh')
-                . ($sisa > 0 ? ' ' . self::$satuan[$sisa] : '');
+
+            return ($puluhan === 1 ? 'sepuluh' : self::$satuan[$puluhan].' puluh')
+                .($sisa > 0 ? ' '.self::$satuan[$sisa] : '');
         }
 
         if ($number < 200) {
-            return 'seratus' . ($number > 100 ? ' ' . self::convert($number - 100) : '');
+            return 'seratus'.($number > 100 ? ' '.self::convert($number - 100) : '');
         }
 
         if ($number < 1000) {
             $ratusan = intdiv($number, 100);
             $sisa = $number % 100;
-            return self::$satuan[$ratusan] . ' ratus'
-                . ($sisa > 0 ? ' ' . self::convert($sisa) : '');
+
+            return self::$satuan[$ratusan].' ratus'
+                .($sisa > 0 ? ' '.self::convert($sisa) : '');
         }
 
         if ($number < 1000000) {
@@ -68,9 +70,9 @@ class Terbilang
     {
         $satuan = intdiv($number, $base);
 
-        $prefix = $satuan === 1 && $base === 1000 ? 'seribu' : self::convert($satuan) . ' ' . $label;
+        $prefix = $satuan === 1 && $base === 1000 ? 'seribu' : self::convert($satuan).' '.$label;
         $sisa = $number % $base;
 
-        return $prefix . ($sisa > 0 ? ' ' . self::convert($sisa) : '');
+        return $prefix.($sisa > 0 ? ' '.self::convert($sisa) : '');
     }
 }

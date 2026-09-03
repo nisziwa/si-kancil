@@ -38,11 +38,10 @@ class FileUploadController extends Controller
     {
         $checklist = SpjChecklist::findOrFail($checklistId);
 
-        if (!$checklist->file_path || !Storage::disk('public')->exists($checklist->file_path)) {
+        if (! $checklist->file_path || ! Storage::disk('public')->exists($checklist->file_path)) {
             return back()->with('error', 'File tidak ditemukan.');
         }
 
         return Storage::disk('public')->download($checklist->file_path);
     }
 }
-
