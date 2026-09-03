@@ -47,5 +47,10 @@ Keputusan penting:
 - QA Bug Fix: validasi lapangan status SPJ terpusat di `RequestStatusService@requiredFields()` dan dipakai seluruh jalur (dropdown `update`, kanban `updateAjax`, bulk `bulk`); Selesai wajib `tanggal_selesai_spj` (dropdown eksplisit, kanban/bulk auto-fill hari ini via `_auto_field_`); `catatan` optional di semua jalur; FPA hanya dapat diedit/dihapus saat status Persiapan; page break gabungan Superkendis memakai paragraf page-break eksplisit `<w:p><w:r><w:br w:type="page"/></w:r></w:p>` di antara blok pelaksana (bukan `<w:sectPr>` yang tidak valid di tengah `<w:body>`)
 - PDF Superkendis: hasil konversi PhpWord→DOMPDF memakai writer dengan `setEditCallback` (`SuperkendisController@pdfWriter`) yang menghapus CSS global bawaan `table/td {border: 1px solid black}` agar border PDF mengikuti template DOCX (hanya tabel yang memang bergaris), mengaktifkan `border-collapse: collapse`, serta mempertahankan border asli sel (0.2pt)
 
+## Sprint 16 - Superkendis UX & Format Tanggal Global
+- Kebijakan tanggal: input `<input type="date">` tetap (browser kirim `Y-m-d`, DB tidak diubah); hanya teks tampilan diubah ke `dd-mm-yyyy` (timestamp `d/m/Y H:i` → `d-m-Y H:i`). File: `requests/show.blade.php`, `dashboard.blade.php`, `partials/status-workflow.blade.php`, `sk_rates/edit.blade.php`, `ChecklistKanbanController.php`, `CalendarController.php`.
+- UX input NIP di `requests/superkendis.blade.php`: scroll horizontal mengikuti cursor saat mengetik, reset ke awal saat blur; value tidak diubah. Tabel Superkendis `table-layout: fixed` + `<colgroup>` min-width (50/220/260/220/160/200/180/180/130/120) + scroll horizontal; dropdown tampil label lengkap.
+- Automated testing: `SuperkendisTest@test_superkendis_index_page_renders` diperkuat. Seluruh 83 test PASS (269 assertions). Kode diformat ulang dengan Laravel Pint.
+
 ## Last Commit
-Commit terakhir: `fix: resolve superkendis download, page break, history and pdf issues`
+Commit terakhir: `fix: improve superkendis ux and date formatting` (menutup GitHub Issue #9).

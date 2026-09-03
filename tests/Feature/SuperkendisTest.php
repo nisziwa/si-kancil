@@ -89,6 +89,15 @@ class SuperkendisTest extends TestCase
         $response->assertOk();
         $response->assertSee('Generate Superkendis');
         $response->assertSee('Budi Santoso');
+
+        $html = $response->getContent();
+        // Tabel Superkendis memakai table-layout fixed dengan min-width per kolom.
+        $this->assertStringContainsString('table-layout: fixed;', $html);
+        $this->assertMatchesRegularExpression('/<colgroup>/', $html);
+        // Behavior input NIP tersedia (scroll ikuti cursor + reset saat blur).
+        $this->assertStringContainsString('[nip]', $html);
+        $this->assertStringContainsString('scrollLeft = this.scrollWidth', $html);
+        $this->assertStringContainsString('this.scrollLeft = 0', $html);
     }
 
     public function test_index_autochecks_pelaksana_with_stored_superkendis_and_prefills(): void

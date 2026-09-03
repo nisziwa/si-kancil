@@ -64,7 +64,7 @@ class ChecklistKanbanController extends Controller
                 'history' => [
                     'status_baru' => $newStatus,
                     'user' => Auth::user()->name,
-                    'time' => now()->format('d/m/Y H:i'),
+                    'time' => now()->format('d-m-Y H:i'),
                     'document' => $checklist->nama_dokumen,
                 ],
             ]);
@@ -156,7 +156,7 @@ class ChecklistKanbanController extends Controller
             'history' => [
                 'status_baru' => 'Lengkap',
                 'user' => Auth::user()->name,
-                'time' => now()->format('d/m/Y H:i'),
+                'time' => now()->format('d-m-Y H:i'),
                 'document' => $checklist->nama_dokumen,
             ],
         ]);

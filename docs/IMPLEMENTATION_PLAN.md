@@ -204,3 +204,10 @@ users                  (default Laravel users table)
 - BUG #7 (Medium): Verifikasi PDF DOMPDF (`Settings::PDF_RENDERER_DOMPDF` + path `vendor/dompdf/dompdf/src/Dompdf.php`).
 - BUG #8 (Low): UI cleanup - query `ChecklistHistory` dipindah ke `RequestController@show()` (`$checklistHistory`), flash `session('error')` di dashboard & superkendis, lebar halaman checklist `max-w-7xl`.
 - Automated testing: `RequestStatusTest` (parity Selesai dropdown/kanban, catatan optional, edit hanya Persiapan), `SuperkendisTest@test_bulk_merged_page_break_between_pelaksana` (unit reflection `appendBody`). Total 82 unit & feature tests PASS.
+
+## Sprint 16 - Superkendis UX & Format Tanggal Global
+- Kebijakan tanggal: input `<input type="date">` tetap (browser kirim `Y-m-d`, DB tidak berubah); YANG DIUBAH hanya teks tampilan menjadi `dd-mm-yyyy` (mis. `04-09-2026`); timestamp `d/m/Y H:i` → `d-m-Y H:i`. Tidak mengubah DB maupun nilai input.
+- Daftar file teks tanggal diubah menjadi `d-m-Y` / `d-m-Y H:i`: `requests/show.blade.php`, `dashboard.blade.php`, `partials/status-workflow.blade.php`, `sk_rates/edit.blade.php`, `ChecklistKanbanController.php`, `CalendarController.php`.
+- UX input NIP di `requests/superkendis.blade.php`: saat mengetik angka panjang, scroll horizontal input mengikuti posisi cursor (`input` → `scrollLeft = scrollWidth`); saat blur, scroll di-reset ke awal (`scrollLeft = 0`). Value tersimpan TIDAK diubah.
+- Tabel Superkendis memakai `table-layout: fixed` + `<colgroup>` dengan min-width per kolom (Checkbox 50, Pelaksana 220, Nomor Surat Tugas 260, Kecamatan Tujuan 220, Tanggal Perjalanan 160, Jenis Kegiatan 200, NIP 180, Dokumen 180, Status 130, Action 120) + `overflow-x-auto` untuk scroll horizontal; select Kecamatan/Jenis Kegiatan menampilkan label lengkap saat dipilih.
+- Automated testing: `SuperkendisTest@test_superkendis_index_page_renders` diperkuat (assert `table-layout: fixed`, `<colgroup>`, behavior NIP `scrollLeft`). Total 83 unit & feature tests PASS (269 assertions). Kode diformat ulang dengan Laravel Pint.

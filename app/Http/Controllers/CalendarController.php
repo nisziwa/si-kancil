@@ -48,7 +48,7 @@ class CalendarController extends Controller
                     'nomor_fpa' => $fpa->nomor_fpa,
                     'status_spj' => $fpa->status_spj,
                     'lokasi' => $fpa->lokasi ?: '-',
-                    'deadline' => $fpa->deadline_spj ? $fpa->deadline_spj->format('d/m/Y') : '-',
+                    'deadline' => $fpa->deadline_spj ? $fpa->deadline_spj->format('d-m-Y') : '-',
                     'jenis_pengeluaran' => $fpa->expenseType->nama ?? '-',
                 ],
             ];

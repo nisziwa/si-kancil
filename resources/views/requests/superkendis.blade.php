@@ -81,21 +81,33 @@
 
                         <!-- Tabel Pelaksana + Checkbox + Input -->
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <table class="min-w-full divide-y divide-gray-200 text-sm w-full" style="table-layout: fixed;">
+                                <colgroup>
+                                    <col style="width: 50px; min-width: 50px;">
+                                    <col style="width: 220px; min-width: 220px;">
+                                    <col style="width: 260px; min-width: 260px;">
+                                    <col style="width: 220px; min-width: 220px;">
+                                    <col style="width: 160px; min-width: 160px;">
+                                    <col style="width: 200px; min-width: 200px;">
+                                    <col style="width: 180px; min-width: 180px;">
+                                    <col style="width: 180px; min-width: 180px;">
+                                    <col style="width: 130px; min-width: 130px;">
+                                    <col style="width: 120px; min-width: 120px;">
+                                </colgroup>
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-4 py-2 w-10">
+                                        <th class="px-3 py-2 w-10">
                                             <input type="checkbox" id="select-all" class="rounded border-gray-300 text-indigo-600">
                                         </th>
-                                        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Pelaksana</th>
-                                        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nomor Surat Tugas</th>
-                                        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Kecamatan Tujuan *</th>
-                                        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Tanggal Perjalanan *</th>
-                                        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Jenis Kegiatan</th>
-                                        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">NIP</th>
-                                        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Dokumen</th>
-                                        <th class="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
-                                        <th class="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Aksi</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Pelaksana</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nomor Surat Tugas</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Kecamatan Tujuan *</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Tanggal Perjalanan *</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Jenis Kegiatan</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">NIP</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Dokumen</th>
+                                        <th class="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
+                                        <th class="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
@@ -261,6 +273,21 @@
                         syncRow(row);
                     });
                     syncRow(row);
+                });
+
+                // Behavior khusus input NIP: saat mengetik angka panjang, biarkan
+                // scroll horizontal mengikuti posisi cursor; saat kehilangan fokus
+                // (blur) reset scroll ke awal agar karakter pertama kembali terlihat.
+                // Value yang tersimpan TIDAK diubah.
+                document.querySelectorAll('input[type="text"][name*="[nip]"]').forEach(function (nip) {
+                    nip.addEventListener('input', function () {
+                        // Paksa scroll ke ujung kanan agar karakter yang baru diketik terlihat.
+                        this.scrollLeft = this.scrollWidth;
+                    });
+                    nip.addEventListener('blur', function () {
+                        this.scrollLeft = 0;
+                    });
+                    nip.style.minWidth = '100%';
                 });
 
                 const selectAll = document.getElementById('select-all');
