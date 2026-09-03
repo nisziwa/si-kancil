@@ -121,6 +121,15 @@ Aplikasi web Laravel untuk membantu Sekretaris Tim mengontrol proses administras
 - Export PDF: load hasil DOCX (struktur utuh) lalu konversi langsung ke PDF
 - Gabung (merged): isi template per pelaksana lalu gabungkan isi `<w:body>` per dokumen agar tabel/border/style tetap utuh
 
+### Document Generation Improvement v2
+- Mengganti template Superkendis menjadi `storage/app/public/[template] Superkendis 2.docx` (`TEMPLATE_PATH = '[template] Superkendis 2.docx'`)
+- Standardisasi placeholder tetap memakai `{{ }}` (`setMacroChars('{{','}}')`), bukan `${}`
+- Placeholder v2: `{{nama}}`, `{{NIP}}`, `{{nomor surat tugas}}`, `{{tanggal surat tugas}}`, `{{tanggal perjalanan}}`, `{{biaya sk}}`, `{{terbilangnya berapa}}`, `{{jenis kegiatan}}`, `{{jabatan}}`
+- Pemetaan jenis kegiatan → jabatan: Pelatihan → PCL, Pendataan Lapangan → PCL, Pengawasan Lapangan → PML, Supervisi Lapangan → Supervisor
+- Semua tanggal generate dalam format Indonesia (mis. "25 Juli 2026"), bukan `Y-m-d` / `d-m-Y`
+- `cleanupTemplate` digeneralisasi: setelah penggabungan run, seluruh placeholder `{{key}}` diganti dari data agar tidak ada yang tertinggal (menangani `{{jenis kegiatan}}` yang terpecah antar-run)
+- Mempertahankan perbaikan layout: tabel Daftar Pengeluaran Riil tetap muncul, border sesuai template, posisi tanda tangan tetap, nama tidak menempel teks sebelumnya
+
 ---
 
 ## Struktur Database Final

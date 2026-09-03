@@ -1,10 +1,10 @@
 # SI-KANCIL Agent Handoff
 
 ## Current Sprint
-Sprint aktif: Document Generation Improvement
+Sprint aktif: Document Generation Improvement v2
 
 ## Current Status
-Seluruh tahapan pengembangan (Sprint 1 s/d Sprint 11) pada aplikasi SI-KANCIL telah selesai 100% dan seluruh 55 automated unit & feature tests berhasil tanpa error. Generate DOCX berbasis template kini mempertahankan layout Word asli (tabel, border, alignment, tanda tangan).
+Seluruh tahapan pengembangan (Sprint 1 s/d Sprint 11b) pada aplikasi SI-KANCIL telah selesai 100% dan seluruh 55 automated unit & feature tests berhasil tanpa error. Generate DOCX berbasis template Superkendis 2 kini mempertahankan layout Word asli (tabel, border, alignment, tanda tangan) dengan placeholder `{{ }}` dan format tanggal Indonesia.
 
 ## Completed
 Daftar pekerjaan yang sudah selesai:
@@ -19,6 +19,7 @@ Daftar pekerjaan yang sudah selesai:
 - Sprint 9 Finalisasi Status SPJ (4 status + validasi transisi), FPA tanpa nomor, Surat Tugas multi-pelaksana dengan nomor sub otomatis, dan Superkendis (DOCX/PDF, ZIP, gabung)
 - Sprint 10 Master SK Rate Management (CRUD + search + history) dan peningkatan Generate Superkendis (pilihan pelaksana via checkbox + input per pelaksana, generate berbasis template Superkendis.docx, export DOCX/PDF, Pisah ZIP / Gabung)
 - Sprint 11 (Document Generation Improvement): memperbaiki generate DOCX berbasis template agar mempertahankan layout Word (tabel, border, alignment, tanda tangan); flow `Template DOCX → TemplateProcessor → DOCX final` tanpa rebuild elemen
+- Sprint 11b (Document Generation Improvement v2): penggunaan template `[template] Superkendis 2.docx`, standardisasi placeholder `{{ }}`, pemetaan jenis kegiatan → jabatan (Pelatihan/Pendataan → PCL, Pengawasan → PML, Supervisi → Supervisor), format tanggal Indonesia, dan perbaikan layout generate dokumen
 
 ## Remaining Tasks
 Daftar pekerjaan yang belum selesai:
@@ -32,10 +33,12 @@ Keputusan penting:
 - Library: Tailwind CSS, SortableJS, FullCalendar 6, Litepicker, phpoffice/phpword, dompdf/dompdf
 - Business rules: Kanban FPA interaktif drag and drop (mengubah status FPA dan mencatat riwayat)
 - Status SPJ final (4): `Persiapan`, `Dikirim ke PPK`, `Perbaikan`, `Selesai` — transisi divalidasi; `nomor_fpa` nullable tetapi wajib saat "Dikirim ke PPK"
-- Superkendis digenerate dari pelaksana Surat Tugas (tabel `surat_tugas_pelaksanas`) via `SuperkendisController`; generate berbasis template `[template] Superkendis.docx` menggunakan `TemplateProcessor` dengan `setMacroChars('{{','}}')`
+- Superkendis digenerate dari pelaksana Surat Tugas (tabel `surat_tugas_pelaksanas`) via `SuperkendisController`; generate berbasis template `[template] Superkendis 2.docx` menggunakan `TemplateProcessor` dengan `setMacroChars('{{','}}')`
+- Placeholder Superkendis v2: `{{nama}}`, `{{NIP}}`, `{{nomor surat tugas}}`, `{{tanggal surat tugas}}`, `{{tanggal perjalanan}}`, `{{biaya sk}}`, `{{terbilangnya berapa}}`, `{{jenis kegiatan}}`, `{{jabatan}}`
+- Jenis kegiatan → jabatan: Pelatihan → PCL, Pendataan Lapangan → PCL, Pengawasan Lapangan → PML, Supervisi Lapangan → Supervisor; semua tanggal generate dalam format Indonesia (mis. "25 Juli 2026")
 - SK Rate Perjalanan dikelola via halaman management; riwayat perubahan dicatat di `sk_rate_perjalanan_histories` (FK `nullOnDelete` agar riwayat tetap tersimpan walau rate dihapus)
 - Besaran biaya transport & terbilang pada Superkendis diambil dari SK Rate berdasarkan kecamatan tujuan menggunakan helper `App\Support\Terbilang`
-- Document Generation: hasil DOCX dihasilkan langsung dari `TemplateProcessor` (setelah `saveAs`) tanpa `IOFactory::load()` + salin elemen ke PhpWord baru, karena hal itu merusak struktur Word (tabel/border/alignment/tanda tangan); PDF dikonversi dari DOCX berstruktur utuh; Gabung (merged) menggabungkan isi `<w:body>` per pelaksana agar layout tetap utuh
+- Document Generation: hasil DOCX dihasilkan langsung dari `TemplateProcessor` (setelah `saveAs`) tanpa `IOFactory::load()` + salin elemen ke PhpWord baru, karena hal itu merusak struktur Word (tabel/border/alignment/tanda tangan); PDF dikonversi dari DOCX berstruktur utuh; Gabung (merged) menggabungkan isi `<w:body>` per pelaksana agar layout tetap utuh; `cleanupTemplate` digeneralisasi untuk mengganti seluruh `{{key}}` yang terpecah antar-run
 
 ## Last Commit
-Commit terakhir: `fix: preserve docx template layout during generation`
+Commit terakhir: `fix: update superkendis template v2 generation`

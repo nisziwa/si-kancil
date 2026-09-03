@@ -136,3 +136,14 @@ Ringkasan Perubahan:
 - Export PDF: load hasil DOCX (struktur utuh) lalu konversi langsung ke PDF
 - Gabung (merged) Superkendis: isi template per pelaksana lalu gabungkan isi `<w:body>` per dokumen agar tabel/border/style tetap utuh
 - Verifikasi: seluruh 55 unit & feature tests berhasil 100% (PASS)
+
+## Sprint 11b — Document Generation Improvement v2
+Status: Completed
+Ringkasan Perubahan:
+- Mengganti template Superkendis menjadi `storage/app/public/[template] Superkendis 2.docx` (`TEMPLATE_PATH = '[template] Superkendis 2.docx'`)
+- Standardisasi placeholder tetap memakai `{{ }}` (`setMacroChars('{{','}}')`), bukan `${}`; mapping placeholder v2: `{{nama}}`, `{{NIP}}`, `{{nomor surat tugas}}`, `{{tanggal surat tugas}}`, `{{tanggal perjalanan}}`, `{{biaya sk}}`, `{{terbilangnya berapa}}`, `{{jenis kegiatan}}`, `{{jabatan}}`
+- Pemetaan jenis kegiatan → jabatan: Pelatihan → PCL, Pendataan Lapangan → PCL, Pengawasan Lapangan → PML, Supervisi Lapangan → Supervisor
+- Semua tanggal generate dalam format Indonesia (mis. "25 Juli 2026"), bukan `Y-m-d` / `d-m-Y`
+- `cleanupTemplate` digeneralisasi: setelah penggabungan run, semua placeholder `{{key}}` diganti dari data (menangani `{{jenis kegiatan}}` yang terpecah antar-run)
+- Layout tetap dipertahankan: tabel Daftar Pengeluaran Riil muncul, border sesuai template, tanda tangan benar, nama tidak menempel teks sebelumnya, semua placeholder terganti
+- Verifikasi: seluruh 55 unit & feature tests berhasil 100% (PASS)

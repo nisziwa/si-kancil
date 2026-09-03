@@ -15,7 +15,7 @@ class SuperkendisController extends Controller
 {
     const FORMATS = ['docx', 'pdf'];
 
-    const TEMPLATE_PATH = '[template] Superkendis.docx';
+    const TEMPLATE_PATH = '[template] Superkendis 2.docx';
 
     /**
      * Ringkasan Superkendis untuk halaman detail FPA.
@@ -237,6 +237,14 @@ class SuperkendisController extends Controller
 
         $besaran = $rate ? (float) $rate->besaran_biaya_transport : 0;
 
+        $jenisKegiatan = trim((string) ($input['jenis_kegiatan'] ?? ''));
+        if ($jenisKegiatan === '') {
+            $jenisKegiatan = trim((string) ($input['jenis_perjalanan'] ?? 'Pendataan Lapangan'));
+        }
+        if ($jenisKegiatan === '') {
+            $jenisKegiatan = 'Pendataan Lapangan';
+        }
+
         return [
             'nama_pelaksana' => $pelaksana->nama_pelaksana,
             'nip' => $this->normalizeNip((string) ($input['nip'] ?? '')),
@@ -244,13 +252,46 @@ class SuperkendisController extends Controller
             'tanggal_perjalanan' => (string) ($input['tanggal_perjalanan'] ?? ''),
             'besaran_biaya' => $rate ? number_format($besaran, 0, ',', '.') : '-',
             'terbilang' => $rate ? ucwords(Terbilang::convert($besaran)) . ' Rupiah' : '-',
-            'jabatan' => (string) ($input['jabatan'] ?? 'Petugas'),
-            'jenis_perjalanan' => (string) ($input['jenis_perjalanan'] ?? 'pendataan lapangan'),
+            'jenis_kegiatan' => $jenisKegiatan,
+            'jabatan' => $this->jabatanUntukKegiatan($jenisKegiatan),
             'nomor_surat' => $pelaksana->nomor_surat ?: '-',
             'tanggal_surat_tugas' => $pelaksana->suratTugasDetail->tanggal_surat_tugas ?? '',
             'fpa' => $requestModel->nomor_fpa ?: 'Belum ada nomor FPA',
             'deskripsi' => $requestModel->deskripsi_permintaan,
         ];
+    }
+
+    /**
+     * Pemetaan jenis kegiatan ke jabatan pelaksana.
+     */
+    protected function jabatanUntukKegiatan(string $jenisKegiatan): string
+    {
+        return match (strtolower(trim($jenisKegiatan))) {
+            'supervisi lapangan', 'supervisi' => 'Supervisor',
+            'pengawasan lapangan', 'pengawasan' => 'PML',
+            'pelatihan' => 'PCL',
+            default => 'PCL',
+        };
+    }
+
+    /**
+     * Format tanggal ke format Indonesia, mis. "25 Juli 2026".
+     */
+    protected function formatTanggalIndonesia($value): string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+
+        $ts = strtotime($value);
+        if ($ts === false) {
+            return $value;
+        }
+
+        $bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+        return date('j', $ts) . ' ' . $bulan[(int) date('n', $ts) - 1] . ' ' . date('Y', $ts);
     }
 
     protected function selectedPelaksanas(Request $request, FpaRequest $requestModel)
@@ -301,7 +342,7 @@ class SuperkendisController extends Controller
     }
 
     /**
-     * Mengisi template Superkendis.docx dengan TemplateProcessor lalu
+     * Mengisi template Superkendis 2.docx dengan TemplateProcessor lalu
      * menyimpan langsung sebagai DOCX final (menjaga layout/table/border/tanda tangan).
      */
     protected function fillTemplate(array $data, string $outPath): void
@@ -312,8 +353,9 @@ class SuperkendisController extends Controller
         $template = new TemplateProcessor($templatePath);
         $template->setMacroChars('{{', '}}');
 
-        $tanggalSurat = $data['tanggal_surat_tugas'] ? date('Y-m-d', strtotime($data['tanggal_surat_tugas'])) : '';
-        $tanggalPerjalanan = $data['tanggal_perjalanan'] ? date('d-m-Y', strtotime($data['tanggal_perjalanan'])) : '';
+        // Seluruh tanggal wajib dalam format Indonesia (mis. "25 Juli 2026").
+        $tanggalSurat = $this->formatTanggalIndonesia($data['tanggal_surat_tugas']);
+        $tanggalPerjalanan = $this->formatTanggalIndonesia($data['tanggal_perjalanan']);
 
         $values = [
             'nama' => $data['nama_pelaksana'],
@@ -324,8 +366,8 @@ class SuperkendisController extends Controller
             'tanggal perjalanan' => $tanggalPerjalanan,
             'biaya sk' => $data['besaran_biaya'],
             'terbilangnya berapa' => $data['terbilang'],
-            'list dari 4 pilihan dropdown' => $data['jenis_perjalanan'],
-            'Bisa Supervisor, PCL atau PML' => $data['jabatan'],
+            'jenis kegiatan' => $data['jenis_kegiatan'],
+            'jabatan' => $data['jabatan'],
         ];
 
         foreach ($values as $key => $value) {
@@ -339,7 +381,7 @@ class SuperkendisController extends Controller
         // Langkah 2: simpan dokumen yang sudah terisi (struktur & style tetap utuh).
         $template->saveAs($outPath);
 
-        // Langkah 3: bersihkan sisa placeholder yang membungkus field Word (tanpa rebuild elemen).
+        // Langkah 3: bersihkan sisa placeholder (tanpa rebuild elemen).
         $this->cleanupTemplate($outPath, $data);
     }
 
@@ -349,13 +391,13 @@ class SuperkendisController extends Controller
         if (file_exists($path)) {
             return $path;
         }
-        abort(500, 'Template Superkendis.docx tidak ditemukan.');
+        abort(500, 'Template Superkendis 2.docx tidak ditemukan.');
     }
 
     /**
-     * Membersihkan placeholder yang terpecah antar-run XML atau membungkus field Word
-     * (mis. {{terbilangnya berapa: ...}} yang berisi MERGEFIELD) secara langsung pada
+     * Membersihkan placeholder yang terpecah antar-run XML secara langsung pada
      * word/document.xml, tanpa melalui rebuild elemen PhpWord sehingga layout tetap utuh.
+     * Semua placeholder {{key}} diganti dari data agar tidak ada yang tertinggal.
      */
     protected function cleanupTemplate(string $docxPath, array $data): void
     {
@@ -377,14 +419,23 @@ class SuperkendisController extends Controller
             $xml
         );
 
-        $replacements = [
-            '#\{\{terbilangnya berapa:.*?\}\}#s' => $data['terbilang'],
-            '#\{\{list dari 4 pilihan dropdown:.*?\}\}#s' => $data['jenis_perjalanan'],
-            '#\{\{list dari.*?\}\}#s' => $data['jenis_perjalanan'],
-            '#\{\{Bisa.*?\}\}#s' => $data['jabatan'] ?: 'Petugas',
+        $tanggalSurat = $this->formatTanggalIndonesia($data['tanggal_surat_tugas']);
+        $tanggalPerjalanan = $this->formatTanggalIndonesia($data['tanggal_perjalanan']);
+
+        $map = [
+            'nama' => $data['nama_pelaksana'],
+            'NIP' => $data['nip'],
+            'nomor surat tugas' => $data['nomor_surat'],
+            'tanggal surat tugas' => $tanggalSurat,
+            'tanggal perjalanan' => $tanggalPerjalanan,
+            'biaya sk' => $data['besaran_biaya'],
+            'terbilangnya berapa' => $data['terbilang'],
+            'jenis kegiatan' => $data['jenis_kegiatan'],
+            'jabatan' => $data['jabatan'],
         ];
 
-        foreach ($replacements as $pattern => $replacement) {
+        foreach ($map as $key => $replacement) {
+            $pattern = '#\{\{\s*' . preg_quote($key, '#') . '\s*\}\}#u';
             $xml = preg_replace($pattern, $replacement, $xml);
         }
 
