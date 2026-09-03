@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('sk_rate_perjalanan', function (Blueprint $table) {
             $table->id();
             $table->string('kecamatan');
+            $table->string('ibukota_kecamatan');
             $table->decimal('besaran_biaya_transport', 15, 2)->default(0);
             $table->text('keterangan')->nullable();
             $table->timestamps();

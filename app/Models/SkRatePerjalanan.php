@@ -8,7 +8,7 @@ class SkRatePerjalanan extends Model
 {
     protected $table = 'sk_rate_perjalanan';
 
-    protected $fillable = ['kecamatan', 'besaran_biaya_transport', 'keterangan'];
+    protected $fillable = ['kecamatan', 'ibukota_kecamatan', 'besaran_biaya_transport', 'keterangan'];
 
     protected function casts(): array
     {

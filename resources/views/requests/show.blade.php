@@ -1,44 +1,49 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold leading-tight text-gray-800">
                 {{ __('Detail FPA') }} - {{ $fpaRequest->nomor_fpa ?? 'Belum ada nomor FPA' }}
             </h2>
             <div class="flex gap-2">
-                <a href="{{ route('requests.index') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Kembali</a>
+                <a href="{{ route('requests.index') }}" class="px-4 py-2 font-bold text-white bg-gray-500 rounded hover:bg-gray-700">Kembali</a>
                 @if($fpaRequest->status_spj === 'Persiapan')
-                    <a href="{{ route('requests.edit', $fpaRequest->id) }}" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Edit FPA</a>
+                    <a href="{{ route('requests.edit', $fpaRequest->id) }}" class="px-4 py-2 font-bold text-white bg-yellow-500 rounded hover:bg-yellow-700">Edit FPA</a>
+                    <form action="{{ route('requests.destroy', $fpaRequest->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus FPA ini? Semua data checklist dan riwayat terkait akan ikut terhapus.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="px-4 py-2 font-bold text-white bg-red-600 rounded hover:bg-red-700">Hapus FPA</button>
+                    </form>
                 @endif
             </div>
         </div>
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
 
             @if(session('success'))
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <div class="relative px-4 py-3 mb-4 text-green-700 bg-green-100 border border-green-400 rounded" role="alert">
                     <span class="block sm:inline">{{ session('success') }}</span>
                 </div>
             @endif
 
             @if(session('error'))
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <div class="relative px-4 py-3 mb-4 text-red-700 bg-red-100 border border-red-400 rounded" role="alert">
                     <span class="block sm:inline">{{ session('error') }}</span>
                 </div>
             @endif
 
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
-                <h3 class="text-lg font-bold mb-4 border-b pb-2">Informasi FPA</h3>
+            <div class="p-6 mb-6 overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <h3 class="pb-2 mb-4 text-lg font-bold border-b">Informasi FPA</h3>
 
                 @php $priority = $fpaRequest->priority_info; @endphp
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                         <p class="text-sm text-gray-500">Nomor FPA</p>
                         @if($fpaRequest->has_nomor_fpa)
                             <p class="font-semibold">{{ $fpaRequest->nomor_fpa }}</p>
                         @else
-                            <p class="font-semibold text-gray-400 italic">Belum ada nomor FPA</p>
+                            <p class="italic font-semibold text-gray-400">Belum ada nomor FPA</p>
                         @endif
                     </div>
                     <div>
@@ -91,7 +96,7 @@
                         @elseif($priority['level'] === 'warning') bg-amber-50 border-amber-300
                         @else bg-gray-50 border-gray-300 @endif">
                         <div class="flex items-center gap-2">
-                            <span class="font-semibold text-sm text-gray-700">Prioritas SPJ:</span>
+                            <span class="text-sm font-semibold text-gray-700">Prioritas SPJ:</span>
                             <span class="text-sm font-semibold
                                 @if($priority['level'] === 'danger') text-red-700
                                 @elseif($priority['level'] === 'warning') text-amber-700
@@ -99,15 +104,15 @@
                                 {{ $priority['label'] }}
                             </span>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">Deadline: {{ $fpaRequest->deadline_spj->format('d/m/Y') }} | Sisa hari: {{ $priority['sisa_hari'] }} | Keterlambatan: {{ $priority['terlambat'] ? 'Ya' : 'Tidak' }}</p>
+                        <p class="mt-1 text-xs text-gray-500">Deadline: {{ $fpaRequest->deadline_spj->format('d/m/Y') }} | Sisa hari: {{ $priority['sisa_hari'] }} | Keterlambatan: {{ $priority['terlambat'] ? 'Ya' : 'Tidak' }}</p>
                     </div>
                 @endif
             </div>
 
             @if ($errors->any())
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                <div class="relative px-4 py-3 mb-4 text-red-700 bg-red-100 border border-red-400 rounded">
                     <strong class="font-bold">Ada kesalahan!</strong>
-                    <ul class="list-disc pl-5 mt-2">
+                    <ul class="pl-5 mt-2 list-disc">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
                         @endforeach
@@ -119,14 +124,14 @@
             @include('partials.status-workflow', ['fpaRequest' => $fpaRequest])
 
             <!-- Baris 8: Superkendis -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
-                <div class="flex justify-between items-center border-b pb-3 mb-4">
+            <div class="p-6 mb-6 overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <div class="flex items-center justify-between pb-3 mb-4 border-b">
                     <div>
                         <h3 class="text-lg font-bold text-gray-800">Superkendis</h3>
                         <p class="text-xs text-gray-500">Generate Surat Keterangan Bukan Kendaraan Dinas (Superkendis) untuk para pelaksana Surat Tugas.</p>
                     </div>
                     <a href="{{ route('requests.superkendis', $fpaRequest->id) }}"
-                       class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm"
+                       class="px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded hover:bg-indigo-700"
                        @if(!$fpaRequest->checklists->contains(fn($c) => str_contains($c->nama_dokumen, 'Surat Tugas'))) @endif>
                         Generate Superkendis
                     </a>
@@ -137,13 +142,13 @@
                 @endphp
 
                 @if($stChecklist && $stChecklist->status === 'Lengkap' && $stChecklist->suratTugasDetail && $stChecklist->suratTugasDetail->pelaksanas->count() > 0)
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <table class="min-w-full text-sm divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">No</th>
-                                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nama Pelaksana</th>
-                                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nomor Surat Tugas</th>
-                                <th class="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Generate</th>
+                                <th class="px-4 py-2 text-xs font-semibold text-left text-gray-600 uppercase">No</th>
+                                <th class="px-4 py-2 text-xs font-semibold text-left text-gray-600 uppercase">Nama Pelaksana</th>
+                                <th class="px-4 py-2 text-xs font-semibold text-left text-gray-600 uppercase">Nomor Surat Tugas</th>
+                                <th class="px-4 py-2 text-xs font-semibold text-center text-gray-600 uppercase">Generate</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -153,37 +158,37 @@
                                     <td class="px-4 py-2 font-medium text-gray-800">{{ $pelaksana->nama_pelaksana }}</td>
                                     <td class="px-4 py-2 text-gray-600">{{ $pelaksana->nomor_surat ?: '-' }}</td>
                                     <td class="px-4 py-2 text-center whitespace-nowrap">
-                                        <a href="{{ route('requests.superkendis', $fpaRequest->id) }}?pelaksana={{ $pelaksana->id }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-xs">Buka Form →</a>
+                                        <a href="{{ route('requests.superkendis', $fpaRequest->id) }}?pelaksana={{ $pelaksana->id }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-900">Buka Form →</a>
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
-                    <div class="mt-3 flex gap-2">
-                        <a href="{{ route('requests.superkendis', $fpaRequest->id) }}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded text-sm">Buka Superkendis →</a>
+                    <div class="flex gap-2 mt-3">
+                        <a href="{{ route('requests.superkendis', $fpaRequest->id) }}" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded hover:bg-indigo-700">Buka Superkendis →</a>
                     </div>
                 @else
-                    <p class="text-gray-500 italic text-sm">
+                    <p class="text-sm italic text-gray-500">
                         Superkendis hanya dapat digenerate setelah checklist <strong>Surat Tugas</strong> berstatus <strong>Lengkap</strong> dan seluruh pelaksana tersedia.
                     </p>
                 @endif
             </div>
 
             <!-- Sprint 4: Kanban Checklist SPJ & History -->
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+            <div class="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-4">
                 <!-- Kanban Area (3/4) -->
-                <div class="lg:col-span-3 bg-white shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-lg font-bold mb-4 border-b pb-2">Kanban Checklist Dokumen</h3>
+                <div class="p-6 bg-white shadow-sm lg:col-span-3 sm:rounded-lg">
+                    <h3 class="pb-2 mb-4 text-lg font-bold border-b">Kanban Checklist Dokumen</h3>
                     @if($fpaRequest->checklists->count() > 0)
                         @include('partials.kanban-checklist', ['fpaRequest' => $fpaRequest])
                     @else
-                        <p class="text-gray-500 italic">Belum ada checklist untuk FPA ini.</p>
+                        <p class="italic text-gray-500">Belum ada checklist untuk FPA ini.</p>
                     @endif
                 </div>
 
                 <!-- History Sidebar (1/4) -->
                 <div class="bg-gray-50 shadow-sm sm:rounded-lg p-6 border border-gray-200 h-[600px] overflow-y-auto">
-                    <h3 class="text-md font-bold mb-4 border-b pb-2 text-gray-700">Riwayat Perubahan Status</h3>
+                    <h3 class="pb-2 mb-4 font-bold text-gray-700 border-b text-md">Riwayat Perubahan Status</h3>
 
                     <ul id="history-list" class="space-y-2">
                         @php
@@ -196,13 +201,13 @@
                         @endphp
 
                         @forelse($histories as $history)
-                            <li class="mb-2 text-sm pb-2 border-b">
+                            <li class="pb-2 mb-2 text-sm border-b">
                                 <span class="font-semibold text-gray-800">{{ $history->checklist->nama_dokumen ?? 'Dokumen' }}</span>
                                 diubah ke <span class="text-blue-600">{{ $history->status_baru }}</span>
                                 <br><span class="text-xs text-gray-500">Oleh {{ $history->user->name ?? '-' }} pada {{ $history->created_at->format('d/m/Y H:i') }}</span>
                             </li>
                         @empty
-                            <li class="text-xs text-gray-500 italic" id="empty-history">Belum ada riwayat perubahan.</li>
+                            <li class="text-xs italic text-gray-500" id="empty-history">Belum ada riwayat perubahan.</li>
                         @endforelse
                     </ul>
                 </div>
