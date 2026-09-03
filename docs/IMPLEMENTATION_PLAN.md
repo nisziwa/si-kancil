@@ -228,4 +228,10 @@ users                  (default Laravel users table)
 - Daftar file teks tanggal diubah menjadi `d-m-Y` / `d-m-Y H:i`: `requests/show.blade.php`, `dashboard.blade.php`, `partials/status-workflow.blade.php`, `sk_rates/edit.blade.php`, `ChecklistKanbanController.php`, `CalendarController.php`.
 - UX input NIP di `requests/superkendis.blade.php`: saat mengetik angka panjang, scroll horizontal input mengikuti posisi cursor (`input` → `scrollLeft = scrollWidth`); saat blur, scroll di-reset ke awal (`scrollLeft = 0`). Value tersimpan TIDAK diubah.
 - Tabel Superkendis memakai `table-layout: fixed` + `<colgroup>` dengan min-width per kolom (Checkbox 50, Pelaksana 220, Nomor Surat Tugas 260, Kecamatan Tujuan 220, Tanggal Perjalanan 160, Jenis Kegiatan 200, NIP 180, Dokumen 180, Status 130, Action 120) + `overflow-x-auto` untuk scroll horizontal; select Kecamatan/Jenis Kegiatan menampilkan label lengkap saat dipilih.
-- Automated testing: `SuperkendisTest@test_superkendis_index_page_renders` diperkuat (assert `table-layout: fixed`, `<colgroup>`, behavior NIP `scrollLeft`). Total 83 unit & feature tests PASS (269 assertions). Kode diformat ulang dengan Laravel Pint.
+## Sprint 17 - Flatpickr Datepicker & Range Picker FPA
+- Mengganti penggunaan `<input type="date">` bawaan browser dengan Flatpickr.
+- Flatpickr di-load via CDN pada `layouts/app.blade.php` dengan locale `id` (Indonesia).
+- Inisialisasi global untuk class `.datepicker` (single date picker) dan `.datepicker-range` (range date picker).
+- Tampilan form akan menunjukkan format Indonesia (`j F Y` -> "2 September 2026"), namun input hidden akan tetap mengirimkan format `Y-m-d` ke backend, sehingga tidak perlu merubah logika di sisi server/database.
+- Form create dan edit FPA (`requests/create.blade.php` & `requests/edit.blade.php`) kini menggunakan 1 input rentang (range picker) yang menggabungkan Tanggal Mulai dan Tanggal Selesai.
+- Form checklist edit, status workflow, dan superkendis kini menggunakan single picker Flatpickr.

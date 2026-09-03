@@ -70,25 +70,20 @@
                             @error('periode') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
                         </div>
 
-                        <!-- Tanggal Mulai -->
-                        <div>
-                            <label for="tanggal_mulai" class="block text-sm font-medium text-gray-700">Tanggal Mulai</label>
-                            <input type="date" name="tanggal_mulai" id="tanggal_mulai" value="{{ old('tanggal_mulai', request('tanggal_mulai')) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                            <p class="text-xs text-gray-500 mt-1">Gunakan date picker. Akan ditampilkan dalam format Indonesia, contoh: 02 September 2026.</p>
-                        </div>
-
-                        <!-- Tanggal Selesai -->
-                        <div>
-                            <label for="tanggal_selesai" class="block text-sm font-medium text-gray-700">Tanggal Selesai</label>
-                            <input type="date" name="tanggal_selesai" id="tanggal_selesai" value="{{ old('tanggal_selesai', request('tanggal_selesai')) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                            <p class="text-xs text-gray-500 mt-1">Gunakan date picker. Akan ditampilkan dalam format Indonesia, contoh: 02 September 2026.</p>
+                        <!-- Tanggal Kegiatan (Range Picker) -->
+                        <div class="md:col-span-2">
+                            <label for="tanggal_range" class="block text-sm font-medium text-gray-700">Tanggal Kegiatan (Mulai - Selesai)</label>
+                            <input type="text" id="tanggal_range" placeholder="Pilih rentang tanggal kegiatan" class="datepicker-range mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white" data-start-input="tanggal_mulai" data-end-input="tanggal_selesai">
+                            <input type="hidden" name="tanggal_mulai" id="tanggal_mulai" value="{{ old('tanggal_mulai', request('tanggal_mulai')) }}">
+                            <input type="hidden" name="tanggal_selesai" id="tanggal_selesai" value="{{ old('tanggal_selesai', request('tanggal_selesai')) }}">
+                            <p class="text-xs text-gray-500 mt-1">Pilih rentang dari tanggal mulai hingga tanggal selesai.</p>
                         </div>
 
                         <!-- Deadline SPJ (auto = akhir kegiatan + 3 hari, tetap bisa diubah) -->
                         <div>
                             <label for="deadline_spj" class="block text-sm font-medium text-gray-700">Deadline SPJ</label>
-                            <input type="date" name="deadline_spj" id="deadline_spj" value="{{ old('deadline_spj', request('deadline_spj')) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                            <p class="text-xs text-gray-500 mt-1">Gunakan date picker. Otomatis = tanggal akhir kegiatan + 3 hari. Akan ditampilkan dalam format Indonesia, contoh: 05 September 2026.</p>
+                            <input type="text" name="deadline_spj" id="deadline_spj" value="{{ old('deadline_spj', request('deadline_spj')) }}" class="datepicker mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white">
+                            <p class="text-xs text-gray-500 mt-1">Otomatis = tanggal akhir kegiatan + 3 hari. Dapat disesuaikan manual.</p>
                         </div>
                     </div>
 

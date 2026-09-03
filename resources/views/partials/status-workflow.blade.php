@@ -64,13 +64,13 @@
                         <!-- Tanggal Kirim PPK (muncul jika Dikirim ke PPK) -->
                         <div id="field-tanggal-kirim" class="hidden">
                             <label for="tanggal_kirim_ppk" class="block text-sm font-medium text-gray-700">Tanggal Kirim ke PPK *</label>
-                            <input type="date" name="tanggal_kirim_ppk" id="tanggal_kirim_ppk" value="{{ now()->format('Y-m-d') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <input type="text" name="tanggal_kirim_ppk" id="tanggal_kirim_ppk" value="{{ now()->format('Y-m-d') }}" class="datepicker mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white">
                         </div>
 
                         <!-- Tanggal Selesai SPJ (muncul jika Selesai) -->
                         <div id="field-tanggal-selesai" class="hidden">
                             <label for="tanggal_selesai_spj" class="block text-sm font-medium text-gray-700">Tanggal Selesai SPJ *</label>
-                            <input type="date" name="tanggal_selesai_spj" id="tanggal_selesai_spj" value="{{ now()->format('Y-m-d') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <input type="text" name="tanggal_selesai_spj" id="tanggal_selesai_spj" value="{{ now()->format('Y-m-d') }}" class="datepicker mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white">
                         </div>
 
                         <!-- Catatan -->

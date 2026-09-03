@@ -84,7 +84,7 @@
 
                             <div>
                                 <label for="tanggal_surat_tugas" class="block text-sm font-medium text-gray-700">Tanggal Surat Tugas</label>
-                                <input type="date" name="tanggal_surat_tugas" id="tanggal_surat_tugas" value="{{ old('tanggal_surat_tugas', optional($checklist->suratTugasDetail->tanggal_surat_tugas ?? null)->format('Y-m-d')) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+                                <input type="text" name="tanggal_surat_tugas" id="tanggal_surat_tugas" value="{{ old('tanggal_surat_tugas', optional($checklist->suratTugasDetail->tanggal_surat_tugas ?? null)->format('Y-m-d')) }}" class="datepicker mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm bg-white">
                             </div>
 
                             <div class="md:col-span-2">

@@ -13,6 +13,9 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        <!-- Flatpickr Date Picker -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">
@@ -32,5 +35,48 @@
                 {{ $slot }}
             </main>
         </div>
+
+        <!-- Flatpickr JS -->
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Single date picker
+                document.querySelectorAll('.datepicker').forEach(function(el) {
+                    flatpickr(el, {
+                        locale: 'id',
+                        dateFormat: 'Y-m-d',
+                        altInput: true,
+                        altFormat: 'j F Y',
+                        allowInput: true,
+                    });
+                });
+
+                // Range date picker
+                document.querySelectorAll('.datepicker-range').forEach(function(el) {
+                    var startInput = document.getElementById(el.dataset.startInput);
+                    var endInput = document.getElementById(el.dataset.endInput);
+                    
+                    flatpickr(el, {
+                        locale: 'id',
+                        mode: 'range',
+                        dateFormat: 'Y-m-d',
+                        altInput: true,
+                        altFormat: 'j F Y',
+                        allowInput: false,
+                        defaultDate: [startInput?.value, endInput?.value].filter(Boolean),
+                        onChange: function(dates) {
+                            if (dates.length >= 1) {
+                                startInput.value = flatpickr.formatDate(dates[0], 'Y-m-d');
+                            }
+                            if (dates.length >= 2) {
+                                endInput.value = flatpickr.formatDate(dates[1], 'Y-m-d');
+                                endInput.dispatchEvent(new Event('change'));
+                            }
+                        }
+                    });
+                });
+            });
+        </script>
     </body>
 </html>

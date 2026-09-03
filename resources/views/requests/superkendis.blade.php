@@ -145,9 +145,9 @@
                                                 </select>
                                             </td>
                                             <td class="px-4 py-3">
-                                                <input type="date" name="pelaksana[{{ $pelaksana->id }}][tanggal_perjalanan]"
+                                                <input type="text" name="pelaksana[{{ $pelaksana->id }}][tanggal_perjalanan]"
                                                        value="{{ $presetTanggal }}"
-                                                       class="pelaksana-input mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-xs disabled:bg-gray-100">
+                                                       class="datepicker pelaksana-input mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-xs disabled:bg-gray-100 bg-white">
                                             </td>
                                             <td class="px-4 py-3">
                                                 <select name="pelaksana[{{ $pelaksana->id }}][jenis_kegiatan]"

@@ -58,5 +58,10 @@ Keputusan penting:
 - Area diterapkan: `requests/show.blade.php`, `dashboard.blade.php`, `partials/status-workflow.blade.php`, `partials/kanban-checklist.blade.php` + `ChecklistKanbanController`, `sk_rates/edit.blade.php`, `CalendarController`, `SuperkendisController` (tanggal surat tugas & perjalanan DOCX/PDF). Label/helper input diperbarui ke format Indonesia.
 - Test baru `TanggalTest`. Komit: `feat: standardize Indonesian date display format` (menutup GitHub Issue #10).
 
+## Sprint 17 - Flatpickr Datepicker & Range Picker FPA
+- Flatpickr Datepicker diterapkan secara global menggantikan `<input type="date">`.
+- Tampilan form akan menunjukkan format Indonesia (misal: "2 September 2026") tetapi akan mengirim `Y-m-d` ke server melalui hidden inputs.
+- FPA `tanggal_mulai` dan `tanggal_selesai` digabung menjadi range picker untuk input yang lebih sederhana dan UX yang lebih baik.
+
 ## Last Commit
-Commit terakhir: `fix: improve superkendis ux and date formatting` (menutup GitHub Issue #9).
+Commit terakhir: `feat: change date picker to Flatpickr with indonesian format and range picker` (menutup GitHub Issue #11).
