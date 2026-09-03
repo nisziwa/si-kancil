@@ -160,3 +160,20 @@ Ringkasan Perubahan:
 - Generate Superkendis membaca data dari Daftar Pelaksana Surat Tugas; tidak ada form detail baru
 - Automated feature testing baru: `SuratTugasValidationTest` (tanpa nomor/tanggal/uraian/pelaksana tidak bisa Lengkap, dropdown tervalidasi, kanban tervalidasi, tombol hanya muncul bila lengkap, input massal pelaksana, nomor sub otomatis)
 - Verifikasi menyeluruh: seluruh 66 unit & feature tests berhasil 100% (PASS)
+
+## Sprint 13 — Superkendis Flow Improvement & FPA Kanban Enhancement
+Status: Completed
+Ringkasan Perubahan:
+- Tabel baru `superkendis` (migrasi `2026_09_03_091949_create_superkendis_table.php`): satu record per `surat_tugas_pelaksana_id` dengan `nip, kecamatan, tanggal_perjalanan, jenis_kegiatan, jabatan, file_docx, file_pdf` (NO `checklist_id`/`nomor_surat` snapshot/`generated_at`)
+- Model baru `App\Models\Superkendis` (fillable + cast tanggal_perjalanan date + relasi `belongsTo SuratTugasPelaksana`); `SuratTugasPelaksana` ditambah relasi `hasOne superkendis`
+- Persistensi per-pelaksana: `generate()` & `bulk()` menyimpan file (DOCX/PDF) ke `storage/app/public/spj-files/superkendis/...` dan merekam/memperbarui record `superkendis` via `update`/`create` pada `surat_tugas_pelaksana_id` (regenerate tidak membuat duplikat)
+- Checklist "Pengeluaran Riil + Surat Non Kendaraan Dinas" otomatis jadi "Lengkap" HANYA saat SEMUA pelaksana telah tersimpan Superkendis-nya, dan target tidak berstatus "Perlu Perbaikan"/"Lengkap"; mencatat `ChecklistHistory`; Surat Tugas & checklist lain tidak pernah disentuh
+- Jenis kegiatan = daftar statis (`Pelatihan/Pendataan Lapangan→PCL, Pengawasan Lapangan→PML, Supervisi Lapangan→Supervisor`); jabatan tidak diinput manual
+- Perbaikan bug `in_array(): Argument #2 (~?pelaksana=`)`: param dinormalisasi menjadi array `selectedPelaksanaIds` untuk view
+- Form Superkendis dipertahankan tanpa form baru; nama pelaksana + nomor surat sub readonly, prefill dari record `superkendis` saat regenerate; link dokumen tersimpan ditampilkan
+- File gabungan (merged) tetap sebagai output tambahan; output terpisah dibuat dari file tersimpan (ZIP)
+- Refactor validasi status FPA ke `App\Services\RequestStatusService` (TRANSITIONS terpusat, `validate()`, `apply()`); `RequestStatusController` menggunakan service untuk `update`/`updateAjax`
+- Bulk Kanban FPA (`RequestStatusController@bulk`, route `requests.status.bulk`) → per-FPA validasi via service, valid dipindah & gagal tetap; response `{results:{success:[{nomor_fpa,...}], failed:[{nomor_fpa,errors}]}}`; tanpa rollback all-or-nothing
+- Kanban drag warning: pada kegagalan card kembali ke kolom asal TANPA `location.reload()`, modal ≥8 detik dengan tombol tutup + klik backdrop, menampilkan alasan + nomor FPA
+- Automated feature testing baru: `SuperkendisPersistenceTest` (record+file tersimpan, regenerate tanpa duplikat, semua-pelaksana→Pengeluaran Riil Lengkap, Surat Tugas tak berubah, Perlu Perbaikan tak dioverwrite, jenis→jabatan, param pelaksana tunggal/array) & `FpaStatusServiceBulkTest` (bulk valid/gagal parsial, transisi ilegal, bulk sukses)
+- Verifikasi menyeluruh: seluruh 75 unit & feature tests berhasil 100% (PASS)

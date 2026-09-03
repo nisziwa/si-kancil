@@ -84,19 +84,30 @@
                                         <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nomor Surat Tugas</th>
                                         <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Kecamatan Tujuan *</th>
                                         <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Tanggal Perjalanan *</th>
+                                        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Jenis Kegiatan</th>
                                         <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">NIP</th>
+                                        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Dokumen</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     @foreach($stChecklist->suratTugasDetail->pelaksanas as $index => $pelaksana)
+                                        @php
+                                            $sk = $pelaksana->superkendis;
+                                            $presetKecamatan = old('pelaksana.'.$pelaksana->id.'.kecamatan', $sk->kecamatan ?? '');
+                                            $presetTanggal = old('pelaksana.'.$pelaksana->id.'.tanggal_perjalanan', $sk && $sk->tanggal_perjalanan ? $sk->tanggal_perjalanan->format('Y-m-d') : '');
+                                            $presetJenis = old('pelaksana.'.$pelaksana->id.'.jenis_kegiatan', $sk->jenis_kegiatan ?? 'Pendataan Lapangan');
+                                            $presetNip = old('pelaksana.'.$pelaksana->id.'.nip', $sk && $sk->nip ? $sk->nip : '');
+                                            $checked = in_array((int) $pelaksana->id, $selectedPelaksanaIds, true);
+                                        @endphp
                                         <tr class="pelaksana-row hover:bg-gray-50">
                                             <td class="px-4 py-3 text-center">
                                                 <input type="checkbox" name="pelaksana[{{ $pelaksana->id }}][selected]" value="1"
                                                        class="pelaksana-check rounded border-gray-300 text-indigo-600"
-                                                       {{ in_array($pelaksana->id, request('pelaksana', [])) ? 'checked' : '' }}>
+                                                       {{ $checked ? 'checked' : '' }}>
                                             </td>
                                             <td class="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
-                                                <span class="pelaksana-label">{{ $pelaksana->nama_pelaksana }}</span>
+                                                {{ $pelaksana->nama_pelaksana }}
+                                                <span class="block text-xs text-gray-400">(dari Surat Tugas)</span>
                                             </td>
                                             <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $pelaksana->nomor_surat ?: '-' }}</td>
                                             <td class="px-4 py-3">
@@ -104,7 +115,7 @@
                                                         class="pelaksana-input mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-xs disabled:bg-gray-100">
                                                     <option value="">-- Pilih --</option>
                                                     @foreach($kecamatans as $k)
-                                                        <option value="{{ $k->kecamatan }}" {{ old('pelaksana.'.$pelaksana->id.'.kecamatan') === $k->kecamatan ? 'selected' : '' }}>
+                                                        <option value="{{ $k->kecamatan }}" {{ $presetKecamatan === $k->kecamatan ? 'selected' : '' }}>
                                                             {{ $k->kecamatan }} (Rp {{ number_format($k->besaran_biaya_transport, 0, ',', '.') }})
                                                         </option>
                                                     @endforeach
@@ -112,14 +123,37 @@
                                             </td>
                                             <td class="px-4 py-3">
                                                 <input type="date" name="pelaksana[{{ $pelaksana->id }}][tanggal_perjalanan]"
-                                                       value="{{ old('pelaksana.'.$pelaksana->id.'.tanggal_perjalanan') }}"
+                                                       value="{{ $presetTanggal }}"
                                                        class="pelaksana-input mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-xs disabled:bg-gray-100">
                                             </td>
                                             <td class="px-4 py-3">
+                                                <select name="pelaksana[{{ $pelaksana->id }}][jenis_kegiatan]"
+                                                        class="pelaksana-input mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-xs disabled:bg-gray-100">
+                                                    @foreach(\App\Http\Controllers\SuperkendisController::JENIS_KEGIATAN_LIST as $jk)
+                                                        <option value="{{ $jk }}" {{ $presetJenis === $jk ? 'selected' : '' }}>{{ $jk }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                            <td class="px-4 py-3">
                                                 <input type="text" name="pelaksana[{{ $pelaksana->id }}][nip]"
-                                                       value="{{ old('pelaksana.'.$pelaksana->id.'.nip') }}"
+                                                       value="{{ $presetNip }}"
                                                        placeholder="Kosongkan -> '-'"
                                                        class="pelaksana-input mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-xs disabled:bg-gray-100">
+                                            </td>
+                                            <td class="px-4 py-3 whitespace-nowrap">
+                                                @if($sk)
+                                                    <div class="flex flex-col gap-1 text-xs">
+                                                        @if($sk->file_docx)
+                                                            <a href="{{ asset('storage/' . $sk->file_docx) }}" target="_blank" class="text-green-700 hover:underline">DOCX tersimpan</a>
+                                                        @endif
+                                                        @if($sk->file_pdf)
+                                                            <a href="{{ asset('storage/' . $sk->file_pdf) }}" target="_blank" class="text-red-700 hover:underline">PDF tersimpan</a>
+                                                        @endif
+                                                        <span class="text-gray-400">{{ $sk->jabatan }}</span>
+                                                    </div>
+                                                @else
+                                                    <span class="text-gray-400">Belum digenerate</span>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach
@@ -128,7 +162,7 @@
                         </div>
 
                         <p class="text-xs text-gray-500 mt-2">
-                            NIP opsional: jika kosong atau format tidak sesuai akan terisi "-". Kecamatan tujuan digunakan untuk mengambil besaran biaya transport dari SK Rate.
+                            Nama pelaksana dan nomor surat diambil dari <strong>Surat Tugas</strong>. NIP opsional: jika kosong atau tidak sesuai akan terisi "-". Kecamatan tujuan digunakan untuk mengambil besaran biaya transport dari SK Rate. Generate ulang akan memperbarui dokumen yang sudah ada.
                         </p>
 
                         <!-- Format & Metode -->

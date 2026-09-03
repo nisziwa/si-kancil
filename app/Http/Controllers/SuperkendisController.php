@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ChecklistHistory;
+use App\Models\SpjChecklist;
 use App\Models\Request as FpaRequest;
 use App\Models\SkRatePerjalanan;
+use App\Models\Superkendis;
 use App\Support\Terbilang;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\Shared\ZipArchive;
@@ -18,12 +23,28 @@ class SuperkendisController extends Controller
     const TEMPLATE_PATH = '[template] Superkendis 2.docx';
 
     /**
+     * Jenis kegiatan (static list, tanpa master database).
+     */
+    const JENIS_KEGIATAN_LIST = [
+        'Pelatihan',
+        'Pendataan Lapangan',
+        'Pengawasan Lapangan',
+        'Supervisi Lapangan',
+    ];
+
+    /**
+     * Nama checklist dokumen yang otomatis menjadi Lengkap setelah seluruh
+     * Superkendis pelaksana berhasil digenerate.
+     */
+    const INTEGRASI_CHECKLIST = 'Pengeluaran Riil + Surat Non Kendaraan Dinas';
+
+    /**
      * Ringkasan Superkendis untuk halaman detail FPA.
      */
     public function index($requestId)
     {
         $requestModel = FpaRequest::with([
-            'checklists.suratTugasDetail.pelaksanas',
+            'checklists.suratTugasDetail.pelaksanas.superkendis',
             'expenseType',
         ])->findOrFail($requestId);
 
@@ -34,7 +55,23 @@ class SuperkendisController extends Controller
 
         $kecamatans = SkRatePerjalanan::orderBy('kecamatan')->get();
 
-        return view('requests.superkendis', compact('requestModel', 'stChecklist', 'superkendisDone', 'kecamatans'));
+        // Normalisasi ?pelaksana=12 dan ?pelaksana[]=12 menjadi array.
+        $selected = request('pelaksana', []);
+        if (! is_array($selected)) {
+            $selected = [$selected];
+        }
+        $selectedPelaksanaIds = collect($selected)
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+
+        return view('requests.superkendis', compact(
+            'requestModel',
+            'stChecklist',
+            'superkendisDone',
+            'kecamatans',
+            'selectedPelaksanaIds'
+        ));
     }
 
     /**
@@ -55,9 +92,15 @@ class SuperkendisController extends Controller
 
         $data = $this->buildDataForPelaksana($request, $requestModel, $pelaksana, (int) $pelaksanaId);
 
+        // Simpan file hasil ke storage + catat histori (updateOrCreate).
+        $stored = $this->storeGeneratedFile($pelaksana, $data, $format);
+
+        // Tandai checklist integrasi menjadi Lengkap bila seluruh pelaksana sudah digenerate.
+        $this->markIntegrasiChecklistLengkap($requestModel);
+
         $filename = 'Superkendis_' . $this->slug($pelaksana->nama_pelaksana) . '.' . $format;
 
-        return $this->buildDocument($data, $format, $filename);
+        return response()->download($stored['local_path'], $filename);
     }
 
     /**
@@ -80,27 +123,44 @@ class SuperkendisController extends Controller
 
         $method = $request->input('method', 'separate');
 
+        // Data per pelaksana.
         $datas = $pelaksanas->map(fn ($p) => [
             'pelaksana' => $p,
             'data' => $this->buildDataForPelaksana($request, $requestModel, $p, (int) $p->id),
         ]);
 
+        // Selalu simpan file + histori per pelaksana (updateOrCreate), tanpa duplikasi.
+        $stored = [];
+        foreach ($datas as $item) {
+            $stored[] = $this->storeGeneratedFile($item['pelaksana'], $item['data'], $format);
+        }
+
+        // Bila seluruh pelaksana Surat Tugas sudah digenerate, tandai checklist integrasi Lengkap.
+        $this->markIntegrasiChecklistLengkap($requestModel);
+
         if ($method === 'merged') {
             return $this->buildMerged($datas, $format);
         }
 
-        return $this->buildSeparate($datas, $format);
+        return $this->buildSeparateStored($stored, $format);
     }
 
-    protected function buildSeparate($datas, string $format)
+    /**
+     * ZIP dari file hasil yang sudah tersimpan (mode pisah file).
+     */
+    protected function buildSeparateStored(array $stored, string $format)
     {
         $tmpDir = storage_path('app/superkendis-tmp/' . uniqid());
         if (! is_dir($tmpDir)) {
             mkdir($tmpDir, 0777, true);
         }
 
-        foreach ($datas as $item) {
-            $this->writeDocument($item['data'], $format, $tmpDir . '/' . 'Superkendis_' . $this->slug($item['pelaksana']->nama_pelaksana) . '.' . $format);
+        $files = [];
+        foreach ($stored as $item) {
+            $name = 'Superkendis_' . $this->slug($item['pelaksana']->nama_pelaksana) . '.' . $format;
+            $target = $tmpDir . '/' . $name;
+            copy($item['local_path'], $target);
+            $files[] = $target;
         }
 
         $zip = new ZipArchive;
@@ -109,15 +169,111 @@ class SuperkendisController extends Controller
             abort(500, 'Gagal membuat arsip ZIP.');
         }
 
-        foreach (glob($tmpDir . '/*.' . $format) as $file) {
+        foreach ($files as $file) {
             $zip->addFile($file, basename($file));
         }
         $zip->close();
 
-        array_map('unlink', glob($tmpDir . '/*.' . $format) ?: []);
+        array_map('unlink', $files ?: []);
         rmdir($tmpDir);
 
         return response()->download($zipFile, 'Superkendis_Pisah.zip')->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Simpan file hasil generate ke storage dan catat histori per pelaksana.
+     * Generate ulang = updateOrCreate (tidak membuat duplikat record).
+     *
+     * @return array{local_path: string, relative_path: string}
+     */
+    protected function storeGeneratedFile($pelaksana, array $data, string $format): array
+    {
+        $relative = 'spj-files/superkendis/' . $data['nomor_surat'] . '_' . $this->slug($pelaksana->nama_pelaksana) . '.' . $format;
+        $localPath = Storage::disk('public')->path($relative);
+
+        // Pastikan direktori ada.
+        $dir = dirname($localPath);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        // Tulis file DOCX (dan konversi PDF bila diminta) langsung ke lokasi penyimpanan.
+        $this->writeDocument($data, $format, $localPath);
+
+        // Simpan/update record Superkendis per pelaksana.
+        $field = $format === 'pdf' ? 'file_pdf' : 'file_docx';
+        $payload = [
+            'nip' => $data['nip'] === '-' ? null : $data['nip'],
+            'kecamatan' => $data['kecamatan'],
+            'tanggal_perjalanan' => $data['tanggal_perjalanan'] !== '' ? $data['tanggal_perjalanan'] : null,
+            'jenis_kegiatan' => $data['jenis_kegiatan'],
+            'jabatan' => $data['jabatan'],
+            $field => $relative,
+        ];
+
+        if (Superkendis::where('surat_tugas_pelaksana_id', $pelaksana->id)->exists()) {
+            Superkendis::where('surat_tugas_pelaksana_id', $pelaksana->id)->update($payload);
+        } else {
+            $payload['surat_tugas_pelaksana_id'] = $pelaksana->id;
+            Superkendis::create($payload);
+        }
+
+        return [
+            'local_path' => $localPath,
+            'relative_path' => $relative,
+            'pelaksana' => $pelaksana,
+        ];
+    }
+
+    /**
+     * Setelah seluruh pelaksana Surat Tugas berhasil digenerate, tandai checklist
+     * integrasi menjadi Lengkap. Hanya checklist "Pengeluaran Riil + Surat Non
+     * Kendaraan Dinas" yang diubah. Jika sudah berstatus "Perlu Perbaikan"
+     * jangan otomatis ditimpa. Seluruh checklist lain tidak disentuh.
+     */
+    protected function markIntegrasiChecklistLengkap(FpaRequest $requestModel): void
+    {
+        $stChecklist = $requestModel->checklists
+            ->first(fn ($c) => str_contains($c->nama_dokumen, 'Surat Tugas'));
+
+        if (! $stChecklist || ! $stChecklist->suratTugasDetail) {
+            return;
+        }
+
+        $pelaksanas = $stChecklist->suratTugasDetail->pelaksanas;
+        if ($pelaksanas->isEmpty()) {
+            return;
+        }
+
+        // Seluruh pelaksana harus sudah memiliki record Superkendis tersimpan.
+        foreach ($pelaksanas as $pelaksana) {
+            if (! $pelaksana->superkendis) {
+                return;
+            }
+        }
+
+        $target = $requestModel->checklists
+            ->first(fn ($c) => $c->nama_dokumen === self::INTEGRASI_CHECKLIST);
+
+        if (! $target) {
+            return;
+        }
+
+        // Jangan overwrite status selain 'Belum Ada'/'Belum Lengkap'.
+        if ($target->status === 'Perlu Perbaikan' || $target->status === 'Lengkap') {
+            return;
+        }
+
+        $oldStatus = $target->status;
+        $target->status = 'Lengkap';
+        $target->save();
+
+        ChecklistHistory::create([
+            'checklist_id' => $target->id,
+            'status_lama' => $oldStatus,
+            'status_baru' => 'Lengkap',
+            'user_id' => Auth::id(),
+        ]);
     }
 
     /**

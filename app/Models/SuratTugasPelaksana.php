@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SuratTugasPelaksana extends Model
 {
@@ -14,5 +15,10 @@ class SuratTugasPelaksana extends Model
     public function suratTugasDetail(): BelongsTo
     {
         return $this->belongsTo(SuratTugasDetail::class, 'surat_tugas_detail_id');
+    }
+
+    public function superkendis(): HasOne
+    {
+        return $this->hasOne(Superkendis::class, 'surat_tugas_pelaksana_id');
     }
 }

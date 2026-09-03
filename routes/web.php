@@ -38,8 +38,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/checklists/{id}/download', [FileUploadController::class, 'download'])->name('checklists.download');
 
     // Status SPJ Routes
-    Route::post('/requests/{id}/status', [RequestStatusController::class, 'update'])->name('requests.status.update');
-    Route::patch('/requests/{id}/status-ajax', [RequestStatusController::class, 'updateAjax'])->name('requests.status.ajax');
+    Route::post('/requests/bulk/status', [RequestStatusController::class, 'bulk'])->name('requests.status.bulk');
+    Route::post('/requests/{id}/status', [RequestStatusController::class, 'update'])->whereNumber('id')->name('requests.status.update');
+    Route::patch('/requests/{id}/status-ajax', [RequestStatusController::class, 'updateAjax'])->whereNumber('id')->name('requests.status.ajax');
 
     // Superkendis Routes
     Route::get('/requests/{requestId}/superkendis', [SuperkendisController::class, 'index'])->name('requests.superkendis');

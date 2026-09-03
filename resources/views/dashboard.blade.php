@@ -177,10 +177,41 @@
             <!-- 4. TABEL RINGKASAN FPA -->
             <div class="bg-white p-6 rounded-lg shadow-sm">
                 <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Tabel Ringkasan Dokumen FPA</h3>
+
+                <!-- Bulk Move Kanban FPA -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 mb-4 p-3 bg-indigo-50 rounded border border-indigo-200">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Pilih FPA</label>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="bulk-select-all" class="rounded border-gray-300 text-indigo-600">
+                            <span class="text-xs text-gray-600">Semua ({{ $fpaRequests->count() }})</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="bulk-status" class="block text-xs font-semibold text-gray-600 uppercase mb-1">Status Tujuan</label>
+                        <select id="bulk-status" class="block w-full text-sm border-gray-300 rounded-md shadow-sm">
+                            <option value="">-- Pilih Status --</option>
+                            @foreach(\App\Models\Request::STATUS_LIST as $s)
+                                <option value="{{ $s }}">{{ $s }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="button" id="bulk-move-btn"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm">
+                        Pindahkan Terpilih
+                    </button>
+                </div>
+
+                <!-- Hasil Bulk Move -->
+                <div id="bulk-result" class="hidden mb-4 p-4 rounded border text-sm"></div>
+
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50">
                             <tr>
+                                <th class="px-4 py-3 text-left font-semibold text-gray-600 uppercase text-xs w-10">
+                                    <input type="checkbox" id="table-select-all" class="rounded border-gray-300 text-indigo-600">
+                                </th>
                                 <th class="px-4 py-3 text-left font-semibold text-gray-600 uppercase text-xs">No FPA</th>
                                 <th class="px-4 py-3 text-left font-semibold text-gray-600 uppercase text-xs">Deskripsi Kegiatan</th>
                                 <th class="px-4 py-3 text-left font-semibold text-gray-600 uppercase text-xs">Jenis</th>
@@ -194,6 +225,9 @@
                             @forelse($fpaRequests as $fpa)
                                 @php $progress = $fpa->checklist_progress; @endphp
                                 <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 text-center">
+                                        <input type="checkbox" class="bulk-fpa-check rounded border-gray-300 text-indigo-600" value="{{ $fpa->id }}" data-nomor="{{ $fpa->nomor_fpa ?: 'Belum ada nomor FPA' }}">
+                                    </td>
                                     <td class="px-4 py-3 font-semibold text-blue-600 whitespace-nowrap">
                                         @if($fpa->has_nomor_fpa)
                                             {{ $fpa->nomor_fpa }}
@@ -230,7 +264,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-4 py-6 text-center text-gray-500 italic">
+                                    <td colspan="8" class="px-4 py-6 text-center text-gray-500 italic">
                                         Tidak ada data FPA yang sesuai filter.
                                     </td>
                                 </tr>
@@ -243,12 +277,83 @@
         </div>
     </div>
 
+    <!-- Modal Peringatan Kanban -->
+    <div id="kanban-warning-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex items-center justify-between px-5 py-3 border-b border-red-200 bg-red-50 rounded-t-lg">
+                <h4 class="font-bold text-red-800">Status tidak dapat diubah</h4>
+                <button type="button" id="kanban-warning-close" class="text-red-500 hover:text-red-800 font-bold text-lg leading-none">&times;</button>
+            </div>
+            <div class="px-5 py-4">
+                <p class="text-sm text-gray-700 mb-3" id="kanban-warning-nomor"></p>
+                <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Alasan:</p>
+                <ul id="kanban-warning-reasons" class="list-disc pl-5 text-sm text-gray-700 space-y-1"></ul>
+            </div>
+            <div class="px-5 py-3 border-t border-gray-200 flex justify-end">
+                <button type="button" id="kanban-warning-ok"
+                        class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded text-sm">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Script SortableJS untuk FPA Kanban -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const columns = document.querySelectorAll('.fpa-kanban-items');
             const toast = document.getElementById('ajax-toast');
+            const modal = document.getElementById('kanban-warning-modal');
+            const modalNomor = document.getElementById('kanban-warning-nomor');
+            const modalReasons = document.getElementById('kanban-warning-reasons');
+            let modalTimer = null;
+
+            function closeWarning() {
+                if (modalTimer) clearTimeout(modalTimer);
+                modal.classList.add('hidden');
+            }
+
+            document.getElementById('kanban-warning-close').addEventListener('click', closeWarning);
+            document.getElementById('kanban-warning-ok').addEventListener('click', closeWarning);
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) closeWarning();
+            });
+
+            function showWarning(nomorFpa, reasonText) {
+                // Tampilkan alasan dari data.errors bila ada, jika tidak pakai message.
+                let reasons = [];
+                if (Array.isArray(reasonText)) {
+                    reasons = reasonText;
+                } else {
+                    reasons = [reasonText];
+                }
+                modalNomor.textContent = 'FPA: ' + nomorFpa;
+                modalReasons.innerHTML = '';
+                reasons.forEach(function (r) {
+                    const li = document.createElement('li');
+                    li.textContent = r;
+                    modalReasons.appendChild(li);
+                });
+                modal.classList.remove('hidden');
+                // Tahan minimal 8 detik sebelum otomatis menutup.
+                if (modalTimer) clearTimeout(modalTimer);
+                modalTimer = setTimeout(closeWarning, 8000);
+            }
+
+            function showToast(msg, ok) {
+                toast.textContent = msg;
+                toast.classList.remove('hidden');
+                if (ok) {
+                    toast.classList.remove('bg-red-100', 'text-red-800');
+                    toast.classList.add('bg-green-100', 'text-green-800');
+                    setTimeout(() => toast.classList.add('hidden'), 3000);
+                } else {
+                    toast.classList.remove('bg-green-100', 'text-green-800');
+                    toast.classList.add('bg-red-100', 'text-red-800');
+                    setTimeout(() => toast.classList.add('hidden'), 6000);
+                }
+            }
 
             columns.forEach(function(column) {
                 new Sortable(column, {
@@ -260,6 +365,7 @@
                         const newColumn = itemEl.closest('.fpa-kanban-column');
                         const newStatus = newColumn.getAttribute('data-status');
                         const fpaId = itemEl.getAttribute('data-id');
+                        const fromColumn = evt.from ? evt.from.closest('.fpa-kanban-column') : null;
 
                         fetch(`/requests/${fpaId}/status-ajax`, {
                             method: 'PATCH',
@@ -270,35 +376,115 @@
                             },
                             body: JSON.stringify({ status: newStatus })
                         })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                toast.textContent = `Status FPA diubah ke: ${newStatus}`;
-                                toast.classList.remove('hidden');
-                                toast.classList.remove('bg-red-100', 'text-red-800');
-                                toast.classList.add('bg-green-100', 'text-green-800');
-                                setTimeout(() => toast.classList.add('hidden'), 3000);
-                            } else {
-                                // Tampilkan peringatan jika status diblokir (mis. belum lengkap dokumen)
-                                toast.textContent = data.message || 'Status tidak dapat diubah.';
-                                toast.classList.remove('hidden');
-                                toast.classList.remove('bg-green-100', 'text-green-800');
-                                toast.classList.add('bg-red-100', 'text-red-800');
-                                setTimeout(() => toast.classList.add('hidden'), 6000);
-                                // Kembalikan card ke kolom asal
-                                location.reload();
+                        .then(response => response.json().then(data => ({ ok: response.ok, data })))
+                        .then(({ ok, data }) => {
+                            if (data && data.success) {
+                                showToast(`Status FPA diubah ke: ${newStatus}`, true);
+                                return;
                             }
+                            // Gagal: kembalikan card ke kolom asal TANPA reload.
+                            if (fromColumn && fromColumn !== newColumn) {
+                                fromColumn.querySelector('.fpa-kanban-items').appendChild(itemEl);
+                            }
+                            const nomorFpa = (data && data.nomor_fpa) ? data.nomor_fpa : 'Belum ada nomor FPA';
+                            const reasons = (data && data.errors) ? data.errors : ((data && data.message) ? data.message : 'Status tidak dapat diubah.');
+                            showWarning(nomorFpa, reasons);
                         })
                         .catch(err => {
                             console.error(err);
-                            toast.textContent = 'Terjadi kesalahan koneksi.';
-                            toast.classList.remove('hidden');
-                            toast.classList.remove('bg-green-100', 'text-green-800');
-                            toast.classList.add('bg-red-100', 'text-red-800');
-                            setTimeout(() => toast.classList.add('hidden'), 4000);
-                            location.reload();
+                            if (fromColumn && fromColumn !== newColumn) {
+                                fromColumn.querySelector('.fpa-kanban-items').appendChild(itemEl);
+                            }
+                            showWarning('Belum ada nomor FPA', 'Terjadi kesalahan koneksi. Silakan coba lagi.');
                         });
                     }
+                });
+            });
+
+            /* ---------- Bulk Move Kanban FPA ---------- */
+            const fpaChecks = () => document.querySelectorAll('.bulk-fpa-check:checked');
+            const bulkStatus = document.getElementById('bulk-status');
+            const bulkResult = document.getElementById('bulk-result');
+
+            function syncSelectAll() {
+                const all = document.querySelectorAll('.bulk-fpa-check');
+                const checked = fpaChecks();
+                const tableAll = document.getElementById('table-select-all');
+                const bulkAll = document.getElementById('bulk-select-all');
+                if (tableAll) tableAll.checked = all.length > 0 && checked.length === all.length;
+                if (bulkAll) bulkAll.checked = all.length > 0 && checked.length === all.length;
+            }
+
+            document.querySelectorAll('.bulk-fpa-check').forEach(c => c.addEventListener('change', syncSelectAll));
+
+            function bindSelectAll(selectAllId, targetId) {
+                const btn = document.getElementById(selectAllId);
+                const target = document.getElementById(targetId);
+                if (!btn || !target) return;
+                btn.addEventListener('change', function () {
+                    document.querySelectorAll(target).forEach(c => { c.checked = btn.checked; });
+                });
+            }
+            bindSelectAll('table-select-all', '.bulk-fpa-check');
+            bindSelectAll('bulk-select-all', '.bulk-fpa-check');
+
+            document.getElementById('bulk-move-btn').addEventListener('click', function () {
+                const checked = fpaChecks();
+                if (checked.length === 0) {
+                    bulkResult.classList.remove('hidden');
+                    bulkResult.className = 'hidden mb-4 p-4 rounded border text-sm bg-red-50 border-red-200 text-red-700';
+                    bulkResult.classList.remove('hidden');
+                    bulkResult.innerHTML = 'Pilih minimal satu FPA terlebih dahulu.';
+                    return;
+                }
+                const status = bulkStatus.value;
+                if (!status) {
+                    bulkResult.classList.remove('hidden');
+                    bulkResult.className = 'hidden mb-4 p-4 rounded border text-sm bg-red-50 border-red-200 text-red-700';
+                    bulkResult.classList.remove('hidden');
+                    bulkResult.innerHTML = 'Pilih status tujuan terlebih dahulu.';
+                    return;
+                }
+
+                const ids = Array.from(checked).map(c => c.value);
+
+                fetch(`{{ route('requests.status.bulk') }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ ids: ids, status: status })
+                })
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ data }) => {
+                    let html = '';
+                    const succ = (data.results && data.results.success) || [];
+                    const fail = (data.results && data.results.failed) || [];
+                    if (succ.length > 0) {
+                        html += '<div class="mb-2 font-semibold text-green-800">Berhasil:</div>';
+                        html += '<ul class="list-disc pl-5">';
+                        succ.forEach(s => html += `<li>${s.nomor_fpa} → ${s.status}</li>`);
+                        html += '</ul>';
+                    }
+                    if (fail.length > 0) {
+                        html += '<div class="mb-2 mt-2 font-semibold text-red-800">Gagal:</div>';
+                        html += '<ul class="list-disc pl-5">';
+                        fail.forEach(f => html += `<li><strong>${f.nomor_fpa}</strong>: ${(f.errors || []).join(' ')}</li>`);
+                        html += '</ul>';
+                    }
+                    bulkResult.className = 'mb-4 p-4 rounded border text-sm '
+                        + (fail.length > 0 ? 'bg-red-50 border-red-200 text-red-800' : 'bg-green-50 border-green-200 text-green-800');
+                    bulkResult.innerHTML = html || 'Tidak ada perubahan.';
+                    bulkResult.classList.remove('hidden');
+                })
+                .catch(err => {
+                    console.error(err);
+                    bulkResult.className = 'mb-4 p-4 rounded border text-sm bg-red-50 border-red-200 text-red-800';
+                    bulkResult.innerHTML = 'Terjadi kesalahan saat memproses.';
+                    bulkResult.classList.remove('hidden');
+                    bulkResult.classList.add('block');
                 });
             });
         });

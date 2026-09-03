@@ -140,6 +140,21 @@ Aplikasi web Laravel untuk membantu Sekretaris Tim mengontrol proses administras
 - Nomor surat sub otomatis dipertahankan (contoh: `B-1041/75040/KP.650/2026` → `B-1041.1/...`, `B-1041.2/...`, `B-1041.3/...`)
 - Generate Superkendis mengambil data dari Daftar Pelaksana Surat Tugas (nama, nomor surat sub); tidak membuat form detail baru "Pengeluaran Riil & Surat Non Kendaraan Dinas"
 
+### Superkendis Flow Improvement & FPA Kanban Enhancement
+- Tabel baru `superkendis` (satu record per `surat_tugas_pelaksana_id`) untuk mempersistkan Superkendis; field: `id, surat_tugas_pelaksana_id, nip, kecamatan, tanggal_perjalanan, jenis_kegiatan, jabatan, file_docx, file_pdf, created_at, updated_at` (TANPA `checklist_id`, TANPA snapshot `nomor_surat`, TANPA `generated_at`)
+- Tidak memakai `spj_checklists.file_path` untuk penyimpanan Superkendis; file DOCX/PDF disimpan di `storage/app/public/spj-files/superkendis/...`
+- `generate()` & `bulk()` per-pelaksana: simpan file + `update`/`create` record `superkendis` berdasarkan `surat_tugas_pelaksana_id` (regenerate = perbarui, tanpa duplikat); NIP kosong tersimpan `'-'`
+- Checklist "Pengeluaran Riil + Surat Non Kendaraan Dinas" otomatis jadi "Lengkap" HANYA apabila SEMUA pelaksana sudah tersimpan Superkendis-nya dan target tidak berstatus "Perlu Perbaikan"/"Lengkap"; mencatat `ChecklistHistory`; Surat Tugas & checklist lain tak pernah diubah
+- Jenis kegiatan = daftar statis (tanpa master DB): `Pelatihan→PCL, Pendataan Lapangan→PCL, Pengawasan Lapangan→PML, Supervisi Lapangan→Supervisor`; jabatan tidak diinput manual
+- Form Superkendis tetap tanpa form baru; nama pelaksana + nomor surat sub readonly (dari `surat_tugas_pelaksanas`), NIP/kecamatan/tanggal perjalanan/jenis kegiatan input; prefill dari record `superkendis` saat regenerate; tautan dokumen tersimpan ditampilkan
+- File gabungan (merged) tetap output tambahan; output terpisah dibuat dari file tersimpan (ZIP)
+- Perbaikan bug `in_array(): Argument #2`: parameter `?pelaksana=12` dan `?pelaksana[]=12` dinormalisasi menjadi array `$selectedPelaksanaIds` untuk view
+- Refactor validasi status FPA ke service `App\Services\RequestStatusService` (konstanta `TRANSITIONS`, `validate()`: transisi + nomor FPA + checklist wajib untuk Dikirim ke PPK, `apply()`: set `tanggal_kirim_ppk`/`tanggal_selesai_spj`); `RequestStatusController@update` & `@updateAjax` memakai service
+- Bulk-move Kanban FPA (`RequestStatusController@bulk`, route `POST requests/bulk/status`, name `requests.status.bulk`): per-FPA validasi via service, yang valid dipindah & yang gagal tetap (TANPA rollback all-or-nothing); respons `{results:{success:[{nomor_fpa,status,changed}], failed:[{nomor_fpa,errors}]}}`
+- Perbaikan ordering route: `{id}` pada `requests.status.update` & `requests.status.ajax` diberi `->whereNumber('id')` agar `POST requests/bulk/status` tidak tertelan pola `requests/{id}/status`
+- Kanban drag warning: kegagalan dipindah → card kembali ke kolom asal TANPA `location.reload()`; modal peringatan tampil ≥8 detik dengan tombol tutup + klik backdrop; menampilkan alasan + nomor FPA
+- Automated testing baru: `SuperkendisPersistenceTest` (record+file tersimpan, regenerate tanpa duplikat, semua-pelaksana→Pengeluaran Riil Lengkap, Surat Tugas tak berubah, Perlu Perbaikan tak dioverwrite, jenis→jabatan, param pelaksana tunggal/array), `FpaStatusServiceBulkTest` (bulk valid/gagal parsial, transisi ilegal, bulk sukses)
+
 ---
 
 ## Struktur Database Final
@@ -152,6 +167,7 @@ checklist_histories    (id, checklist_id, status_lama, status_baru, catatan, use
 request_status_histories (id, request_id, status_lama, status_baru, catatan, file_bukti, user_id)
 surat_tugas_details    (id, checklist_id, nomor_surat_tugas, tanggal_surat_tugas, pelaksana [nullable/legacy], isi_tugas)
 surat_tugas_pelaksanas (id, surat_tugas_detail_id, nama_pelaksana, nomor_surat, urutan)
+superkendis          (id, surat_tugas_pelaksana_id, nip, kecamatan, tanggal_perjalanan, jenis_kegiatan, jabatan, file_docx, file_pdf)
 sk_rate_perjalanan     (id, kecamatan, ibukota_kecamatan, besaran_biaya_transport, keterangan)
 sk_rate_perjalanan_histories (id, sk_rate_perjalanan_id [nullable, nullOnDelete], data_sebelum, data_sesudah, aksi, user_id)
 travel_details         (id, checklist_id, nomor_spd, nama_pelaksana, maksud_perjalanan, tempat_berangkat, tempat_tujuan, tanggal_berangkat, tanggal_kembali, transportasi)

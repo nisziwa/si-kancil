@@ -77,7 +77,7 @@ class RequestController extends Controller
 
     public function show($id)
     {
-        $fpaRequest = FpaRequest::with(['expenseType', 'user', 'checklists.suratTugasDetail.pelaksanas', 'statusHistories.user'])->findOrFail($id);
+        $fpaRequest = FpaRequest::with(['expenseType', 'user', 'checklists.suratTugasDetail.pelaksanas.superkendis', 'statusHistories.user'])->findOrFail($id);
         return view('requests.show', compact('fpaRequest'));
     }
 

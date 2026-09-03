@@ -162,7 +162,19 @@
                                     <td class="px-4 py-2 font-medium text-gray-800">{{ $pelaksana->nama_pelaksana }}</td>
                                     <td class="px-4 py-2 text-gray-600">{{ $pelaksana->nomor_surat ?: '-' }}</td>
                                     <td class="px-4 py-2 text-center whitespace-nowrap">
-                                        <a href="{{ route('requests.superkendis', $fpaRequest->id) }}?pelaksana={{ $pelaksana->id }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-900">Buka Form →</a>
+                                        @if($pelaksana->superkendis)
+                                            <a href="{{ route('requests.superkendis', $fpaRequest->id) }}?pelaksana={{ $pelaksana->id }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-900">Buka Form →</a>
+                                            <div class="flex gap-2 justify-center mt-1 text-xs">
+                                                @if($pelaksana->superkendis->file_docx)
+                                                    <a href="{{ asset('storage/' . $pelaksana->superkendis->file_docx) }}" target="_blank" class="text-green-700 hover:underline">DOCX</a>
+                                                @endif
+                                                @if($pelaksana->superkendis->file_pdf)
+                                                    <a href="{{ asset('storage/' . $pelaksana->superkendis->file_pdf) }}" target="_blank" class="text-red-700 hover:underline">PDF</a>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <a href="{{ route('requests.superkendis', $fpaRequest->id) }}?pelaksana={{ $pelaksana->id }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-900">Buka Form →</a>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
