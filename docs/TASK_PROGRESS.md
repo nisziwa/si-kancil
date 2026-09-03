@@ -125,3 +125,14 @@ Ringkasan Perubahan:
 - DatabaseSeederTest diperbaiki: verifikasi seeder (18 SK Rate, tanpa dummy lama); SuperkendisTest diperbarui ke alur per-pelaksana (checkbox)
 - Automated feature testing: SuperkendisTest (per-pelaksana, bulk merged/separate, validasi) & SkRatePerjalananTest (CRUD, search, history create/update/delete)
 - Verifikasi menyeluruh: seluruh 55 unit & feature tests berhasil 100% (PASS)
+
+## Sprint 11 — Document Generation Improvement
+Status: Completed
+Ringkasan Perubahan:
+- Memperbaiki generate DOCX berbasis template agar hasil final mempertahankan layout Word asli
+- Flow generate diubah agar langsung: `Template DOCX → TemplateProcessor → DOCX final`
+- Menghapus proses merusak yang sebelumnya dilakukan (`IOFactory::load()` + salin elemen ke PhpWord baru) yang menyebabkan tabel hilang, border hilang, alignment berubah, dan tanda tangan berantakan
+- Memastikan tabel (Daftar Pengeluaran Riil), border, alignment, dan tanda tangan tetap sesuai template; semua placeholder tetap terganti
+- Export PDF: load hasil DOCX (struktur utuh) lalu konversi langsung ke PDF
+- Gabung (merged) Superkendis: isi template per pelaksana lalu gabungkan isi `<w:body>` per dokumen agar tabel/border/style tetap utuh
+- Verifikasi: seluruh 55 unit & feature tests berhasil 100% (PASS)

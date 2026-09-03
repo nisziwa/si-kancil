@@ -1,10 +1,10 @@
 # SI-KANCIL Agent Handoff
 
 ## Current Sprint
-Sprint aktif: Sprint 10 — Master SK Rate Management & Peningkatan Generate Superkendis
+Sprint aktif: Document Generation Improvement
 
 ## Current Status
-Seluruh tahapan pengembangan (Sprint 1 s/d Sprint 10) pada aplikasi SI-KANCIL telah selesai 100% dan seluruh 55 automated unit & feature tests berhasil tanpa error.
+Seluruh tahapan pengembangan (Sprint 1 s/d Sprint 11) pada aplikasi SI-KANCIL telah selesai 100% dan seluruh 55 automated unit & feature tests berhasil tanpa error. Generate DOCX berbasis template kini mempertahankan layout Word asli (tabel, border, alignment, tanda tangan).
 
 ## Completed
 Daftar pekerjaan yang sudah selesai:
@@ -18,6 +18,7 @@ Daftar pekerjaan yang sudah selesai:
 - Sprint 8 Layout, UI Polish & Testing
 - Sprint 9 Finalisasi Status SPJ (4 status + validasi transisi), FPA tanpa nomor, Surat Tugas multi-pelaksana dengan nomor sub otomatis, dan Superkendis (DOCX/PDF, ZIP, gabung)
 - Sprint 10 Master SK Rate Management (CRUD + search + history) dan peningkatan Generate Superkendis (pilihan pelaksana via checkbox + input per pelaksana, generate berbasis template Superkendis.docx, export DOCX/PDF, Pisah ZIP / Gabung)
+- Sprint 11 (Document Generation Improvement): memperbaiki generate DOCX berbasis template agar mempertahankan layout Word (tabel, border, alignment, tanda tangan); flow `Template DOCX → TemplateProcessor → DOCX final` tanpa rebuild elemen
 
 ## Remaining Tasks
 Daftar pekerjaan yang belum selesai:
@@ -34,6 +35,7 @@ Keputusan penting:
 - Superkendis digenerate dari pelaksana Surat Tugas (tabel `surat_tugas_pelaksanas`) via `SuperkendisController`; generate berbasis template `[template] Superkendis.docx` menggunakan `TemplateProcessor` dengan `setMacroChars('{{','}}')`
 - SK Rate Perjalanan dikelola via halaman management; riwayat perubahan dicatat di `sk_rate_perjalanan_histories` (FK `nullOnDelete` agar riwayat tetap tersimpan walau rate dihapus)
 - Besaran biaya transport & terbilang pada Superkendis diambil dari SK Rate berdasarkan kecamatan tujuan menggunakan helper `App\Support\Terbilang`
+- Document Generation: hasil DOCX dihasilkan langsung dari `TemplateProcessor` (setelah `saveAs`) tanpa `IOFactory::load()` + salin elemen ke PhpWord baru, karena hal itu merusak struktur Word (tabel/border/alignment/tanda tangan); PDF dikonversi dari DOCX berstruktur utuh; Gabung (merged) menggabungkan isi `<w:body>` per pelaksana agar layout tetap utuh
 
 ## Last Commit
-Commit terakhir: (menunggu final commit Sprint 10)
+Commit terakhir: `fix: preserve docx template layout during generation`

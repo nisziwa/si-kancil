@@ -114,6 +114,13 @@ Aplikasi web Laravel untuk membantu Sekretaris Tim mengontrol proses administras
 - Helper baru `App\Support\Terbilang` untuk konversi angka → kata (berbasis data SK Rate)
 - Integrasi SK Rate: besaran biaya transport & terbilang diambil dari kecamatan tujuan sesuai SK Rate
 
+### Document Generation Improvement
+- Memperbaiki generate DOCX berbasis template agar hasil final mempertahankan layout Word asli
+- Flow baru: `Template DOCX → TemplateProcessor → DOCX final` (tanpa `IOFactory::load()` + salin elemen ke PhpWord baru yang merusak struktur Word)
+- Mempertahankan tabel (mis. Daftar Pengeluaran Riil), border, alignment, dan tanda tangan sesuai template
+- Export PDF: load hasil DOCX (struktur utuh) lalu konversi langsung ke PDF
+- Gabung (merged): isi template per pelaksana lalu gabungkan isi `<w:body>` per dokumen agar tabel/border/style tetap utuh
+
 ---
 
 ## Struktur Database Final

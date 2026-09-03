@@ -62,7 +62,7 @@ class SuperkendisController extends Controller
 
     /**
      * Bulk download beberapa pelaksana Superkendis terpilih.
-     * Payload: pilihan[] (id pelaksana) + pelaksana[id][...].
+     * Payload: pelaksana[id][...] (checkbox) + format + method (separate|merged).
      */
     public function bulk(Request $request, $requestId)
     {
@@ -86,13 +86,13 @@ class SuperkendisController extends Controller
         ]);
 
         if ($method === 'merged') {
-            return $this->buildMerged($requestModel, $datas, $format);
+            return $this->buildMerged($datas, $format);
         }
 
-        return $this->buildSeparate($requestModel, $datas, $format);
+        return $this->buildSeparate($datas, $format);
     }
 
-    protected function buildSeparate(FpaRequest $requestModel, $datas, string $format)
+    protected function buildSeparate($datas, string $format)
     {
         $tmpDir = storage_path('app/superkendis-tmp/' . uniqid());
         if (! is_dir($tmpDir)) {
@@ -120,19 +120,106 @@ class SuperkendisController extends Controller
         return response()->download($zipFile, 'Superkendis_Pisah.zip')->deleteFileAfterSend(true);
     }
 
-    protected function buildMerged(FpaRequest $requestModel, $datas, string $format)
+    /**
+     * Gabungan: isi template per pelaksana lalu gabung dengan menggabungkan
+     * isi <w:body> dari setiap dokumen agar tabel/border/style Word tetap utuh.
+     */
+    protected function buildMerged($datas, string $format)
     {
-        $phpWord = new \PhpOffice\PhpWord\PhpWord;
-        $phpWord->getSettings()->setUpdateFields(true);
+        $documentXml = 'word/document.xml';
 
-        foreach ($datas as $index => $item) {
-            $section = $index === 0 ? $phpWord->addSection() : $phpWord->addSection();
-            $this->populateViaTemplate($section, $item['data']);
+        $sources = [];
+        foreach ($datas as $item) {
+            $tmp = storage_path('app/superkendis-filled-' . uniqid() . '.docx');
+            $this->fillTemplate($item['data'], $tmp);
+            $sources[] = $tmp;
+        }
+
+        $merged = storage_path('app/superkendis-merged-' . uniqid() . '.docx');
+
+        $baseXml = $this->readEntry($sources[0], $documentXml);
+        if ($baseXml === null) {
+            abort(500, 'Gagal memproses dokumen Superkendis.');
+        }
+
+        // Setiap dokumen sumber disisipkan sebagai section tersendiri (berpindah halaman)
+        // dengan mempertahankan seluruh XML (tabel, border, style) secara utuh.
+        foreach (array_slice($sources, 1) as $src) {
+            $srcXml = $this->readEntry($src, $documentXml);
+            if ($srcXml === null) {
+                continue;
+            }
+            $baseXml = $this->appendBody($baseXml, $srcXml);
+        }
+
+        $this->writeMergedDocx($sources[0], $merged, $baseXml);
+
+        foreach ($sources as $s) {
+            @unlink($s);
         }
 
         $filename = 'Superkendis_Gabungan.' . $format;
 
-        return $this->downloadPhpWord($phpWord, $filename, $format);
+        return $this->downloadFinal($merged, $filename, $format, 'docx');
+    }
+
+    protected function readEntry(string $docxPath, string $entryName): ?string
+    {
+        $zip = new ZipArchive;
+        if ($zip->open($docxPath) !== true) {
+            return null;
+        }
+        $content = $zip->getFromName($entryName);
+        $zip->close();
+
+        return $content === false ? null : $content;
+    }
+
+    /**
+     * Menyisipkan isi <w:body> dari dokumen sumber ke dokumen dasar,
+     * sebelum <w:sectPr> penutup, menambah section break antar pelaksana.
+     */
+    protected function appendBody(string $baseXml, string $srcXml): string
+    {
+        if (! preg_match('#<w:body>(.*?)(<w:sectPr\b[^>]*>.*?</w:sectPr>)?</w:body>#s', $srcXml, $m)) {
+            return $baseXml;
+        }
+
+        $content = $m[1];
+        // Section break mempertahankan properti section (ukuran/orientasi halaman dst.)
+        $sectPr = $m[2] ?? '';
+        $content .= $sectPr !== '' ? $sectPr : '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+
+        return preg_replace(
+            '#(<w:body>)(.*?)(<w:sectPr\b[^>]*>.*?</w:sectPr>)(</w:body>)#s',
+            '$1$2' . $content . '$3$4',
+            $baseXml,
+            1
+        );
+    }
+
+    /**
+     * Menyalin seluruh isi ZIP dari dokumen dasar, mengganti document.xml dengan yang baru.
+     */
+    protected function writeMergedDocx(string $base, string $merged, string $baseXml): void
+    {
+        $src = new ZipArchive;
+        $dst = new ZipArchive;
+        if ($src->open($base) !== true || $dst->open($merged, ZipArchive::CREATE) !== true) {
+            abort(500, 'Gagal membuat dokumen Superkendis gabungan.');
+        }
+
+        for ($idx = 0; $idx < $src->numFiles; $idx++) {
+            $name = $src->getNameIndex($idx);
+            if ($name === 'word/document.xml') {
+                $dst->addFromString($name, $baseXml);
+            } else {
+                $dst->addFromString($name, $src->getFromIndex($idx));
+            }
+        }
+
+        $src->close();
+        $dst->close();
     }
 
     /**
@@ -201,24 +288,27 @@ class SuperkendisController extends Controller
         }
     }
 
+    /**
+     * Generate dokumen tunggal berbasis template.
+     * Flow: Template DOCX -> TemplateProcessor -> DOCX final (tidak rebuild).
+     */
     protected function buildDocument(array $data, string $format, string $filename)
     {
-        $phpWord = new \PhpOffice\PhpWord\PhpWord;
-        $phpWord->getSettings()->setUpdateFields(true);
-        $section = $phpWord->addSection();
-        $this->populateViaTemplate($section, $data);
+        $tempDocx = storage_path('app/superkendis-generated-' . uniqid() . '.docx');
+        $this->fillTemplate($data, $tempDocx);
 
-        return $this->downloadPhpWord($phpWord, $filename, $format);
+        return $this->downloadFinal($tempDocx, $filename, $format, 'docx');
     }
 
     /**
-     * Mengisi template Superkendis.docx menggunakan TemplateProcessor,
-     * lalu menyalin elemen hasil ke section tujuan.
+     * Mengisi template Superkendis.docx dengan TemplateProcessor lalu
+     * menyimpan langsung sebagai DOCX final (menjaga layout/table/border/tanda tangan).
      */
-    protected function populateViaTemplate($section, array $data)
+    protected function fillTemplate(array $data, string $outPath): void
     {
         $templatePath = $this->templatePath();
 
+        // Langkah 1: isi placeholder dengan TemplateProcessor.
         $template = new TemplateProcessor($templatePath);
         $template->setMacroChars('{{', '}}');
 
@@ -246,29 +336,11 @@ class SuperkendisController extends Controller
             }
         }
 
-        $tempDocx = storage_path('app/superkendis-filled-' . uniqid() . '.docx');
-        $template->saveAs($tempDocx);
+        // Langkah 2: simpan dokumen yang sudah terisi (struktur & style tetap utuh).
+        $template->saveAs($outPath);
 
-        // Bersihkan placeholder yang terpecah antar-run / membungkus field Word.
-        $this->cleanupTemplate($tempDocx, $data);
-
-        $filled = IOFactory::load($tempDocx);
-        foreach ($filled->getSections() as $filledSection) {
-            foreach ($filledSection->getElements() as $element) {
-                if ($element instanceof \PhpOffice\PhpWord\Element\Text) {
-                    $section->addText($element->getText(), $element->getFontStyle(), $element->getParagraphStyle());
-                } elseif ($element instanceof \PhpOffice\PhpWord\Element\TextRun) {
-                    $texts = collect($element->getElements())
-                        ->map(fn ($r) => $r instanceof \PhpOffice\PhpWord\Element\Text ? $r->getText() : '')
-                        ->implode('');
-                    $section->addText($texts);
-                } elseif ($element instanceof \PhpOffice\PhpWord\Element\Table) {
-                    $section->addText('');
-                }
-            }
-        }
-
-        @unlink($tempDocx);
+        // Langkah 3: bersihkan sisa placeholder yang membungkus field Word (tanpa rebuild elemen).
+        $this->cleanupTemplate($outPath, $data);
     }
 
     protected function templatePath(): string
@@ -282,8 +354,8 @@ class SuperkendisController extends Controller
 
     /**
      * Membersihkan placeholder yang terpecah antar-run XML atau membungkus field Word
-     * (mis. {{terbilangnya berapa: ...}} yang berisi MERGEFIELD). Placeholder tersebut
-     * tidak bisa diganti TemplateProcessor secara langsung.
+     * (mis. {{terbilangnya berapa: ...}} yang berisi MERGEFIELD) secara langsung pada
+     * word/document.xml, tanpa melalui rebuild elemen PhpWord sehingga layout tetap utuh.
      */
     protected function cleanupTemplate(string $docxPath, array $data): void
     {
@@ -335,38 +407,40 @@ class SuperkendisController extends Controller
         return $nip;
     }
 
-    protected function downloadPhpWord(\PhpOffice\PhpWord\PhpWord $phpWord, string $filename, string $format)
+    /**
+     * Menyalin/hasil akhir dokumen. Untuk DOCX langsung dikirim; untuk PDF,
+     * load hasil DOCX (struktur utuh) lalu dikonversi ke PDF.
+     */
+    protected function downloadFinal(string $path, string $filename, string $format, string $pathFormat)
     {
         if ($format === 'pdf') {
             $this->configurePdfRenderer();
-            $writer = IOFactory::createWriter($phpWord, 'PDF');
-            $temp = storage_path('app/superkendis-' . uniqid() . '.pdf');
-            $writer->save($temp);
+            $writer = IOFactory::createWriter(IOFactory::load($path), 'PDF');
+            $pdf = storage_path('app/superkendis-' . uniqid() . '.pdf');
+            $writer->save($pdf);
+            @unlink($path);
 
-            return response()->download($temp, $filename)->deleteFileAfterSend(true);
+            return response()->download($pdf, $filename)->deleteFileAfterSend(true);
         }
 
-        $writer = IOFactory::createWriter($phpWord, 'Word2007');
-        $temp = storage_path('app/superkendis-' . uniqid() . '.docx');
-        $writer->save($temp);
-
-        return response()->download($temp, $filename)->deleteFileAfterSend(true);
+        return response()->download($path, $filename)->deleteFileAfterSend(true);
     }
 
     protected function writeDocument(array $data, string $format, string $path)
     {
-        $phpWord = new \PhpOffice\PhpWord\PhpWord;
-        $phpWord->getSettings()->setUpdateFields(true);
-        $section = $phpWord->addSection();
-        $this->populateViaTemplate($section, $data);
+        $tempDocx = storage_path('app/superkendis-generated-' . uniqid() . '.docx');
+        $this->fillTemplate($data, $tempDocx);
 
         if ($format === 'pdf') {
             $this->configurePdfRenderer();
+            $writer = IOFactory::createWriter(IOFactory::load($tempDocx), 'PDF');
+            $writer->save($path);
+            @unlink($tempDocx);
+            return;
         }
-        $writer = $format === 'pdf'
-            ? IOFactory::createWriter($phpWord, 'PDF')
-            : IOFactory::createWriter($phpWord, 'Word2007');
-        $writer->save($path);
+
+        copy($tempDocx, $path);
+        @unlink($tempDocx);
     }
 
     protected function configurePdfRenderer(): void
