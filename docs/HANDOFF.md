@@ -85,3 +85,8 @@ Status: Completed
 - Penggunaan pada generate laporan perjalanan: nilai POK terpilih disimpan di `travel_reports.pok_rincian_id` lalu dibaca `TravelReportService->pokLines()` untuk mengisi bagian "5. Pembiayaan Kegiatan" pada DOCX/PDF.
 - Seeder idempotent (`updateOrCreate` dalam transaksi DB), aman dijalankan berulang; sudah di-wire ke `DatabaseSeeder`. 100 tests PASS.
 
+## Hotfix - Laporan Perjalanan status save (validation.in & bulk connection)
+Status: Completed
+- Perbaiki `SpjChecklistController@update` validasi nested: `report_status.*` -> `report_status.status.*` (nilai skalar) sehingga simpan "Sudah Mengumpulkan" via form utama tidak lagi memicu `validation.in`.
+- Perbaiki `TravelReportController@bulkPelaksanaStatus` agar mengembalikan JSON (bukan redirect `back()`) sehingga aksi bulk tidak lagi gagal parsing JSON ("Terjadi kesalahan koneksi").
+- Tambah regression test `test_main_form_saves_sudah_mengumpulkan_without_validation_in_error`; 101 tests PASS.

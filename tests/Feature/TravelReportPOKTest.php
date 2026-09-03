@@ -189,12 +189,37 @@ class TravelReportPOKTest extends TestCase
     public function test_bulk_pelaksana_status_updates_selected(): void
     {
         $response = $this->actingAs($this->user)
-            ->post(route('travel-reports.bulk-pelaksana-status', $this->laporanChecklist->id), [
+            ->postJson(route('travel-reports.bulk-pelaksana-status', $this->laporanChecklist->id), [
                 'pelaksana_ids' => [$this->pelaksana->id],
                 'status' => 'Sudah Mengumpulkan',
             ]);
 
-        $response->assertRedirect();
+        $response->assertOk();
+        $response->assertJson(['success' => true]);
+        $this->assertDatabaseHas('travel_report_pelaksanas', [
+            'checklist_id' => $this->laporanChecklist->id,
+            'surat_tugas_pelaksana_id' => $this->pelaksana->id,
+            'status' => 'Sudah Mengumpulkan',
+        ]);
+    }
+
+    public function test_main_form_saves_sudah_mengumpulkan_without_validation_in_error(): void
+    {
+        // Reproduksi bug: validasi report_status.status.* harus menarget nilai skalar,
+        // bukan array (report_status.*), agar tidak memicu "validation.in".
+        $response = $this->actingAs($this->user)
+            ->put(route('checklists.update', $this->laporanChecklist->id), [
+                'status' => 'Belum Lengkap',
+                'catatan' => null,
+                'report_status' => [
+                    'selected' => [$this->pelaksana->id => '1'],
+                    'status' => [$this->pelaksana->id => 'Sudah Mengumpulkan'],
+                ],
+            ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect(route('requests.show', $this->fpa->id));
+
         $this->assertDatabaseHas('travel_report_pelaksanas', [
             'checklist_id' => $this->laporanChecklist->id,
             'surat_tugas_pelaksana_id' => $this->pelaksana->id,

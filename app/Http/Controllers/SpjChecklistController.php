@@ -68,7 +68,8 @@ class SpjChecklistController extends Controller
 
         if (str_contains($docName, 'Laporan Perjalanan')) {
             $rules['report_status'] = 'nullable|array';
-            $rules['report_status.*'] = 'nullable|in:'.implode(',', TravelReportPelaksana::STATUS_LIST);
+            $rules['report_status.status'] = 'nullable|array';
+            $rules['report_status.status.*'] = 'nullable|in:'.implode(',', TravelReportPelaksana::STATUS_LIST);
         }
 
         $validated = $request->validate($rules);

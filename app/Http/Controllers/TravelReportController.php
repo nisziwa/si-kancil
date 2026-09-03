@@ -220,7 +220,10 @@ class TravelReportController extends Controller
 
         $this->syncChecklistStatus($checklist);
 
-        return back()->with('success', 'Status '.count($ids).' pelaksana diperbarui menjadi '.$status.'.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Status '.count($ids).' pelaksana diperbarui menjadi '.$status.'.',
+        ]);
     }
 
     // ------------------------------------------------------------------
