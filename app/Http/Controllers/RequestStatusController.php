@@ -33,31 +33,22 @@ class RequestStatusController extends Controller
         $oldStatus = $fpaRequest->status_spj;
 
         $rules = [
-            'status_baru' => 'required|in:' . implode(',', FpaRequest::STATUS_LIST),
+            'status_baru' => 'required|in:'.implode(',', FpaRequest::STATUS_LIST),
             'catatan' => 'nullable|string',
+            'tanggal_selesai_spj' => 'nullable|date',
             'file_bukti' => 'nullable|file|mimes:pdf,jpg,jpeg,png,docx|max:10240',
         ];
 
         $newStatus = $request->input('status_baru');
+        $validated = $request->validate($rules);
 
-        // Validasi transisi + nomor FPA + checklist (satu sumber).
-        $result = $this->statusService->validate($fpaRequest, $newStatus);
+        // Validasi transisi + nomor FPA + checklist + lapangan wajib (satu sumber).
+        $result = $this->statusService->validate($fpaRequest, $newStatus, $validated);
         if (! $result['ok']) {
             throw ValidationException::withMessages([
                 'status_baru' => implode(' ', $result['errors']),
             ]);
         }
-
-        if ($newStatus === 'Perbaikan') {
-            $rules['catatan'] = 'required|string';
-        }
-
-        if ($newStatus === 'Selesai') {
-            $rules['tanggal_selesai_spj'] = 'required|date';
-            $rules['catatan'] = 'required|string';
-        }
-
-        $validated = $request->validate($rules);
 
         // Terapkan perubahan status via service.
         $this->statusService->apply($fpaRequest, $newStatus, $validated);
@@ -89,7 +80,7 @@ class RequestStatusController extends Controller
     public function updateAjax(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:' . implode(',', FpaRequest::STATUS_LIST),
+            'status' => 'required|in:'.implode(',', FpaRequest::STATUS_LIST),
         ]);
 
         $fpaRequest = FpaRequest::findOrFail($id);
@@ -100,8 +91,9 @@ class RequestStatusController extends Controller
             return response()->json(['success' => true, 'message' => 'Status tidak berubah']);
         }
 
-        // Validasi terpusat.
-        $result = $this->statusService->validate($fpaRequest, $newStatus);
+        // Validasi terpusat (jalur kanban mengisi tanggal selesai otomatis hari ini).
+        $extra = ['_auto_field_tanggal_selesai_spj' => true];
+        $result = $this->statusService->validate($fpaRequest, $newStatus, $extra);
         if (! $result['ok']) {
             return response()->json([
                 'success' => false,
@@ -111,7 +103,7 @@ class RequestStatusController extends Controller
             ], 422);
         }
 
-        $this->statusService->apply($fpaRequest, $newStatus);
+        $this->statusService->apply($fpaRequest, $newStatus, $extra);
 
         RequestStatusHistory::create([
             'request_id' => $fpaRequest->id,
@@ -138,7 +130,7 @@ class RequestStatusController extends Controller
         $request->validate([
             'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:requests,id',
-            'status' => 'required|in:' . implode(',', FpaRequest::STATUS_LIST),
+            'status' => 'required|in:'.implode(',', FpaRequest::STATUS_LIST),
         ]);
 
         $newStatus = $request->input('status');
@@ -149,6 +141,7 @@ class RequestStatusController extends Controller
             $fpa = FpaRequest::find($id);
             if (! $fpa) {
                 $results['failed'][] = ['nomor_fpa' => "ID {$id}", 'errors' => ['FPA tidak ditemukan.']];
+
                 continue;
             }
 
@@ -156,17 +149,21 @@ class RequestStatusController extends Controller
 
             if ($fpa->status_spj === $newStatus) {
                 $results['success'][] = ['nomor_fpa' => $label, 'status' => $newStatus, 'changed' => false];
+
                 continue;
             }
 
-            $result = $this->statusService->validate($fpa, $newStatus);
+            // Validasi terpusat (jalur bulk mengisi tanggal selesai otomatis hari ini).
+            $extra = ['_auto_field_tanggal_selesai_spj' => true];
+            $result = $this->statusService->validate($fpa, $newStatus, $extra);
             if (! $result['ok']) {
                 $results['failed'][] = ['nomor_fpa' => $label, 'errors' => $result['errors']];
+
                 continue;
             }
 
             $oldStatus = $fpa->status_spj;
-            $this->statusService->apply($fpa, $newStatus);
+            $this->statusService->apply($fpa, $newStatus, $extra);
 
             RequestStatusHistory::create([
                 'request_id' => $fpa->id,

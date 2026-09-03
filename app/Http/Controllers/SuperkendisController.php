@@ -348,9 +348,26 @@ class SuperkendisController extends Controller
         }
 
         $content = $m[1];
-        // Section break mempertahankan properti section (ukuran/orientasi halaman dst.)
+
+        // Setiap Superkendis pelaksana WAJIB dimulai pada halaman baru.
+        // Template memakai <w:type w:val="continuous"/>, yang membuat dokumen
+        // berikutnya menempel di halaman yang sama. Ubah menjadi nextPage
+        // sehingga antar pelaksana selalu dipisah halaman baru tanpa merusak
+        // tabel/border/tanda tangan (struktur XML lainnya dipertahankan utuh).
         $sectPr = $m[2] ?? '';
-        $content .= $sectPr !== '' ? $sectPr : '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+        if ($sectPr !== '') {
+            $sectPr = preg_replace(
+                '#<w:type w:val="[^"]*"/?>#',
+                '<w:type w:val="nextPage"/>',
+                $sectPr,
+                1
+            );
+        } else {
+            // Fallback: page break eksplisit bila sumber tidak memiliki sectPr.
+            $sectPr = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+        }
+
+        $content .= $sectPr;
 
         return preg_replace(
             '#(<w:body>)(.*?)(<w:sectPr\b[^>]*>.*?</w:sectPr>)(</w:body>)#s',

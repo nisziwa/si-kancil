@@ -260,4 +260,106 @@ class RequestStatusTest extends TestCase
         $response->assertOk();
         $this->assertTrue($response->json('available'));
     }
+
+    /* ---------- BUG #2: Parity validasi antara dropdown, kanban (ajax), & bulk ---------- */
+
+    public function test_dropdown_to_selesai_requires_tanggal_selesai(): void
+    {
+        $this->fpaRequest->update(['status_spj' => 'Dikirim ke PPK']);
+
+        // Dropdown ke Selesai tanpa tanggal -> ditolak dengan pesan yang jelas.
+        $response = $this->actingAs($this->user)->post(route('requests.status.update', $this->fpaRequest->id), [
+            'status_baru' => 'Selesai',
+            'catatan' => 'SPJ selesai',
+        ]);
+
+        $response->assertSessionHasErrors('status_baru');
+        $this->assertDatabaseHas('requests', [
+            'id' => $this->fpaRequest->id,
+            'status_spj' => 'Dikirim ke PPK',
+        ]);
+    }
+
+    public function test_dropdown_to_selesai_with_tanggal_works(): void
+    {
+        $this->fpaRequest->update(['status_spj' => 'Dikirim ke PPK']);
+
+        $response = $this->actingAs($this->user)->post(route('requests.status.update', $this->fpaRequest->id), [
+            'status_baru' => 'Selesai',
+            'tanggal_selesai_spj' => now()->format('Y-m-d'),
+        ]);
+
+        $response->assertRedirect(route('requests.show', $this->fpaRequest->id));
+        $this->assertDatabaseHas('requests', [
+            'id' => $this->fpaRequest->id,
+            'status_spj' => 'Selesai',
+        ]);
+    }
+
+    public function test_ajax_to_selesai_autofills_tanggal_and_works(): void
+    {
+        $this->fpaRequest->update(['status_spj' => 'Dikirim ke PPK']);
+
+        // Kanban (ajax) tidak mengisi tanggal; service otomatis mengisinya hari ini.
+        $response = $this->actingAs($this->user)->patchJson(route('requests.status.ajax', $this->fpaRequest->id), [
+            'status' => 'Selesai',
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['success' => true, 'new_status' => 'Selesai']);
+        $this->assertDatabaseHas('requests', [
+            'id' => $this->fpaRequest->id,
+            'status_spj' => 'Selesai',
+        ]);
+        // Tanggal selesai terisi otomatis hari ini oleh service.
+        $this->assertNotNull($this->fpaRequest->fresh()->tanggal_selesai_spj);
+    }
+
+    public function test_dropdown_to_perbaikan_without_catatan_is_allowed(): void
+    {
+        $this->fpaRequest->update(['status_spj' => 'Dikirim ke PPK']);
+
+        // Catatan optional di semua jalur (parity dengan kanban/bulk).
+        $response = $this->actingAs($this->user)->post(route('requests.status.update', $this->fpaRequest->id), [
+            'status_baru' => 'Perbaikan',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('requests', [
+            'id' => $this->fpaRequest->id,
+            'status_spj' => 'Perbaikan',
+        ]);
+    }
+
+    /* ---------- BUG #3: FPA hanya boleh diedit saat berstatus Persiapan ---------- */
+
+    public function test_fpa_only_editable_when_persiapan(): void
+    {
+        // Status Persiapan: edit diperbolehkan.
+        $resp1 = $this->actingAs($this->user)->put(route('requests.update', $this->fpaRequest->id), [
+            'deskripsi_permintaan' => 'Deskripsi diubah',
+            'jenis_pengeluaran_id' => $this->expenseType->id,
+            'periode' => 'Bulanan',
+        ]);
+        $resp1->assertRedirect();
+        $this->assertDatabaseHas('requests', [
+            'id' => $this->fpaRequest->id,
+            'deskripsi_permintaan' => 'Deskripsi diubah',
+        ]);
+
+        // Keluar dari Persiapan.
+        $this->fpaRequest->update(['status_spj' => 'Dikirim ke PPK']);
+
+        // Edit berikutnya ditolak.
+        $resp2 = $this->actingAs($this->user)->put(route('requests.update', $this->fpaRequest->id), [
+            'deskripsi_permintaan' => 'Coba edit lagi',
+            'jenis_pengeluaran_id' => $this->expenseType->id,
+            'periode' => 'Bulanan',
+        ]);
+        $resp2->assertSessionHas('error');
+        $this->assertDatabaseMissing('requests', [
+            'id' => $this->fpaRequest->id,
+            'deskripsi_permintaan' => 'Coba edit lagi',
+        ]);
+    }
 }

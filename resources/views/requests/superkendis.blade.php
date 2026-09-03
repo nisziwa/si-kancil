@@ -19,6 +19,12 @@
                 </div>
             @endif
 
+            @if(session('error'))
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                    {{ session('error') }}
+                </div>
+            @endif
+
             @if(request('error'))
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
                     {{ request('error') }}
@@ -71,6 +77,7 @@
                 @if($superkendisDone && $stChecklist && $stChecklist->suratTugasDetail && $stChecklist->suratTugasDetail->pelaksanas->count() > 0)
                     <form method="POST" action="{{ route('requests.superkendis.bulk', $requestModel->id) }}" id="superkendis-form">
                         @csrf
+                        <div id="superkendis-feedback" class="hidden mb-4 p-3 rounded border text-sm"></div>
 
                         <!-- Tabel Pelaksana + Checkbox + Input -->
                         <div class="overflow-x-auto">
@@ -215,7 +222,7 @@
                         </div>
 
                         <div class="mt-6 flex items-center gap-2">
-                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm">
+                            <button type="submit" id="superkendis-submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm">
                                 Generate Superkendis
                             </button>
                             <a href="{{ route('requests.superkendis', $requestModel->id) }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded text-sm">
@@ -262,11 +269,23 @@
                     });
                 });
 
-                document.getElementById('superkendis-form').addEventListener('submit', function (e) {
+                const form = document.getElementById('superkendis-form');
+                const feedback = document.getElementById('superkendis-feedback');
+                const submitBtn = document.getElementById('superkendis-submit');
+
+                function showFeedback(msg, isError) {
+                    feedback.className = 'mb-4 p-3 rounded border text-sm '
+                        + (isError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700');
+                    feedback.textContent = msg;
+                    feedback.classList.remove('hidden');
+                    feedback.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+
+                form.addEventListener('submit', function (e) {
                     const anyChecked = Array.from(document.querySelectorAll('.pelaksana-check')).some(function (c) { return c.checked; });
                     if (!anyChecked) {
                         e.preventDefault();
-                        alert('Pilih minimal satu pelaksana untuk generate Superkendis.');
+                        showFeedback('Pilih minimal satu pelaksana untuk generate Superkendis.', true);
                         return;
                     }
                     // Validasi per pelaksana yang dipilih: kecamatan & tanggal wajib
@@ -283,8 +302,13 @@
                     });
                     if (missing) {
                         e.preventDefault();
-                        alert('Kecamatan tujuan dan tanggal perjalanan wajib diisi untuk setiap pelaksana yang dipilih.');
+                        showFeedback('Kecamatan tujuan dan tanggal perjalanan wajib diisi untuk setiap pelaksana yang dipilih.', true);
+                        return;
                     }
+                    // Loading state saat memproses generate.
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Memproses...';
+                    showFeedback('Mohon tunggu, Superkendis sedang diproses.', false);
                 });
             });
         </script>

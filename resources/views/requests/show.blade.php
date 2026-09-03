@@ -207,16 +207,7 @@
                     <h3 class="pb-2 mb-4 font-bold text-gray-700 border-b text-md">Riwayat Perubahan Status</h3>
 
                     <ul id="history-list" class="space-y-2">
-                        @php
-                            // Ambil history dari relasi checklist yang ada (lewat checklist_histories)
-                            // Karena relasi langsung dari request tidak ada, kita query lewat model
-                            $histories = \App\Models\ChecklistHistory::whereIn('checklist_id', $fpaRequest->checklists->pluck('id'))
-                                        ->with(['checklist', 'user'])
-                                        ->orderByDesc('created_at')
-                                        ->get();
-                        @endphp
-
-                        @forelse($histories as $history)
+                        @forelse($checklistHistory as $history)
                             <li class="pb-2 mb-2 text-sm border-b">
                                 <span class="font-semibold text-gray-800">{{ $history->checklist->nama_dokumen ?? 'Dokumen' }}</span>
                                 diubah ke <span class="text-blue-600">{{ $history->status_baru }}</span>

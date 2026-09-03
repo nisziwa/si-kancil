@@ -192,3 +192,16 @@ Ringkasan Perubahan:
 - Superkendis: lebar halaman `max-w-7xl`; kolom Status (Generated/Belum) + Aksi Download per baris; perilaku download: 1 pelaksana -> langsung download DOCX (tanpa ZIP/merge), >1 pelaksana -> merged/gabung atau ZIP terpisah sesuai method
 - Automated feature testing: `DocumentDetailTest` diperbarui (travel detail diturunkan dari ST, tidak ada baris detail kosong) dan `SuperkendisTest` (ZIP untuk >1 pelaksana, download langsung DOCX untuk 1 pelaksana)
 - Verifikasi menyeluruh: seluruh 76 unit & feature tests berhasil 100% (PASS)
+
+## Sprint 15 - QA Bug Fix (Superkendis & Workflow Validation)
+Status: Completed
+Ringkasan Perubahan:
+- BUG #1 (Critical): Page break antar pelaksana pada dokumen Superkendis gabungan. `SuperkendisController@appendBody` mengganti `<w:type w:val="continuous"/>` menjadi `nextPage` saat menyisipkan section break sehingga antar pelaksana selalu berpindah halaman tanpa merusak tabel/border/tanda tangan (struktur XML sisanya dipertahankan); fallback page break bila sumber tidak memiliki sectPr.
+- BUG #2 (High): Konsistensi validasi status antara dropdown, kanban (ajax), dan bulk. Aturan lapangan (`tanggal_selesai_spj` untuk Selesai) kini terpusat di `App\Services\RequestStatusService @requiredFields()` yang dipakai ketiga jalur; `catatan` optional di semua jalur; kanban/bulk menandai `_auto_field_tanggal_selesai_spj` agar tanggal Selesai terisi otomatis hari ini, dropdown wajib mengisinya eksplisit; pesan error user-friendly Bahasa Indonesia.
+- BUG #3 (High): FPA hanya dapat diedit saat berstatus "Persiapan". Guard server-side ditambahkan di `RequestController@update()` (mirror `destroy()`), view tombol Edit sudah terkondisi oleh status.
+- BUG #4 (Medium): Bulk select kartu Kanban FPA. Checkbox pada tiap kartu + bar aksi bulk (Pilih Semua / status tujuan / Pindahkan) memakai endpoint `requests.status.bulk` yang sama, dengan hasil sukses/gagal per FPA beserta alasannya.
+- BUG #5 (Medium): Laporan Perjalanan UX - popup konfirmasi Kanban dengan status Sudah/Belum Mengumpulkan per pelaksana, data bersumber dari Surat Tugas (sudah ada di Sprint 14, diverifikasi).
+- BUG #6 (Medium): Superkendis UX - `alert()` diganti feedback in-page, tombol loading "Memproses...", tampilkan `session('error')`, konsistensi pesan.
+- BUG #7 (Medium): PDF (DOMPDF) verifikasi - `Settings::setPdfRendererName(PDF_RENDERER_DOMPDF)` + path ke `vendor/dompdf/dompdf/src/Dompdf.php` diverifikasi via tes generate PDF.
+- BUG #8 (Low): UI cleanup - raw Eloquent query di `show.blade.php` dipindah ke `RequestController@show()` (variabel `$checklistHistory`), flash `session('error')` ditambahkan di dashboard & superkendis, konsistensi lebar halaman checklist (`max-w-7xl`), gaya modal/button seragam.
+- Automated testing baru: `RequestStatusTest` (parity dropdown/kanban Selesai, catatan optional, edit hanya Persiapan) dan `SuperkendisTest@test_bulk_merged_page_break_between_pelaksana` (unit via reflection pada `appendBody`). Seluruh 82 unit & feature tests berhasil 100% (PASS). Kode diformat ulang dengan Laravel Pint.

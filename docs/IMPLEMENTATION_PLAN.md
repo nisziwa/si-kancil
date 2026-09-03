@@ -191,3 +191,16 @@ templates              (id, nama_template, kategori, versi, file, status_aktif)
 users                  (default Laravel users table)
 ```
 
+
+---
+
+## Sprint 15 - QA Bug Fix (Superkendis & Workflow Validation)
+- BUG #1 (Critical): Page break antar pelaksana pada dokumen Superkendis gabungan. `SuperkendisController@appendBody` mengganti `<w:type w:val="continuous"/>` menjadi `nextPage` ketika menyisipkan section break sehingga antar pelaksana selalu berpindah halaman tanpa merusak tabel/border/tanda tangan (struktur XML lainnya dipertahankan utuh). Fallback `<w:br w:type="page"/>` bila sumber tidak memiliki sectPr.
+- BUG #2 (High): Konsistensi validasi status. `RequestStatusService@requiredFields()` menjadi satu-satunya sumber aturan lapangan (Selesai -> `tanggal_selesai_spj`); dipakai dropdown (`update`), kanban (`updateAjax`), dan bulk (`bulk`). `catatan` optional di semua jalur. Kanban/bulk meneruskan `_auto_field_tanggal_selesai_spj` agar tanggal Selesai auto-fill hari ini; dropdown wajib mengisinya eksplisit. Pesan error user-friendly Bahasa Indonesia.
+- BUG #3 (High): FPA hanya dapat diedit saat status "Persiapan" - guard server-side `RequestController@update()` (mirror `destroy()`).
+- BUG #4 (Medium): Bulk select kartu Kanban FPA - checkbox tiap kartu + bar aksi bulk (Pilih Semua / status tujuan / Pindahkan) memakai endpoint `requests.status.bulk`, hasil sukses/gagal per FPA.
+- BUG #5 (Medium): UX Laporan Perjalanan (popup konfirmasi Kanban, status Sudah/Belum Mengumpulkan per pelaksana dari Surat Tugas) - diverifikasi dari Sprint 14.
+- BUG #6 (Medium): UX Superkendis - `alert()` diganti feedback in-page, tombol loading, tampilkan `session('error')`.
+- BUG #7 (Medium): Verifikasi PDF DOMPDF (`Settings::PDF_RENDERER_DOMPDF` + path `vendor/dompdf/dompdf/src/Dompdf.php`).
+- BUG #8 (Low): UI cleanup - query `ChecklistHistory` dipindah ke `RequestController@show()` (`$checklistHistory`), flash `session('error')` di dashboard & superkendis, lebar halaman checklist `max-w-7xl`.
+- Automated testing: `RequestStatusTest` (parity Selesai dropdown/kanban, catatan optional, edit hanya Persiapan), `SuperkendisTest@test_bulk_merged_page_break_between_pelaksana` (unit reflection `appendBody`). Total 82 unit & feature tests PASS.

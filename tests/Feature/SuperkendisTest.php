@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\SuperkendisController;
 use App\Models\ExpenseType;
 use App\Models\Request as FpaRequest;
 use App\Models\SkRatePerjalanan;
@@ -186,6 +187,32 @@ class SuperkendisTest extends TestCase
         $this->assertStringContainsString('Superkendis_Pisah.zip', $response->headers->get('content-disposition'));
     }
 
+    public function test_bulk_merged_page_break_between_pelaksana(): void
+    {
+        // BUG #1: antar Superkendis pelaksana harus berpindah halaman (nextPage).
+        // appendBody() mengubah <w:type w:val="continuous"/> menjadi nextPage
+        // agar pelaksana berikutnya tidak menempel di halaman yang sama.
+        $controller = new SuperkendisController;
+        $method = new \ReflectionMethod($controller, 'appendBody');
+        $method->setAccessible(true);
+
+        $base = '<w:body><w:p>Pelaksana 1</w:p><w:sectPr><w:type w:val="nextPage"/></w:sectPr></w:body>';
+        $src = '<w:body><w:p>Pelaksana 2</w:p><w:sectPr><w:type w:val="continuous"/></w:sectPr></w:body>';
+
+        $merged = $method->invokeArgs($controller, [$base, $src]);
+
+        $this->assertStringContainsString('w:val="nextPage"', $merged, 'Section break harus berpindah halaman.');
+        $this->assertStringNotContainsString('w:val="continuous"', $merged, 'Section continuous harus diubah menjadi nextPage.');
+        // Struktur isi pelaksana 2 tetap dipertahankan.
+        $this->assertStringContainsString('Pelaksana 2', $merged);
+
+        // Fallback saat sumber tidak memiliki sectPr: gunakan page break eksplisit.
+        $srcNoSect = '<w:body><w:p>Pelaksana 3</w:p></w:body>';
+        $merged2 = $method->invokeArgs($controller, [$base, $srcNoSect]);
+        $this->assertStringContainsString('w:type="page"', $merged2);
+        $this->assertStringContainsString('Pelaksana 3', $merged2);
+    }
+
     public function test_single_pelaksana_downloads_direct_docx(): void
     {
         $pelaksana1 = SuratTugasPelaksana::orderBy('urutan')->first();
@@ -207,7 +234,7 @@ class SuperkendisTest extends TestCase
         );
 
         $response->assertOk();
-        $filename = 'Superkendis_' . str_replace(' ', '_', $pelaksana1->nama_pelaksana) . '.docx';
+        $filename = 'Superkendis_'.str_replace(' ', '_', $pelaksana1->nama_pelaksana).'.docx';
         $this->assertStringContainsString($filename, $response->headers->get('content-disposition'));
         $this->assertStringNotContainsString('.zip', $response->headers->get('content-disposition'));
     }

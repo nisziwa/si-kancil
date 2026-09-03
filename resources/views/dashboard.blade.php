@@ -25,6 +25,12 @@
                 </div>
             @endif
 
+            @if(session('error'))
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                    {{ session('error') }}
+                </div>
+            @endif
+
             <!-- 1. STATISTIC CARDS -->
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
@@ -126,8 +132,14 @@
                                         $priority = $fpa->priority_info;
                                     @endphp
                                     <div class="fpa-card bg-white p-3 rounded shadow-xs border border-gray-200 cursor-move hover:shadow-md transition-shadow" data-id="{{ $fpa->id }}">
-                                        <div class="flex justify-between items-start">
-                                            <span class="text-xs font-bold text-blue-600">
+                                        <div class="flex justify-between items-start gap-2">
+                                            <label class="inline-flex items-center cursor-pointer select-none" title="Pilih FPA untuk aksi bulk">
+                                                <input type="checkbox" class="fpa-kanban-check rounded border-gray-300 text-indigo-600"
+                                                       value="{{ $fpa->id }}" data-nomor="{{ $fpa->nomor_fpa ?: 'Belum ada nomor FPA' }}"
+                                                       data-status="{{ $fpa->status_spj }}">
+                                                <span class="sr-only">Pilih FPA</span>
+                                            </label>
+                                            <span class="text-xs font-bold text-blue-600 flex-1">
                                                 @if($fpa->has_nomor_fpa)
                                                     {{ $fpa->nomor_fpa }}
                                                 @else
@@ -172,6 +184,36 @@
                         </div>
                     @endforeach
                 </div>
+            </div>
+
+            <!-- Bulk Move Kanban Cards -->
+            <div id="kanban-bulk-bar" class="hidden bg-indigo-600 text-white rounded-lg shadow-lg p-3">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div class="flex items-center gap-2 flex-1">
+                        <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" id="kanban-select-all" class="rounded border-gray-300 text-white">
+                            <span class="text-sm font-semibold">Pilih Semua</span>
+                        </label>
+                        <span class="text-sm" id="kanban-selected-count">0 dipilih</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="kanban-bulk-status" class="block w-full text-sm border-gray-300 rounded-md shadow-sm text-gray-800">
+                            <option value="">-- Pilih Status Tujuan --</option>
+                            @foreach(\App\Models\Request::STATUS_LIST as $s)
+                                <option value="{{ $s }}">{{ $s }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" id="kanban-bulk-move"
+                                class="bg-white text-indigo-700 font-bold py-2 px-4 rounded text-sm hover:bg-indigo-50">
+                            Pindahkan
+                        </button>
+                        <button type="button" id="kanban-bulk-clear"
+                                class="text-white hover:bg-indigo-700 font-semibold py-2 px-3 rounded text-sm">
+                            Batal
+                        </button>
+                    </div>
+                </div>
+                <div id="kanban-bulk-result" class="hidden mt-3 p-3 rounded bg-white text-gray-800 text-sm"></div>
             </div>
 
             <!-- 4. TABEL RINGKASAN FPA -->
@@ -487,6 +529,119 @@
                     bulkResult.classList.add('block');
                 });
             });
+
+            /* ---------- Bulk Select & Move Kanban Cards ---------- */
+            const kanbanChecks = () => Array.from(document.querySelectorAll('.fpa-kanban-check'));
+            const kanbanChecked = () => kanbanChecks().filter(c => c.checked);
+            const kanbanBulkBar = document.getElementById('kanban-bulk-bar');
+            const kanbanCount = document.getElementById('kanban-selected-count');
+            const kanbanStatus = document.getElementById('kanban-bulk-status');
+            const kanbanResult = document.getElementById('kanban-bulk-result');
+            const kanbanSelectAll = document.getElementById('kanban-select-all');
+
+            function updateKanbanBulkBar() {
+                const n = kanbanChecked().length;
+                if (kanbanCount) kanbanCount.textContent = n + ' dipilih';
+                if (kanbanBulkBar) kanbanBulkBar.classList.toggle('hidden', n === 0);
+                if (kanbanSelectAll) kanbanSelectAll.checked = n > 0 && n === kanbanChecks().length;
+                if (n === 0 && kanbanResult) {
+                    kanbanResult.classList.add('hidden');
+                    kanbanResult.innerHTML = '';
+                }
+            }
+
+            kanbanChecks().forEach(cb => cb.addEventListener('change', updateKanbanBulkBar));
+
+            if (kanbanSelectAll) {
+                kanbanSelectAll.addEventListener('change', function () {
+                    const state = kanbanSelectAll.checked;
+                    kanbanChecks().forEach(cb => { cb.checked = state; });
+                    updateKanbanBulkBar();
+                });
+            }
+
+            document.getElementById('kanban-bulk-clear').addEventListener('click', function () {
+                kanbanChecks().forEach(cb => { cb.checked = false; });
+                if (kanbanStatus) kanbanStatus.value = '';
+                updateKanbanBulkBar();
+            });
+
+            document.getElementById('kanban-bulk-move').addEventListener('click', function () {
+                const checked = kanbanChecked();
+                if (checked.length === 0) {
+                    showKanbanBulkResult([], [], 'Pilih minimal satu FPA di kanban terlebih dahulu.');
+                    return;
+                }
+                const status = kanbanStatus.value;
+                if (!status) {
+                    showKanbanBulkResult([], [], 'Pilih status tujuan terlebih dahulu.');
+                    return;
+                }
+
+                const ids = checked.map(c => c.value);
+                const nomorMap = {};
+                checked.forEach(c => { nomorMap[c.value] = c.dataset.nomor; });
+
+                fetch(`{{ route('requests.status.bulk') }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ ids: ids, status: status })
+                })
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok || !data || !data.results) {
+                        showKanbanBulkResult([], [], 'Terjadi kesalahan saat memproses.');
+                        return;
+                    }
+                    const succ = data.results.success || [];
+                    const fail = data.results.failed || [];
+                    showKanbanBulkResult(succ, fail, null);
+                    // Hapus seleksi kartu yang berhasil dipindahkan, sisakan yang gagal.
+                    const movedIds = new Set(succ.filter(s => s.changed).map(s => s.nomor_fpa));
+                    // Nomor FPA unik sebagai kunci; jika sama, tandai via API id bila tersedia.
+                    const failedNomor = new Set(fail.map(f => f.nomor_fpa));
+                    kanbanChecks().forEach(cb => {
+                        if (failedNomor.has(cb.dataset.nomor)) return;
+                        cb.checked = false;
+                    });
+                    updateKanbanBulkBar();
+                })
+                .catch(err => {
+                    console.error(err);
+                    showKanbanBulkResult([], [], 'Terjadi kesalahan saat memproses.');
+                });
+            });
+
+            function showKanbanBulkResult(succ, fail, directMsg) {
+                if (!kanbanResult) return;
+                let html = '';
+                if (directMsg) {
+                    html = `<div class="font-semibold text-red-700">${directMsg}</div>`;
+                    kanbanResult.className = 'mt-3 p-3 rounded bg-white text-gray-800 text-sm border border-red-200';
+                } else {
+                    if (succ.length > 0) {
+                        html += '<div class="mb-1 font-semibold text-green-800">Berhasil:</div>';
+                        html += '<ul class="list-disc pl-5 mb-2">';
+                        succ.forEach(s => html += `<li>${s.nomor_fpa} → ${s.status}${s.changed ? '' : ' (tanpa perubahan)'}</li>`);
+                        html += '</ul>';
+                    }
+                    if (fail.length > 0) {
+                        html += '<div class="mb-1 font-semibold text-red-800">Gagal:</div>';
+                        html += '<ul class="list-disc pl-5">';
+                        fail.forEach(f => html += `<li><strong>${f.nomor_fpa}</strong>: ${(f.errors || []).join(' ')}</li>`);
+                        html += '</ul>';
+                    }
+                    html = html || 'Tidak ada perubahan.';
+                    kanbanResult.className = 'mt-3 p-3 rounded bg-white text-gray-800 text-sm border '
+                        + (fail.length > 0 ? 'border-red-200' : 'border-green-200');
+                }
+                kanbanResult.innerHTML = html;
+                kanbanResult.classList.remove('hidden');
+            }
         });
     </script>
 </x-app-layout>

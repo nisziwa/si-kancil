@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Request as FpaRequest;
+use App\Models\ChecklistHistory;
+use App\Models\DocumentTemplate;
 use App\Models\ExpenseType;
+use App\Models\Request as FpaRequest;
+use App\Models\SpjChecklist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -15,10 +18,10 @@ class RequestController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('nomor_fpa', 'like', "%{$search}%")
-                  ->orWhere('deskripsi_permintaan', 'like', "%{$search}%")
-                  ->orWhere('periode', 'like', "%{$search}%");
+                    ->orWhere('deskripsi_permintaan', 'like', "%{$search}%")
+                    ->orWhere('periode', 'like', "%{$search}%");
             });
         }
 
@@ -35,6 +38,7 @@ class RequestController extends Controller
     public function create()
     {
         $expenseTypes = ExpenseType::where('is_active', true)->get();
+
         return view('requests.create', compact('expenseTypes'));
     }
 
@@ -44,7 +48,7 @@ class RequestController extends Controller
             'nomor_fpa' => 'nullable|string|unique:requests,nomor_fpa',
             'deskripsi_permintaan' => 'required|string',
             'jenis_pengeluaran_id' => 'required|exists:expense_types,id',
-            'periode' => 'required|string|in:' . implode(',', FpaRequest::PERIOD_LIST),
+            'periode' => 'required|string|in:'.implode(',', FpaRequest::PERIOD_LIST),
             'tanggal_mulai' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
             'deadline_spj' => 'nullable|date',
@@ -57,17 +61,17 @@ class RequestController extends Controller
         $fpaRequest = FpaRequest::create($validated);
 
         // Auto-generate Checklist SPJ dari DocumentTemplate
-        $templates = \App\Models\DocumentTemplate::where('expense_type_id', $fpaRequest->jenis_pengeluaran_id)
+        $templates = DocumentTemplate::where('expense_type_id', $fpaRequest->jenis_pengeluaran_id)
             ->orderBy('urutan')
             ->get();
 
         foreach ($templates as $template) {
-            \App\Models\SpjChecklist::create([
-                'request_id'   => $fpaRequest->id,
+            SpjChecklist::create([
+                'request_id' => $fpaRequest->id,
                 'nama_dokumen' => $template->nama_dokumen,
-                'status'       => 'Belum Ada',
-                'is_required'  => $template->is_required,
-                'urutan'       => $template->urutan,
+                'status' => 'Belum Ada',
+                'is_required' => $template->is_required,
+                'urutan' => $template->urutan,
             ]);
         }
 
@@ -78,7 +82,13 @@ class RequestController extends Controller
     public function show($id)
     {
         $fpaRequest = FpaRequest::with(['expenseType', 'user', 'checklists.suratTugasDetail.pelaksanas.superkendis', 'statusHistories.user'])->findOrFail($id);
-        return view('requests.show', compact('fpaRequest'));
+
+        $checklistHistory = ChecklistHistory::whereIn('checklist_id', $fpaRequest->checklists->pluck('id'))
+            ->with(['checklist', 'user'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('requests.show', compact('fpaRequest', 'checklistHistory'));
     }
 
     public function edit($id)
@@ -93,11 +103,16 @@ class RequestController extends Controller
     {
         $fpaRequest = FpaRequest::findOrFail($id);
 
+        if ($fpaRequest->status_spj !== 'Persiapan') {
+            return redirect()->route('requests.show', $fpaRequest->id)
+                ->with('error', 'FPA hanya dapat diedit saat berstatus Persiapan.');
+        }
+
         $validated = $request->validate([
-            'nomor_fpa' => 'nullable|string|unique:requests,nomor_fpa,' . $id,
+            'nomor_fpa' => 'nullable|string|unique:requests,nomor_fpa,'.$id,
             'deskripsi_permintaan' => 'required|string',
             'jenis_pengeluaran_id' => 'required|exists:expense_types,id',
-            'periode' => 'required|string|in:' . implode(',', FpaRequest::PERIOD_LIST),
+            'periode' => 'required|string|in:'.implode(',', FpaRequest::PERIOD_LIST),
             'tanggal_mulai' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
             'deadline_spj' => 'nullable|date',
@@ -145,8 +160,9 @@ class RequestController extends Controller
         }
 
         $exists = $query->exists();
+
         return response()->json([
-            'available' => !$exists,
+            'available' => ! $exists,
             'message' => $exists ? 'Nomor FPA sudah digunakan.' : '',
         ]);
     }
