@@ -63,5 +63,15 @@ Keputusan penting:
 - Tampilan form akan menunjukkan format Indonesia (misal: "2 September 2026") tetapi akan mengirim `Y-m-d` ke server melalui hidden inputs.
 - FPA `tanggal_mulai` dan `tanggal_selesai` digabung menjadi range picker untuk input yang lebih sederhana dan UX yang lebih baik.
 
+## Sprint 18 - Laporan Perjalanan Workflow, Bulk Checklist Action, dan Integrasi POK (Issue #13)
+Status: Completed
+- Kontroler/route baru: `TravelReportController` (searchPok, pokDetail, generate, upload, updateStatus, bulkPelaksanaStatus) dan `ChecklistKanbanController@bulkStatus` + popup konfirmasi kanban yang diperbaiki.
+- Kebergantungan kunci: tabel Laporan diidentifikasi via substring "Laporan Perjalanan"; pelaksana diambil dari checklist "Surat Tugas" pada request yang sama (`stDetailFor`) karena checklist Laporan tidak memiliki `suratTugasDetail` sendiri.
+- Data laporan per pelaksana dikunci `fpa_id` + `surat_tugas_pelaksana_id` (bukan checklist_id). Status per pelaksana di `travel_report_pelaksanas`.
+- Generate DOCX/PDF programatik via `TravelReportService` (PhpWord), pembiayaan dari rantai POK.
+- Bulk checklist action pada kanban FPA (`requests/show.blade.php` + checkbox per kartu).
+- Sebelum merilis: jalankan `php artisan migrate` (dua migrasi baru) + `php artisan db:seed --class=PokSeeder` untuk data POK contoh.
+- 100 tests PASS (87 lama + 13 baru di `TravelReportPOKTest`).
+
 ## Last Commit
-Commit terakhir: `feat: change date picker to Flatpickr with indonesian format and range picker` (menutup GitHub Issue #11).
+Commit terakhir: `feat: improve travel report workflow and add POK integration` (dd8d576, menutup GitHub Issue #13).

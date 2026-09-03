@@ -39,12 +39,15 @@ class ChecklistKanbanController extends Controller
             && $oldStatus !== 'Lengkap'
             && str_contains($checklist->nama_dokumen, 'Laporan Perjalanan')
             && ! $this->allTravelReportCollected($checklist)) {
+            $notCollected = $this->notCollectedCount($checklist);
+
             return response()->json([
                 'success' => false,
                 'revert' => true,
                 'require_confirmation' => true,
                 'checklist_id' => $checklist->id,
-                'message' => 'Konfirmasi Laporan Perjalanan diperlukan sebelum checklist menjadi Lengkap.',
+                'not_collected' => $notCollected,
+                'message' => 'Terdapat '.$notCollected.' pelaksana yang belum mengumpulkan laporan perjalanan.',
             ], 422);
         }
 
@@ -78,19 +81,118 @@ class ChecklistKanbanController extends Controller
     }
 
     /**
+     * Bulk ubah status beberapa checklist sekaligus (kanban detail FPA).
+     * Setiap item divalidasi sama seperti perubahan individual.
+     */
+    public function bulkStatus(Request $request, $requestId)
+    {
+        $status = $request->input('status');
+        $validStatus = ['Belum Ada', 'Belum Lengkap', 'Lengkap', 'Perlu Perbaikan'];
+        if (! in_array($status, $validStatus, true)) {
+            return response()->json([
+                'success' => false,
+                'results' => ['success' => [], 'failed' => [['id' => null, 'nama' => null, 'error' => 'Pilih status target yang valid.']]],
+            ], 422);
+        }
+
+        $ids = collect($request->input('ids', []))->map(fn ($id) => (int) $id)->all();
+        if ($ids === []) {
+            return response()->json([
+                'success' => false,
+                'results' => ['success' => [], 'failed' => [['id' => null, 'nama' => null, 'error' => 'Pilih minimal satu checklist.']]],
+            ], 422);
+        }
+
+        $checklists = SpjChecklist::with('suratTugasDetail.pelaksanas')
+            ->where('request_id', $requestId)
+            ->whereIn('id', $ids)
+            ->get();
+
+        $success = [];
+        $failed = [];
+
+        foreach ($checklists as $checklist) {
+            $error = $this->checkStatusChange($checklist, $status);
+            if ($error) {
+                $failed[] = ['id' => $checklist->id, 'nama' => $checklist->nama_dokumen, 'error' => $error];
+                continue;
+            }
+
+            $oldStatus = $checklist->status;
+            if ($oldStatus !== $status) {
+                $checklist->status = $status;
+                $checklist->save();
+
+                ChecklistHistory::create([
+                    'checklist_id' => $checklist->id,
+                    'status_lama' => $oldStatus,
+                    'status_baru' => $status,
+                    'user_id' => Auth::id(),
+                ]);
+            }
+
+            $success[] = ['id' => $checklist->id, 'nama' => $checklist->nama_dokumen];
+        }
+
+        return response()->json([
+            'success' => $failed === [],
+            'results' => ['success' => $success, 'failed' => $failed],
+        ]);
+    }
+
+    /**
+     * Validasi per-checklist sebelum status diubah (dipakai single & bulk).
+     * Mengembalikan pesan error (null bila valid).
+     */
+    protected function checkStatusChange(SpjChecklist $checklist, string $newStatus): ?string
+    {
+        if ($newStatus !== 'Lengkap' || $checklist->status === 'Lengkap') {
+            return null;
+        }
+
+        if (SuratTugasService::isSuratTugas($checklist) && ! SuratTugasService::isComplete($checklist)) {
+            return SuratTugasService::completenessMessageForChecklist($checklist);
+        }
+
+        if (str_contains($checklist->nama_dokumen, 'Laporan Perjalanan') && ! $this->allTravelReportCollected($checklist)) {
+            return 'Masih ada pelaksana yang belum mengumpulkan laporan perjalanan.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Hitung jumlah pelaksana yang belum mengumpulkan untuk Laporan Perjalanan.
+     */
+    protected function notCollectedCount(SpjChecklist $checklist): int
+    {
+        $st = $this->stDetailFor($checklist);
+        if (! $st || $st->pelaksanas->isEmpty()) {
+            return 0;
+        }
+
+        $pelaksanaIds = $st->pelaksanas->pluck('id');
+        $sudah = TravelReportPelaksana::where('checklist_id', $checklist->id)
+            ->whereIn('surat_tugas_pelaksana_id', $pelaksanaIds)
+            ->where('status', TravelReportPelaksana::STATUS_SUDAH)
+            ->count();
+
+        return $pelaksanaIds->count() - $sudah;
+    }
+
+    /**
      * Detail pelaksana Surat Tugas untuk popup konfirmasi Laporan Perjalanan.
      */
     public function laporanPelaksana($id)
     {
-        $checklist = SpjChecklist::with([
-            'suratTugasDetail.pelaksanas',
-            'travelReportPelaksanas',
-        ])->findOrFail($id);
+        $checklist = SpjChecklist::with(['travelReportPelaksanas'])->findOrFail($id);
 
         $reportStatuses = $checklist->travelReportPelaksanas->keyBy('surat_tugas_pelaksana_id');
 
-        $pelaksanas = $checklist->suratTugasDetail && $checklist->suratTugasDetail->pelaksanas
-            ? $checklist->suratTugasDetail->pelaksanas->map(fn ($p) => [
+        $st = $this->stDetailFor($checklist);
+
+        $pelaksanas = $st && $st->pelaksanas
+            ? $st->pelaksanas->map(fn ($p) => [
                 'id' => $p->id,
                 'nama' => $p->nama_pelaksana,
                 'nomor_surat' => $p->nomor_surat,
@@ -120,14 +222,16 @@ class ChecklistKanbanController extends Controller
             'report_status.status.*' => 'nullable|in:'.implode(',', TravelReportPelaksana::STATUS_LIST),
         ]);
 
-        $checklist = SpjChecklist::with('suratTugasDetail.pelaksanas')->findOrFail($id);
+        $checklist = SpjChecklist::findOrFail($id);
         if ((int) $checklist->id !== (int) $request->input('checklist_id')) {
             return response()->json(['success' => false, 'message' => 'Checklist tidak cocok.'], 422);
         }
 
-        if ($checklist->suratTugasDetail && $checklist->suratTugasDetail->pelaksanas->count() > 0) {
+        $st = $this->stDetailFor($checklist);
+
+        if ($st && $st->pelaksanas->count() > 0) {
             $statuses = $request->input('report_status', []);
-            foreach ($checklist->suratTugasDetail->pelaksanas as $pelaksana) {
+            foreach ($st->pelaksanas as $pelaksana) {
                 $selected = $statuses['selected'][$pelaksana->id] ?? null;
                 if ($selected) {
                     $status = $statuses['status'][$pelaksana->id] ?? TravelReportPelaksana::STATUS_SUDAH;
@@ -165,17 +269,28 @@ class ChecklistKanbanController extends Controller
 
     protected function allTravelReportCollected(SpjChecklist $checklist): bool
     {
-        if (! $checklist->suratTugasDetail || $checklist->suratTugasDetail->pelaksanas->isEmpty()) {
+        $st = $this->stDetailFor($checklist);
+        if (! $st || $st->pelaksanas->isEmpty()) {
             return true;
         }
 
-        $pelaksanaIds = $checklist->suratTugasDetail->pelaksanas->pluck('id');
+        $pelaksanaIds = $st->pelaksanas->pluck('id');
         $sudah = TravelReportPelaksana::where('checklist_id', $checklist->id)
             ->whereIn('surat_tugas_pelaksana_id', $pelaksanaIds)
             ->where('status', TravelReportPelaksana::STATUS_SUDAH)
             ->count();
 
         return $sudah >= $pelaksanaIds->count();
+    }
+
+    protected function stDetailFor(SpjChecklist $checklist)
+    {
+        $stChecklist = SpjChecklist::where('request_id', $checklist->request_id)
+            ->where('nama_dokumen', 'like', '%Surat Tugas%')
+            ->with('suratTugasDetail.pelaksanas')
+            ->first();
+
+        return $stChecklist ? $stChecklist->suratTugasDetail : null;
     }
 
     protected function applyLengkap(SpjChecklist $checklist): void

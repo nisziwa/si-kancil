@@ -43,11 +43,6 @@ class SpjChecklist extends Model
         return $this->hasOne(RealExpenseDetail::class, 'checklist_id');
     }
 
-    public function travelReport(): HasOne
-    {
-        return $this->hasOne(TravelReport::class, 'checklist_id');
-    }
-
     public function travelReportPelaksanas(): HasMany
     {
         return $this->hasMany(TravelReportPelaksana::class, 'checklist_id');

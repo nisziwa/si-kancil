@@ -235,3 +235,15 @@ users                  (default Laravel users table)
 - Tampilan form akan menunjukkan format Indonesia (`j F Y` -> "2 September 2026"), namun input hidden akan tetap mengirimkan format `Y-m-d` ke backend, sehingga tidak perlu merubah logika di sisi server/database.
 - Form create dan edit FPA (`requests/create.blade.php` & `requests/edit.blade.php`) kini menggunakan 1 input rentang (range picker) yang menggabungkan Tanggal Mulai dan Tanggal Selesai.
 - Form checklist edit, status workflow, dan superkendis kini menggunakan single picker Flatpickr.
+
+## Sprint 18 - Laporan Perjalanan Workflow, Bulk Checklist Action, dan Integrasi POK
+Status: Completed (menutup GitHub Issue #13)
+Ringkasan:
+- Perbaikan popup konfirmasi Kanban untuk Laporan Perjalanan (jumlah belum terkumpul + link Lengkapi Laporan) + identifikasi Laporan via checklist "Surat Tugas" pada request yang sama.
+- Bulk checklist action pada kanban FPA (`requests/show.blade.php` + checkbox per kartu + `bulkStatus`).
+- Workflow per pelaksana: bulk status, upload, dan generate laporan per pelaksana di `checklists/edit.blade.php`; sinkronisasi status checklist otomatis.
+- Konfirmasi server saat revert ke "Belum Mengumpulkan" bila file telah ada.
+- Tabel master POK (program, kegiatan, output, sub output, komponen, akun, rincian POK) + seeder contoh; restrukturisasi `travel_reports`.
+- `TravelReportService` menghasilkan DOCX/PDF (pembiayaan dari rantai POK) via PhpWord.
+- Autocomplete + detail POK; pesan validasi Bahasa Indonesia yang ramah.
+- 100 tests PASS (87 lama + 13 baru di `TravelReportPOKTest`).

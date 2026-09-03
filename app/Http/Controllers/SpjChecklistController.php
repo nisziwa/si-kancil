@@ -22,7 +22,6 @@ class SpjChecklistController extends Controller
             'suratTugasDetail.pelaksanas.superkendis',
             'travelDetail',
             'realExpenseDetail',
-            'travelReport',
             'travelReportPelaksanas',
         ])->findOrFail($id);
 
@@ -35,7 +34,15 @@ class SpjChecklistController extends Controller
         $stDetail = $stChecklist ? $stChecklist->suratTugasDetail : null;
         $stPelaksanas = $stDetail ? $stDetail->pelaksanas : collect();
 
-        return view('checklists.edit', compact('checklist', 'stDetail', 'stPelaksanas'));
+        // Travel reports per pelaksana (keyed by surat_tugas_pelaksana_id) untuk
+        // fitur upload & generate laporan pada detail checklist.
+        $travelReports = \App\Models\TravelReport::where('fpa_id', $checklist->request_id)
+            ->whereIn('surat_tugas_pelaksana_id', $stPelaksanas->pluck('id'))
+            ->with('pokRincian')
+            ->get()
+            ->keyBy('surat_tugas_pelaksana_id');
+
+        return view('checklists.edit', compact('checklist', 'stDetail', 'stPelaksanas', 'travelReports'));
     }
 
     public function update(Request $request, $id)

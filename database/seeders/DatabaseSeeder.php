@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             ExpenseTypeSeeder::class,
             DocumentTemplateSeeder::class,
             SkRatePerjalananSeeder::class,
+            PokSeeder::class,
         ]);
     }
 }

@@ -196,6 +196,22 @@
                 <div class="p-6 bg-white shadow-sm lg:col-span-3 sm:rounded-lg">
                     <h3 class="pb-2 mb-4 text-lg font-bold border-b">Kanban Checklist Dokumen</h3>
                     @if($fpaRequest->checklists->count() > 0)
+                        <!-- Bulk action checklist -->
+                        <div class="mb-4 p-3 rounded-md border border-indigo-200 bg-indigo-50 flex flex-wrap items-center gap-3">
+                            <span class="text-sm font-semibold text-indigo-800">Bulk Checklist:</span>
+                            <select id="bulk-checklist-status" class="border-gray-300 rounded-md shadow-sm sm:text-sm text-gray-700">
+                                <option value="">-- Status --</option>
+                                <option value="Belum Ada">Belum Ada</option>
+                                <option value="Belum Lengkap">Belum Lengkap</option>
+                                <option value="Lengkap">Lengkap</option>
+                                <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                            </select>
+                            <button type="button" id="bulk-checklist-apply" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-4 rounded text-sm">
+                                Ubah Status
+                            </button>
+                            <span class="text-xs text-gray-500">(centang kartu checklist pada kanban, lalu pilih status dan ubah sekaligus)</span>
+                        </div>
+                        <div id="bulk-checklist-feedback" class="hidden mb-3 p-3 rounded border text-sm"></div>
                         @include('partials.kanban-checklist', ['fpaRequest' => $fpaRequest])
                     @else
                         <p class="italic text-gray-500">Belum ada checklist untuk FPA ini.</p>
@@ -222,4 +238,64 @@
 
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const applyBtn = document.getElementById('bulk-checklist-apply');
+            if (!applyBtn) return;
+            const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const requestId = {{ $fpaRequest->id }};
+            const feedback = document.getElementById('bulk-checklist-feedback');
+
+            function showFeedback(msg, isError) {
+                feedback.className = 'mb-3 p-3 rounded border text-sm '
+                    + (isError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700');
+                feedback.textContent = msg;
+                feedback.classList.remove('hidden');
+            }
+
+            applyBtn.addEventListener('click', function () {
+                const ids = [];
+                document.querySelectorAll('.kanban-bulk-check:checked').forEach(function (c) {
+                    ids.push(parseInt(c.value, 10));
+                });
+                const status = document.getElementById('bulk-checklist-status').value;
+                if (!ids.length) {
+                    showFeedback('Centang minimal satu checklist terlebih dahulu.', true);
+                    return;
+                }
+                if (!status) {
+                    showFeedback('Pilih status tujuan.', true);
+                    return;
+                }
+
+                fetch(`/requests/${requestId}/checklists/bulk-status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                    body: JSON.stringify({ ids: ids, status: status })
+                })
+                .then(res => res.json().then(d => ({ ok: res.ok, data: d })))
+                .then(({ ok, data }) => {
+                    if (!ok || !data.success) {
+                        const failed = (data.results && data.results.failed) || [];
+                        if (failed.length) {
+                            showFeedback(failed.map(f => f.error).filter(Boolean).join(' '), true);
+                        } else {
+                            showFeedback('Gagal mengubah status sekaligus.', true);
+                        }
+                        return;
+                    }
+                    const failed = (data.results && data.results.failed) || [];
+                    const suc = (data.results && data.results.success) || [];
+                    if (failed.length) {
+                        showFeedback('Sebagian berhasil (' + suc.length + '). Gagal: ' + failed.map(f => f.error).join(' '), true);
+                    } else {
+                        showFeedback('Status ' + suc.length + ' checklist diperbarui menjadi ' + status + '.');
+                    }
+                    setTimeout(function () { location.reload(); }, 1200);
+                })
+                .catch(() => showFeedback('Terjadi kesalahan koneksi.', true));
+            });
+        });
+    </script>
 </x-app-layout>
