@@ -309,6 +309,67 @@
                     submitBtn.disabled = true;
                     submitBtn.textContent = 'Memproses...';
                     showFeedback('Mohon tunggu, Superkendis sedang diproses.', false);
+
+                    // Kirim via AJAX agar kita dapat tahu kapan respons (download) selesai,
+                    // lalu reset tombol kembali ke kondisi awal.
+                    const formData = new FormData(form);
+                    const originalLabel = 'Generate Superkendis';
+
+                    function resetButton(isError, message) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalLabel;
+                        showFeedback(message, isError);
+                        form.reset();
+                        rows.forEach(row => syncRow(row));
+                    }
+
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+                        body: formData,
+                        credentials: 'same-origin'
+                    })
+                    .then(async function (res) {
+                        if (res.ok) {
+                            const disposition = res.headers.get('Content-Disposition') || '';
+                            const blob = await res.blob();
+                            if (disposition.indexOf('attachment') !== -1 || res.headers.get('Content-Type') === 'application/zip') {
+                                // Respons berupa file untuk diunduh -> picu download + feedback sukses.
+                                const filename = (disposition.match(/filename="?([^"]+)"?/) || [null, 'Superkendis'])[1];
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = filename || 'Superkendis';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                                resetButton(false, 'Generate berhasil. File sudah siap diunduh.');
+                            } else {
+                                const text = await blob.text();
+                                try {
+                                    const json = JSON.parse(text);
+                                    resetButton(false, json.message || json.results ? 'Generate berhasil. File sudah siap diunduh.' : 'Generate selesai.');
+                                } catch (err) {
+                                    resetButton(false, 'Generate selesai. Periksa file yang dihasilkan.');
+                                }
+                            }
+                        } else {
+                            const ct = res.headers.get('Content-Type') || '';
+                            let text = await res.text();
+                            let message = 'Terjadi kesalahan saat memproses.';
+                            if (ct.indexOf('json') !== -1) {
+                                try { message = JSON.parse(text).message || message; } catch (e) {}
+                            } else if (text) {
+                                const m = text.match(/<div[^>]*>\s*([^<\/]{20,200})<\/div>/i);
+                                if (m) message = m[1].replace(/<[^>]+>/g, '').trim();
+                            }
+                            resetButton(true, message);
+                        }
+                    })
+                    .catch(function () {
+                        resetButton(true, 'Terjadi kesalahan koneksi. Silakan coba lagi.');
+                    });
                 });
             });
         </script>
