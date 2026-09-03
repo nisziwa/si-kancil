@@ -177,3 +177,18 @@ Ringkasan Perubahan:
 - Kanban drag warning: pada kegagalan card kembali ke kolom asal TANPA `location.reload()`, modal ≥8 detik dengan tombol tutup + klik backdrop, menampilkan alasan + nomor FPA
 - Automated feature testing baru: `SuperkendisPersistenceTest` (record+file tersimpan, regenerate tanpa duplikat, semua-pelaksana→Pengeluaran Riil Lengkap, Surat Tugas tak berubah, Perlu Perbaikan tak dioverwrite, jenis→jabatan, param pelaksana tunggal/array) & `FpaStatusServiceBulkTest` (bulk valid/gagal parsial, transisi ilegal, bulk sukses)
 - Verifikasi menyeluruh: seluruh 75 unit & feature tests berhasil 100% (PASS)
+
+## Sprint 14 - Checklist Detail Flow Refactor & Superkendis Improvement
+Status: Completed
+Ringkasan Perubahan:
+- Refactor "Kelola Dokumen" (checklist detail) sehingga seluruh detail dokumen (SPD/SPPD, Pengeluaran Riil, Laporan Perjalanan) memakai daftar pelaksana yang bersumber dari Surat Tugas (tidak ada input manual ulang nama pelaksana / nomor surat tugas / jabatan / data perjalanan)
+- Sumber pelaksana di-resolve dari checklist "Surat Tugas" pada request yang sama via helper `stDetailFor()` di `SpjChecklistController` (hanya checklist Surat Tugas yang memiliki `surat_tugas_detail`); `edit()` mengirim `$stDetail` & `$stPelaksanas` ke view
+- SPD/SPPD: hanya tabel daftar pelaksana (No | Nama | Nomor Surat Sub | Nomor Surat Tugas) tanpa form manual; `TravelDetail` dibangun ulang dari sumber ST saat data tersedia
+- Perbaikan bug isi detail kosong: `syncTravelDetailFromSuratTugas()` tidak membuat baris kosong (hanya bila pelaksana + nomor non-kosong); mengubah status checklist tidak menghasilkan `real_expense_detail`/`travel_detail` kosong
+- Pengeluaran Riil: tabel pelaksana (No | Nama | Nomor Surat Sub | Status | Aksi); Status "Sudah Generate" (ada record `superkendis`) / "Belum Ada"; Aksi "Download" mengarah ke `file_docx` tersimpan; otomatis Lengkap saat semua pelaksana tergenerate
+- Laporan Perjalanan: tabel pelaksana dengan checkbox bulk + status per-pelaksana; disimpan ke tabel baru `travel_report_pelaksanas` (migrasi `2026_09_03_100810_create_travel_report_pelaksanas_table.php`, model `App\Models\TravelReportPelaksana`); checklist hanya "Lengkap" bila SEMUA pelaksana "Sudah Mengumpulkan"
+- Kanban Laporan Perjalanan: drag ke "Lengkap" saat belum semua mengumpulkan -> modal "Konfirmasi Laporan Perjalanan" (`ChecklistKanbanController@laporanPelaksana`/`storeLaporanPelaksana`, route `checklists.laporan-pelaksana`/`.store`); status disimpan dulu baru status Lengkap diterapkan; batal menampilkan kembali card ke kolom asal tanpa reload
+- FPA status validation + bulk-move + peringatan Kanban dipertahankan memakai `RequestStatusService` (dari Sprint 13)
+- Superkendis: lebar halaman `max-w-7xl`; kolom Status (Generated/Belum) + Aksi Download per baris; perilaku download: 1 pelaksana -> langsung download DOCX (tanpa ZIP/merge), >1 pelaksana -> merged/gabung atau ZIP terpisah sesuai method
+- Automated feature testing: `DocumentDetailTest` diperbarui (travel detail diturunkan dari ST, tidak ada baris detail kosong) dan `SuperkendisTest` (ZIP untuk >1 pelaksana, download langsung DOCX untuk 1 pelaksana)
+- Verifikasi menyeluruh: seluruh 76 unit & feature tests berhasil 100% (PASS)

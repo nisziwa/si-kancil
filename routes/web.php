@@ -34,6 +34,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/checklists/{id}/edit', [SpjChecklistController::class, 'edit'])->name('checklists.edit');
     Route::put('/checklists/{id}', [SpjChecklistController::class, 'update'])->name('checklists.update');
     Route::patch('/checklists/{id}/status', [ChecklistKanbanController::class, 'updateStatus'])->name('checklists.status');
+    Route::get('/checklists/{id}/laporan-pelaksana', [ChecklistKanbanController::class, 'laporanPelaksana'])->name('checklists.laporan-pelaksana');
+    Route::post('/checklists/{id}/laporan-pelaksana', [ChecklistKanbanController::class, 'storeLaporanPelaksana'])->name('checklists.laporan-pelaksana.store');
     Route::post('/checklists/{id}/upload', [FileUploadController::class, 'upload'])->name('checklists.upload');
     Route::get('/checklists/{id}/download', [FileUploadController::class, 'download'])->name('checklists.download');
 

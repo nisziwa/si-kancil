@@ -118,41 +118,38 @@ class DocumentDetailTest extends TestCase
         Storage::disk('public')->assertExists($this->stChecklist->file_path);
     }
 
-    public function test_can_update_travel_detail_and_real_expense_detail(): void
+    public function test_travel_detail_is_derived_from_surat_tugas_and_no_empty_detail_inserted(): void
     {
-        // SPD / SPPD
+        // Sumber data pelaksana berasal dari checklist "Surat Tugas" pada request yang sama.
+        $stDetail = SuratTugasDetail::create([
+            'checklist_id' => $this->stChecklist->id,
+            'nomor_surat_tugas' => 'B-1027/75040/KP.650/2026',
+            'tanggal_surat_tugas' => '2026-08-25',
+            'isi_tugas' => 'Koordinasi data',
+        ]);
+        SuratTugasPelaksana::create([
+            'surat_tugas_detail_id' => $stDetail->id,
+            'nama_pelaksana' => 'Ahmad',
+            'nomor_surat' => 'B-1027.1/75040/KP.650/2026',
+            'urutan' => 1,
+        ]);
+
+        // SPD/SPPD: detail dibuat otomatis dari Surat Tugas, bukan input manual.
         $response1 = $this->actingAs($this->user)->put(route('checklists.update', $this->spdChecklist->id), [
             'status' => 'Belum Lengkap',
-            'nomor_spd' => 'SPD/999/2026',
-            'travel_nama_pelaksana' => 'Ahmad',
-            'maksud_perjalanan' => 'Koordinasi data',
-            'tempat_berangkat' => 'Kantor',
-            'tempat_tujuan' => 'Dinas Prov',
-            'tanggal_berangkat' => '2026-08-20',
-            'tanggal_kembali' => '2026-08-22',
-            'transportasi' => 'Darat',
         ]);
         $response1->assertRedirect();
         $this->assertDatabaseHas('travel_details', [
             'checklist_id' => $this->spdChecklist->id,
-            'nomor_spd' => 'SPD/999/2026',
+            'nomor_spd' => 'B-1027.1/75040/KP.650/2026',
+            'nama_pelaksana' => 'Ahmad',
         ]);
 
-        // Real Expense
+        // Mengubah status checklist Pengeluaran Riil TIDAK membuat baris detail kosong.
         $response2 = $this->actingAs($this->user)->put(route('checklists.update', $this->realChecklist->id), [
             'status' => 'Lengkap',
-            'real_nomor_surat_tugas' => 'ST/001/VIII/2026',
-            'real_tanggal_surat_tugas' => '2026-08-25',
-            'real_nama_pelaksana' => 'Ahmad',
-            'real_jabatan' => 'Staff',
-            'real_tanggal_kegiatan' => '2026-08-26',
-            'uraian_pengeluaran' => 'Biaya BBM dan Tol',
-            'jumlah_pengeluaran' => 350000,
         ]);
         $response2->assertRedirect();
-        $this->assertDatabaseHas('real_expense_details', [
-            'checklist_id' => $this->realChecklist->id,
-            'jumlah_pengeluaran' => 350000.00,
-        ]);
+        $this->assertDatabaseMissing('real_expense_details', ['checklist_id' => $this->realChecklist->id]);
     }
 }

@@ -180,47 +180,34 @@
                 @if(str_contains($checklist->nama_dokumen, 'SPD') || str_contains($checklist->nama_dokumen, 'SPPD'))
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
                         <h3 class="text-lg font-bold mb-4 border-b pb-2 text-indigo-700">Detail Perjalanan Dinas (SPD/SPPD)</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="nomor_spd" class="block text-sm font-medium text-gray-700">Nomor SPD</label>
-                                <input type="text" name="nomor_spd" id="nomor_spd" value="{{ old('nomor_spd', $checklist->travelDetail->nomor_spd ?? '') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm" placeholder="Contoh: SPD/123/2026">
-                            </div>
+                        <p class="text-sm text-gray-500 mb-4">Data pelaksana dan nomor diambil otomatis dari <strong>Surat Tugas</strong>. Tidak ada input manual duplikat.</p>
 
-                            <div>
-                                <label for="travel_nama_pelaksana" class="block text-sm font-medium text-gray-700">Nama Pelaksana</label>
-                                <input type="text" name="travel_nama_pelaksana" id="travel_nama_pelaksana" value="{{ old('travel_nama_pelaksana', $checklist->travelDetail->nama_pelaksana ?? '') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+                        @if($stPelaksanas->count() > 0)
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">No</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nama Pelaksana</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nomor Surat Sub</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nomor Surat Tugas</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        @foreach($stPelaksanas as $idx => $p)
+                                            <tr>
+                                                <td class="px-3 py-2 text-gray-500">{{ $idx + 1 }}</td>
+                                                <td class="px-3 py-2 font-medium text-gray-800">{{ $p->nama_pelaksana }}</td>
+                                                <td class="px-3 py-2 text-gray-600">{{ $p->nomor_surat ?: '-' }}</td>
+                                                <td class="px-3 py-2 text-gray-600">{{ $stDetail->nomor_surat_tugas ?? '-' }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
                             </div>
-
-                            <div>
-                                <label for="tempat_berangkat" class="block text-sm font-medium text-gray-700">Tempat Berangkat</label>
-                                <input type="text" name="tempat_berangkat" id="tempat_berangkat" value="{{ old('tempat_berangkat', $checklist->travelDetail->tempat_berangkat ?? '') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
-                            </div>
-
-                            <div>
-                                <label for="tempat_tujuan" class="block text-sm font-medium text-gray-700">Tempat Tujuan</label>
-                                <input type="text" name="tempat_tujuan" id="tempat_tujuan" value="{{ old('tempat_tujuan', $checklist->travelDetail->tempat_tujuan ?? '') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
-                            </div>
-
-                            <div>
-                                <label for="tanggal_berangkat" class="block text-sm font-medium text-gray-700">Tanggal Berangkat</label>
-                                <input type="date" name="tanggal_berangkat" id="tanggal_berangkat" value="{{ old('tanggal_berangkat', optional($checklist->travelDetail->tanggal_berangkat ?? null)->format('Y-m-d')) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
-                            </div>
-
-                            <div>
-                                <label for="tanggal_kembali" class="block text-sm font-medium text-gray-700">Tanggal Kembali</label>
-                                <input type="date" name="tanggal_kembali" id="tanggal_kembali" value="{{ old('tanggal_kembali', optional($checklist->travelDetail->tanggal_kembali ?? null)->format('Y-m-d')) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
-                            </div>
-
-                            <div>
-                                <label for="transportasi" class="block text-sm font-medium text-gray-700">Moda Transportasi</label>
-                                <input type="text" name="transportasi" id="transportasi" value="{{ old('transportasi', $checklist->travelDetail->transportasi ?? '') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm" placeholder="Contoh: Darat / Kendaraan Pribadi / Pesawat">
-                            </div>
-
-                            <div class="md:col-span-2">
-                                <label for="maksud_perjalanan" class="block text-sm font-medium text-gray-700">Maksud Perjalanan</label>
-                                <textarea name="maksud_perjalanan" id="maksud_perjalanan" rows="2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">{{ old('maksud_perjalanan', $checklist->travelDetail->maksud_perjalanan ?? '') }}</textarea>
-                            </div>
-                        </div>
+                        @else
+                            <p class="text-gray-500 italic text-sm">Isi terlebih dahulu checklist <strong>Surat Tugas</strong> (nomor + daftar pelaksana) agar daftar pelaksana SPD/SPPD tersedia.</p>
+                        @endif
                     </div>
                 @endif
 
@@ -228,47 +215,54 @@
                 @if(str_contains($checklist->nama_dokumen, 'Pengeluaran Riil'))
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
                         <h3 class="text-lg font-bold mb-4 border-b pb-2 text-indigo-700">Detail Pengeluaran Riil & Surat Non Kendaraan Dinas</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="real_nomor_surat_tugas" class="block text-sm font-medium text-gray-700">Nomor Surat Tugas</label>
-                                <input type="text" name="real_nomor_surat_tugas" id="real_nomor_surat_tugas" value="{{ old('real_nomor_surat_tugas', $checklist->realExpenseDetail->nomor_surat_tugas ?? '') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
-                            </div>
+                        <p class="text-sm text-gray-500 mb-4">Data diambil dari <strong>Superkendis</strong> yang digenerate per pelaksana Surat Tugas. Tidak ada input manual.</p>
 
-                            <div>
-                                <label for="real_tanggal_surat_tugas" class="block text-sm font-medium text-gray-700">Tanggal Surat Tugas</label>
-                                <input type="date" name="real_tanggal_surat_tugas" id="real_tanggal_surat_tugas" value="{{ old('real_tanggal_surat_tugas', optional($checklist->realExpenseDetail->tanggal_surat_tugas ?? null)->format('Y-m-d')) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+                        @if($stPelaksanas->count() > 0)
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">No</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nama Pelaksana</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nomor Surat Sub</th>
+                                            <th class="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
+                                            <th class="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        @foreach($stPelaksanas as $idx => $p)
+                                            @php
+                                                $sk = $p->superkendis;
+                                            @endphp
+                                            <tr>
+                                                <td class="px-3 py-2 text-gray-500">{{ $idx + 1 }}</td>
+                                                <td class="px-3 py-2 font-medium text-gray-800">{{ $p->nama_pelaksana }}</td>
+                                                <td class="px-3 py-2 text-gray-600">{{ $p->nomor_surat ?: '-' }}</td>
+                                                <td class="px-3 py-2 text-center">
+                                                    @if($sk)
+                                                        <span class="px-2 py-0.5 inline-flex text-xs font-semibold rounded-full bg-green-100 text-green-800">Sudah Generate</span>
+                                                    @else
+                                                        <span class="px-2 py-0.5 inline-flex text-xs font-semibold rounded-full bg-red-100 text-red-800">Belum Ada</span>
+                                                    @endif
+                                                </td>
+                                                <td class="px-3 py-2 text-center">
+                                                    @if($sk && $sk->file_docx)
+                                                        <a href="{{ asset('storage/' . $sk->file_docx) }}" target="_blank" class="text-xs font-semibold text-green-700 hover:underline">Download</a>
+                                                    @else
+                                                        <span class="text-xs text-gray-400">-</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
                             </div>
-
-                            <div>
-                                <label for="real_nama_pelaksana" class="block text-sm font-medium text-gray-700">Nama Pelaksana</label>
-                                <input type="text" name="real_nama_pelaksana" id="real_nama_pelaksana" value="{{ old('real_nama_pelaksana', $checklist->realExpenseDetail->nama_pelaksana ?? '') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
-                            </div>
-
-                            <div>
-                                <label for="real_jabatan" class="block text-sm font-medium text-gray-700">Jabatan</label>
-                                <input type="text" name="real_jabatan" id="real_jabatan" value="{{ old('real_jabatan', $checklist->realExpenseDetail->jabatan ?? '') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
-                            </div>
-
-                            <div>
-                                <label for="real_tanggal_kegiatan" class="block text-sm font-medium text-gray-700">Tanggal Kegiatan</label>
-                                <input type="date" name="real_tanggal_kegiatan" id="real_tanggal_kegiatan" value="{{ old('real_tanggal_kegiatan', optional($checklist->realExpenseDetail->tanggal_kegiatan ?? null)->format('Y-m-d')) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
-                            </div>
-
-                            <div>
-                                <label for="jumlah_pengeluaran" class="block text-sm font-medium text-gray-700">Jumlah Pengeluaran (Rp)</label>
-                                <input type="number" step="0.01" name="jumlah_pengeluaran" id="jumlah_pengeluaran" value="{{ old('jumlah_pengeluaran', $checklist->realExpenseDetail->jumlah_pengeluaran ?? 0) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
-                            </div>
-
-                            <div class="md:col-span-2">
-                                <label for="uraian_pengeluaran" class="block text-sm font-medium text-gray-700">Uraian Pengeluaran</label>
-                                <textarea name="uraian_pengeluaran" id="uraian_pengeluaran" rows="2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">{{ old('uraian_pengeluaran', $checklist->realExpenseDetail->uraian_pengeluaran ?? '') }}</textarea>
-                            </div>
-
-                            <div class="md:col-span-2">
-                                <label for="real_keterangan" class="block text-sm font-medium text-gray-700">Keterangan Tambahan</label>
-                                <textarea name="real_keterangan" id="real_keterangan" rows="2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">{{ old('real_keterangan', $checklist->realExpenseDetail->keterangan ?? '') }}</textarea>
-                            </div>
-                        </div>
+                            <p class="text-xs text-gray-500 mt-2">
+                                Checklist ini otomatis menjadi <strong>Lengkap</strong> setelah seluruh Superkendis pelaksana digenerate (lihat halaman <a href="{{ route('requests.superkendis', $checklist->request_id) }}" class="text-indigo-600 hover:underline">Generate Superkendis</a>).
+                            </p>
+                        @else
+                            <p class="text-gray-500 italic text-sm">Isi terlebih dahulu checklist <strong>Surat Tugas</strong> supaya daftar pelaksana tersedia, lalu generate Superkendis di halaman FPA.</p>
+                        @endif
                     </div>
                 @endif
 
@@ -276,39 +270,62 @@
                 @if(str_contains($checklist->nama_dokumen, 'Laporan Perjalanan'))
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6">
                         <h3 class="text-lg font-bold mb-4 border-b pb-2 text-indigo-700">Detail Laporan Perjalanan</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="report_nama_pelaksana" class="block text-sm font-medium text-gray-700">Nama Pelaksana</label>
-                                <input type="text" name="report_nama_pelaksana" id="report_nama_pelaksana" value="{{ old('report_nama_pelaksana', $checklist->travelReport->nama_pelaksana ?? '') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+                        <p class="text-sm text-gray-500 mb-4">Centang pelaksana yang laporannya sudah/belum dikumpulkan, lalu pilih status dan simpan. Status disimpan per pelaksana (bulk).</p>
+
+                        @if($stPelaksanas->count() > 0)
+                            @php
+                                $reportStatuses = $checklist->travelReportPelaksanas->keyBy('surat_tugas_pelaksana_id');
+                            @endphp
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-3 py-2 w-10 text-left text-xs font-semibold text-gray-600 uppercase">
+                                                <input type="checkbox" id="report-select-all" class="rounded border-gray-300 text-indigo-600">
+                                            </th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nama</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Nomor Surat Sub</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        @foreach($stPelaksanas as $idx => $p)
+                                            @php
+                                                $existing = $reportStatuses->get($p->id);
+                                                $currStatus = old('report_status.status.'.$p->id, $existing ? $existing->status : \App\Models\TravelReportPelaksana::STATUS_BELUM);
+                                                $currChecked = old('report_status.selected.'.$p->id) ? true : ($existing ? true : false);
+                                            @endphp
+                                            <tr class="report-row">
+                                                <td class="px-3 py-2 text-center">
+                                                    <input type="checkbox" name="report_status[selected][{{ $p->id }}]" value="1"
+                                                           class="report-check rounded border-gray-300 text-indigo-600" {{ $currChecked ? 'checked' : '' }}>
+                                                </td>
+                                                <td class="px-3 py-2 font-medium text-gray-800">{{ $p->nama_pelaksana }}</td>
+                                                <td class="px-3 py-2 text-gray-600">{{ $p->nomor_surat ?: '-' }}</td>
+                                                <td class="px-3 py-2">
+                                                    <select name="report_status[status][{{ $p->id }}]" class="report-status block w-full border-gray-300 rounded-md shadow-sm sm:text-xs disabled:bg-gray-100">
+                                                        @foreach(\App\Models\TravelReportPelaksana::STATUS_LIST as $st)
+                                                            <option value="{{ $st }}" {{ $currStatus === $st ? 'selected' : '' }}>{{ $st }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
                             </div>
 
-                            <div>
-                                <label for="report_tujuan" class="block text-sm font-medium text-gray-700">Tujuan Perjalanan</label>
-                                <input type="text" name="report_tujuan" id="report_tujuan" value="{{ old('report_tujuan', $checklist->travelReport->tujuan ?? '') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+                            <div class="mt-4 flex items-center gap-3">
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm">
+                                    Simpan Perubahan
+                                </button>
+                                <p class="text-xs text-gray-500">
+                                    Checklist <strong>Laporan Perjalanan</strong> hanya menjadi <strong>Lengkap</strong> bila seluruh pelaksana sudah mengumpulkan.
+                                </p>
                             </div>
-
-                            <div>
-                                <label for="report_tanggal_kegiatan" class="block text-sm font-medium text-gray-700">Tanggal Kegiatan</label>
-                                <input type="date" name="report_tanggal_kegiatan" id="report_tanggal_kegiatan" value="{{ old('report_tanggal_kegiatan', optional($checklist->travelReport->tanggal_kegiatan ?? null)->format('Y-m-d')) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
-                            </div>
-
-                            <div>
-                                <label for="report_dokumentasi" class="block text-sm font-medium text-gray-700">Upload Foto/Dokumentasi Kegiatan</label>
-                                <input type="file" name="report_dokumentasi" id="report_dokumentasi" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                                @if($checklist->travelReport && $checklist->travelReport->dokumentasi)
-                                    <div class="mt-2">
-                                        <a href="{{ asset('storage/' . $checklist->travelReport->dokumentasi) }}" target="_blank" class="text-xs text-blue-600 hover:underline">
-                                            Lihat Lampiran Dokumentasi
-                                        </a>
-                                    </div>
-                                @endif
-                            </div>
-
-                            <div class="md:col-span-2">
-                                <label for="report_uraian_kegiatan" class="block text-sm font-medium text-gray-700">Uraian Hasil Kegiatan</label>
-                                <textarea name="report_uraian_kegiatan" id="report_uraian_kegiatan" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">{{ old('report_uraian_kegiatan', $checklist->travelReport->uraian_kegiatan ?? '') }}</textarea>
-                            </div>
-                        </div>
+                        @else
+                            <p class="text-gray-500 italic text-sm">Isi terlebih dahulu checklist <strong>Surat Tugas</strong> supaya daftar pelaksana tersedia.</p>
+                        @endif
                     </div>
                 @endif
 
@@ -427,6 +444,36 @@
                 });
 
                 bindRemove();
+            });
+        </script>
+    @endif
+
+    @if(str_contains($checklist->nama_dokumen, 'Laporan Perjalanan'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const rows = document.querySelectorAll('.report-row');
+
+                function syncRow(row) {
+                    const checked = row.querySelector('.report-check').checked;
+                    const sel = row.querySelector('.report-status');
+                    sel.disabled = !checked;
+                    row.classList.toggle('bg-indigo-50', checked);
+                }
+
+                rows.forEach(function (row) {
+                    row.querySelector('.report-check').addEventListener('change', function () { syncRow(row); });
+                    syncRow(row);
+                });
+
+                const selAll = document.getElementById('report-select-all');
+                if (selAll) {
+                    selAll.addEventListener('change', function () {
+                        rows.forEach(function (row) {
+                            row.querySelector('.report-check').checked = selAll.checked;
+                            syncRow(row);
+                        });
+                    });
+                }
             });
         </script>
     @endif

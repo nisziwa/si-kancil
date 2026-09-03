@@ -11,7 +11,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
             @if(session('success'))
                 <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
@@ -87,6 +87,8 @@
                                         <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Jenis Kegiatan</th>
                                         <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">NIP</th>
                                         <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Dokumen</th>
+                                        <th class="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
+                                        <th class="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
@@ -153,6 +155,23 @@
                                                     </div>
                                                 @else
                                                     <span class="text-gray-400">Belum digenerate</span>
+                                                @endif
+                                            </td>
+                                            <td class="px-4 py-3 text-center whitespace-nowrap">
+                                                @if($sk)
+                                                    <span class="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">Generated</span>
+                                                @else
+                                                    <span class="inline-flex px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800">Belum</span>
+                                                @endif
+                                            </td>
+                                            <td class="px-4 py-3 text-center whitespace-nowrap">
+                                                @if($sk && $sk->file_docx)
+                                                    <a href="{{ asset('storage/' . $sk->file_docx) }}" target="_blank"
+                                                       class="inline-flex px-3 py-1 text-xs font-bold text-white bg-green-600 rounded hover:bg-green-700">
+                                                        Download
+                                                    </a>
+                                                @else
+                                                    <span class="text-gray-400 text-xs">-</span>
                                                 @endif
                                             </td>
                                         </tr>

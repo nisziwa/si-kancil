@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\ChecklistHistory;
-use App\Models\RealExpenseDetail;
 use App\Models\SpjChecklist;
 use App\Models\SuratTugasDetail;
 use App\Models\SuratTugasPelaksana;
 use App\Models\TravelDetail;
-use App\Models\TravelReport;
+use App\Models\TravelReportPelaksana;
 use App\Services\SuratTugasService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,13 +19,23 @@ class SpjChecklistController extends Controller
     {
         $checklist = SpjChecklist::with([
             'request',
-            'suratTugasDetail.pelaksanas',
+            'suratTugasDetail.pelaksanas.superkendis',
             'travelDetail',
             'realExpenseDetail',
             'travelReport',
+            'travelReportPelaksanas',
         ])->findOrFail($id);
 
-        return view('checklists.edit', compact('checklist'));
+        // Sumber data pelaksana berasal dari checklist "Surat Tugas" pada request yang sama.
+        $stChecklist = SpjChecklist::where('request_id', $checklist->request_id)
+            ->where('nama_dokumen', 'like', '%Surat Tugas%')
+            ->with('suratTugasDetail.pelaksanas.superkendis')
+            ->first();
+
+        $stDetail = $stChecklist ? $stChecklist->suratTugasDetail : null;
+        $stPelaksanas = $stDetail ? $stDetail->pelaksanas : collect();
+
+        return view('checklists.edit', compact('checklist', 'stDetail', 'stPelaksanas'));
     }
 
     public function update(Request $request, $id)
@@ -50,34 +59,9 @@ class SpjChecklistController extends Controller
             $rules['pelaksana_nama.*'] = 'nullable|string';
         }
 
-        if (str_contains($docName, 'SPD') || str_contains($docName, 'SPPD')) {
-            $rules['nomor_spd'] = 'nullable|string';
-            $rules['travel_nama_pelaksana'] = 'nullable|string';
-            $rules['maksud_perjalanan'] = 'nullable|string';
-            $rules['tempat_berangkat'] = 'nullable|string';
-            $rules['tempat_tujuan'] = 'nullable|string';
-            $rules['tanggal_berangkat'] = 'nullable|date';
-            $rules['tanggal_kembali'] = 'nullable|date|after_or_equal:tanggal_berangkat';
-            $rules['transportasi'] = 'nullable|string';
-        }
-
-        if (str_contains($docName, 'Pengeluaran Riil')) {
-            $rules['real_nomor_surat_tugas'] = 'nullable|string';
-            $rules['real_tanggal_surat_tugas'] = 'nullable|date';
-            $rules['real_nama_pelaksana'] = 'nullable|string';
-            $rules['real_jabatan'] = 'nullable|string';
-            $rules['real_tanggal_kegiatan'] = 'nullable|date';
-            $rules['uraian_pengeluaran'] = 'nullable|string';
-            $rules['jumlah_pengeluaran'] = 'nullable|numeric|min:0';
-            $rules['real_keterangan'] = 'nullable|string';
-        }
-
         if (str_contains($docName, 'Laporan Perjalanan')) {
-            $rules['report_nama_pelaksana'] = 'nullable|string';
-            $rules['report_tujuan'] = 'nullable|string';
-            $rules['report_uraian_kegiatan'] = 'nullable|string';
-            $rules['report_tanggal_kegiatan'] = 'nullable|date';
-            $rules['report_dokumentasi'] = 'nullable|file|mimes:pdf,jpg,jpeg,png,docx|max:10240';
+            $rules['report_status'] = 'nullable|array';
+            $rules['report_status.*'] = 'nullable|in:' . implode(',', \App\Models\TravelReportPelaksana::STATUS_LIST);
         }
 
         $validated = $request->validate($rules);
@@ -132,57 +116,17 @@ class SpjChecklistController extends Controller
             $this->syncPelaksana($stDetail, $request->input('nomor_surat_tugas') ?? '', $request->input('pelaksana_nama', []));
         }
 
-        // Simpan Travel Detail jika relevan
+        // Simpan Travel Detail jika relevan (dari pelaksana Surat Tugas, bukan form manual).
         if (str_contains($docName, 'SPD') || str_contains($docName, 'SPPD')) {
-            TravelDetail::updateOrCreate(
-                ['checklist_id' => $checklist->id],
-                [
-                    'nomor_spd' => $request->input('nomor_spd') ?? '',
-                    'nama_pelaksana' => $request->input('travel_nama_pelaksana') ?? '',
-                    'maksud_perjalanan' => $request->input('maksud_perjalanan') ?? '',
-                    'tempat_berangkat' => $request->input('tempat_berangkat') ?? '',
-                    'tempat_tujuan' => $request->input('tempat_tujuan') ?? '',
-                    'tanggal_berangkat' => $request->input('tanggal_berangkat'),
-                    'tanggal_kembali' => $request->input('tanggal_kembali'),
-                    'transportasi' => $request->input('transportasi') ?? '',
-                ]
-            );
+            $this->syncTravelDetailFromSuratTugas($checklist);
         }
 
-        // Simpan Real Expense Detail jika relevan
-        if (str_contains($docName, 'Pengeluaran Riil')) {
-            RealExpenseDetail::updateOrCreate(
-                ['checklist_id' => $checklist->id],
-                [
-                    'nomor_surat_tugas' => $request->input('real_nomor_surat_tugas') ?? '',
-                    'tanggal_surat_tugas' => $request->input('real_tanggal_surat_tugas'),
-                    'nama_pelaksana' => $request->input('real_nama_pelaksana') ?? '',
-                    'jabatan' => $request->input('real_jabatan') ?? '',
-                    'tanggal_kegiatan' => $request->input('real_tanggal_kegiatan'),
-                    'uraian_pengeluaran' => $request->input('uraian_pengeluaran') ?? '',
-                    'jumlah_pengeluaran' => $request->input('jumlah_pengeluaran') ?? 0,
-                    'keterangan' => $request->input('real_keterangan'),
-                ]
-            );
-        }
-
-        // Simpan Travel Report jika relevan
+        // Simpan status pengumpulan Laporan Perjalanan per pelaksana (bulk checkbox).
         if (str_contains($docName, 'Laporan Perjalanan')) {
-            $reportData = [
-                'nama_pelaksana' => $request->input('report_nama_pelaksana') ?? '',
-                'tujuan' => $request->input('report_tujuan') ?? '',
-                'uraian_kegiatan' => $request->input('report_uraian_kegiatan') ?? '',
-                'tanggal_kegiatan' => $request->input('report_tanggal_kegiatan'),
-            ];
-
-            if ($request->hasFile('report_dokumentasi')) {
-                $reportData['dokumentasi'] = $request->file('report_dokumentasi')->store('spj-files', 'public');
-            }
-
-            TravelReport::updateOrCreate(
-                ['checklist_id' => $checklist->id],
-                $reportData
-            );
+            $this->syncTravelReportPelaksana($checklist, $request->input('report_status', []));
+            // Checklist Laporan Perjalanan hanya boleh "Lengkap" bila seluruh
+            // pelaksana sudah mengumpulkan.
+            $this->guardTravelReportLengkap($checklist);
         }
 
         // Log history jika ada perubahan status atau catatan
@@ -237,5 +181,109 @@ class SpjChecklistController extends Controller
         }
 
         return $nomorUtama . '.' . $sub;
+    }
+
+    /**
+     * Sumber pelaksana berasal dari checklist "Surat Tugas" pada request yang sama.
+     */
+    protected function stDetailFor(SpjChecklist $checklist)
+    {
+        $stChecklist = SpjChecklist::where('request_id', $checklist->request_id)
+            ->where('nama_dokumen', 'like', '%Surat Tugas%')
+            ->with('suratTugasDetail.pelaksanas')
+            ->first();
+
+        return $stChecklist ? $stChecklist->suratTugasDetail : null;
+    }
+
+    /**
+     * Bangun TravelDetail dari sumber Surat Tugas (pelaksana pertama) bila data
+     * tersedia. Tidak membuat baris kosong.
+     */
+    protected function syncTravelDetailFromSuratTugas(SpjChecklist $checklist): void
+    {
+        $st = $this->stDetailFor($checklist);
+        if (! $st || $st->pelaksanas->isEmpty()) {
+            return;
+        }
+
+        $pelaksana = $st->pelaksanas->first();
+        $nomorUtama = (string) $st->nomor_surat_tugas;
+
+        if (trim($nomorUtama) === '' || trim((string) $pelaksana->nama_pelaksana) === '') {
+            return;
+        }
+
+        TravelDetail::updateOrCreate(
+            ['checklist_id' => $checklist->id],
+            [
+                'nomor_spd' => $pelaksana->nomor_surat ?: $nomorUtama,
+                'nama_pelaksana' => $pelaksana->nama_pelaksana,
+                'maksud_perjalanan' => $st->isi_tugas ?? '',
+                'tempat_berangkat' => '',
+                'tempat_tujuan' => '',
+                'tanggal_berangkat' => $st->tanggal_surat_tugas,
+                'tanggal_kembali' => $st->tanggal_surat_tugas,
+                'transportasi' => '',
+            ]
+        );
+    }
+
+    /**
+     * Simpan status pengumpulan Laporan Perjalanan per pelaksana (bulk checkbox).
+     * Hanya pelaksana yang dipilih yang diperbarui; yang lain tidak disentuh.
+     */
+    protected function syncTravelReportPelaksana(SpjChecklist $checklist, array $statuses): void
+    {
+        $st = $this->stDetailFor($checklist);
+        if (! $st || $st->pelaksanas->isEmpty()) {
+            return;
+        }
+
+        foreach ($st->pelaksanas as $pelaksana) {
+            $selected = $statuses['selected'][$pelaksana->id] ?? null;
+            if ($selected) {
+                $status = $statuses['status'][$pelaksana->id] ?? TravelReportPelaksana::STATUS_SUDAH;
+
+                TravelReportPelaksana::updateOrCreate(
+                    [
+                        'checklist_id' => $checklist->id,
+                        'surat_tugas_pelaksana_id' => $pelaksana->id,
+                    ],
+                    ['status' => $status]
+                );
+            }
+        }
+
+        // Checklist "Laporan Perjalanan" hanya boleh "Lengkap" bila seluruh
+        // pelaksana sudah mengumpulkan.
+        $this->guardTravelReportLengkap($checklist);
+    }
+
+    /**
+     * Jika checklist Laporan Perjalanan diubah menjadi "Lengkap" namun belum
+     * seluruh pelaksana mengumpulkan, kembalikan ke status sebelum ("Belum Lengkap").
+     */
+    protected function guardTravelReportLengkap(SpjChecklist $checklist): void
+    {
+        if ($checklist->status !== 'Lengkap') {
+            return;
+        }
+
+        $st = $this->stDetailFor($checklist);
+        if (! $st || $st->pelaksanas->isEmpty()) {
+            return;
+        }
+
+        $pelaksanaIds = $st->pelaksanas->pluck('id');
+        $sudah = TravelReportPelaksana::where('checklist_id', $checklist->id)
+            ->whereIn('surat_tugas_pelaksana_id', $pelaksanaIds)
+            ->where('status', TravelReportPelaksana::STATUS_SUDAH)
+            ->pluck('surat_tugas_pelaksana_id');
+
+        if ($sudah->count() < $pelaksanaIds->count()) {
+            $checklist->status = 'Belum Lengkap';
+            $checklist->save();
+        }
     }
 }

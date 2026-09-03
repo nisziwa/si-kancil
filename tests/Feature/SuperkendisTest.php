@@ -158,6 +158,37 @@ class SuperkendisTest extends TestCase
     public function test_bulk_separate_generates_zip(): void
     {
         $pelaksana1 = SuratTugasPelaksana::orderBy('urutan')->first();
+        $pelaksana2 = SuratTugasPelaksana::orderBy('urutan')->skip(1)->first();
+
+        $response = $this->actingAs($this->user)->post(
+            route('requests.superkendis.bulk', $this->fpaRequest->id),
+            [
+                'format' => 'docx',
+                'method' => 'separate',
+                'pelaksana' => [
+                    $pelaksana1->id => [
+                        'selected' => 1,
+                        'kecamatan' => 'Kecamatan Muara',
+                        'tanggal_perjalanan' => '2026-08-26',
+                        'nip' => '',
+                    ],
+                    $pelaksana2->id => [
+                        'selected' => 1,
+                        'kecamatan' => 'Kecamatan Muara',
+                        'tanggal_perjalanan' => '2026-08-26',
+                        'nip' => '',
+                    ],
+                ],
+            ]
+        );
+
+        $response->assertOk();
+        $this->assertStringContainsString('Superkendis_Pisah.zip', $response->headers->get('content-disposition'));
+    }
+
+    public function test_single_pelaksana_downloads_direct_docx(): void
+    {
+        $pelaksana1 = SuratTugasPelaksana::orderBy('urutan')->first();
 
         $response = $this->actingAs($this->user)->post(
             route('requests.superkendis.bulk', $this->fpaRequest->id),
@@ -176,7 +207,9 @@ class SuperkendisTest extends TestCase
         );
 
         $response->assertOk();
-        $this->assertStringContainsString('Superkendis_Pisah.zip', $response->headers->get('content-disposition'));
+        $filename = 'Superkendis_' . str_replace(' ', '_', $pelaksana1->nama_pelaksana) . '.docx';
+        $this->assertStringContainsString($filename, $response->headers->get('content-disposition'));
+        $this->assertStringNotContainsString('.zip', $response->headers->get('content-disposition'));
     }
 
     public function test_bulk_export_requires_tujuan_and_tanggal_per_pelaksana(): void

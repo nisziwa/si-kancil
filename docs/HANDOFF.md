@@ -1,10 +1,10 @@
 # SI-KANCIL Agent Handoff
 ## Current Sprint
-Sprint aktif: Superkendis Flow Improvement & FPA Kanban Enhancement
+Sprint aktif: Checklist Detail Flow Refactor & Superkendis Improvement
 
 ## Current Status
-Seluruh tahapan pengembangan (Sprint 1 s/d Sprint 13) pada aplikasi SI-KANCIL telah selesai 100% dan seluruh 75 automated unit & feature tests berhasil tanpa error.
-Superkendis kini dipersistkan per-pelaksana ke tabel `superkendis` (file DOCX/PDF tersimpan), checklist "Pengeluaran Riil + Surat Non Kendaraan Dinas" otomatis jadi Lengkap saat semua pelaksana tergenerate, validasi status FPA dipusatkan ke `RequestStatusService`, tersedia bulk-move Kanban FPA dengan hasil per-FPA, dan peringatan drag Kanban tidak lagi reload halaman.
+Seluruh tahapan pengembangan (Sprint 1 s/d Sprint 14) pada aplikasi SI-KANCIL telah selesai 100% dan seluruh 76 automated unit & feature tests berhasil tanpa error.
+Detail dokumen (SPD/SPPD, Pengeluaran Riil, Laporan Perjalanan) kini memakai daftar pelaksana yang bersumber dari Surat Tugas (tanpa input ulang manual), bug isi detail kosong diperbaiki, status pengumpulan Laporan Perjalanan disimpan per-pelaksana (bulk) ke tabel `travel_report_pelaksanas` dengan konfirmasi popup di Kanban, dan halaman Superkendis menampilkan status + download per baris dengan perilaku download langsung DOCX untuk 1 pelaksana (ZIP/gabung untuk lebih dari satu).
 ## Completed
 Daftar pekerjaan yang sudah selesai:
 - Sprint 1 Setup, Auth & Database Migration
@@ -21,6 +21,7 @@ Daftar pekerjaan yang sudah selesai:
 - Sprint 11b (Document Generation Improvement v2): penggunaan template `[template] Superkendis 2.docx`, standardisasi placeholder `{{ }}`, pemetaan jenis kegiatan → jabatan (Pelatihan/Pendataan → PCL, Pengawasan → PML, Supervisi → Supervisor), format tanggal Indonesia, dan perbaikan layout generate dokumen
 - Sprint 12 (Surat Tugas Completion Validation & Superkendis Flow): validasi status Lengkap terpusat (service) untuk dropdown & kanban, tombol Generate Superkendis hanya saat Surat Tugas lengkap, input pelaksana massal dengan pratinjau & konfirmasi, nomor surat sub otomatis
 - Sprint 13 (Superkendis Flow Improvement & FPA Kanban Enhancement): tabel `superkendis` + persistensi file dan record per-pelaksana, checklist "Pengeluaran Riil + Surat Non Kendaraan Dinas" otomatis Lengkap, perbaikan bug `?pelaksana=`, refactor validasi status FPA ke `RequestStatusService`, bulk-move Kanban FPA per-FPA, dan peringatan drag Kanban tanpa reload (modal ≥8 detik)
+- Sprint 14 (Checklist Detail Flow Refactor & Superkendis Improvement): detail dokumen (SPD/SPPD, Pengeluaran Riil, Laporan Perjalanan) memakai daftar pelaksana bersumber dari Surat Tugas (tanpa input ulang), fix bug isi detail kosong, status pengumpulan Laporan Perjalanan per-pelaksana (bulk) ke tabel `travel_report_pelaksanas`, konfirmasi popup di Kanban, dan Superkendis dengan status + download per baris (1 pelaksana download DOCX langsung, >1 ZIP/gabung)
 
 ## Remaining Tasks
 Daftar pekerjaan yang belum selesai:
@@ -43,4 +44,4 @@ Keputusan penting:
 - Document Generation: hasil DOCX dihasilkan langsung dari `TemplateProcessor` (setelah `saveAs`) tanpa `IOFactory::load()` + salin elemen ke PhpWord baru, karena hal itu merusak struktur Word (tabel/border/alignment/tanda tangan); PDF dikonversi dari DOCX berstruktur utuh; Gabung (merged) menggabungkan isi `<w:body>` per pelaksana agar layout tetap utuh; `cleanupTemplate` digeneralisasi untuk mengganti seluruh `{{key}}` yang terpecah antar-run
 
 ## Last Commit
-Commit terakhir: `feat: improve superkendis flow and fpa kanban validation`
+Commit terakhir: `feat: refactor checklist flow and superkendis download`

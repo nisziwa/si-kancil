@@ -138,6 +138,12 @@ class SuperkendisController extends Controller
         // Bila seluruh pelaksana Surat Tugas sudah digenerate, tandai checklist integrasi Lengkap.
         $this->markIntegrasiChecklistLengkap($requestModel);
 
+        // Satu pelaksana -> langsung download file DOCX (tanpa ZIP / merge).
+        if ($pelaksanas->count() === 1) {
+            $filename = 'Superkendis_' . $this->slug($pelaksanas->first()->nama_pelaksana) . '.' . $format;
+            return response()->download($stored[0]['local_path'], $filename);
+        }
+
         if ($method === 'merged') {
             return $this->buildMerged($datas, $format);
         }

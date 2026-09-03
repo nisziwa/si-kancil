@@ -155,6 +155,19 @@ Aplikasi web Laravel untuk membantu Sekretaris Tim mengontrol proses administras
 - Kanban drag warning: kegagalan dipindah → card kembali ke kolom asal TANPA `location.reload()`; modal peringatan tampil ≥8 detik dengan tombol tutup + klik backdrop; menampilkan alasan + nomor FPA
 - Automated testing baru: `SuperkendisPersistenceTest` (record+file tersimpan, regenerate tanpa duplikat, semua-pelaksana→Pengeluaran Riil Lengkap, Surat Tugas tak berubah, Perlu Perbaikan tak dioverwrite, jenis→jabatan, param pelaksana tunggal/array), `FpaStatusServiceBulkTest` (bulk valid/gagal parsial, transisi ilegal, bulk sukses)
 
+### Checklist Detail Flow Refactor & Superkendis Improvement
+- Refactor "Kelola Dokumen" (checklist detail): seluruh detail dokumen (SPD/SPPD, Pengeluaran Riil, Laporan Perjalanan) memakai daftar pelaksana bersumber dari Surat Tugas, bukan input manual `nama pelaksana`/`nomor surat tugas`/`jabatan`/data perjalanan (no re-input)
+- Sumber data pelaksana di-resolve dari checklist "Surat Tugas" pada request yang sama (`stDetailFor()`), karena hanya checklist Surat Tugas yang memiliki `surat_tugas_detail` + `surat_tugas_pelaksanas`
+- SPD/SPPD: hanya tabel daftar pelaksana (No | Nama | Nomor Surat Sub | Nomor Surat Tugas), tanpa form manual; `TravelDetail` dibangun ulang dari ST ketika data tersedia
+- Perbaikan bug isi detail kosong: `syncTravelDetailFromSuratTugas()` tidak lagi membuat baris kosong (hanya bila ST pelaksana + nomor non-kosong); mengubah status checklist tidak membuat `real_expense_detail`/`travel_detail` kosong
+- Pengeluaran Riil: tabel pelaksana (No | Nama Pelaksana | Nomor Surat Sub | Status | Aksi), Status = "Sudah Generate" (ada record `superkendis`) / "Belum Ada", Aksi = "Download" ke `file_docx` tersimpan; otomatis Lengkap saat semua pelaksana tergenerate
+- Laporan Perjalanan: tabel pelaksana dengan checkbox bulk + status per-pelaksana (Sudah/Belum Mengumpulkan) disimpan ke tabel baru `travel_report_pelaksanas`; checklist hanya "Lengkap" bila SEMUA pelaksana "Sudah Mengumpulkan"
+- Tabel baru `travel_report_pelaksanas` (id, checklist_id FK cascade, surat_tugas_pelaksana_id FK cascade, status default 'Belum Mengumpulkan', unique `(checklist_id, surat_tugas_pelaksana_id)`); model `App\Models\TravelReportPelaksana` (konstanta status) + relasi `SpjChecklist::travelReportPelaksanas()`
+- Kanban Laporan Perjalanan: saat drag ke "Lengkap" tapi belum semua mengumpulkan, muncul modal "Konfirmasi Laporan Perjalanan" (checkbox pelaksana + status); simpan status dulu, baru terapkan Lengkap; batal menampilkan kembali card ke kolom asal tanpa reload (`ChecklistKanbanController@laporanPelaksana` GET + `storeLaporanPelaksana` POST, route `checklists.laporan-pelaksana`/`.store`)
+- FPA status validation + bulk-move + warning Kanban tetap memakai `RequestStatusService` (tidak dirombak ulang; dipertahankan dari Sprint 13)
+- Superkendis: lebar halaman `max-w-7xl`, kolom Status (Generated/Belum) + Aksi Download per baris; perilaku download: 1 pelaksana -> langsung download DOCX (tanpa ZIP/merge), >1 pelaksana -> merged/gabung atau ZIP terpisah sesuai method
+- Automated testing: `DocumentDetailTest` diperbarui ke flow baru (travel detail diturunkan dari ST, tanpa baris detail kosong), `SuperkendisTest` (ZIP untuk >1 pelaksana, download langsung DOCX untuk 1 pelaksana)
+
 ---
 
 ## Struktur Database Final
@@ -173,6 +186,7 @@ sk_rate_perjalanan_histories (id, sk_rate_perjalanan_id [nullable, nullOnDelete]
 travel_details         (id, checklist_id, nomor_spd, nama_pelaksana, maksud_perjalanan, tempat_berangkat, tempat_tujuan, tanggal_berangkat, tanggal_kembali, transportasi)
 real_expense_details   (id, checklist_id, nomor_surat_tugas, tanggal_surat_tugas, nama_pelaksana, jabatan, tanggal_kegiatan, uraian_pengeluaran, jumlah_pengeluaran, keterangan)
 travel_reports         (id, checklist_id, nama_pelaksana, tujuan, uraian_kegiatan, tanggal_kegiatan, dokumentasi)
+travel_report_pelaksanas (id, checklist_id, surat_tugas_pelaksana_id, status [default 'Belum Mengumpulkan'])  UNIQUE (checklist_id, surat_tugas_pelaksana_id)
 templates              (id, nama_template, kategori, versi, file, status_aktif)
 users                  (default Laravel users table)
 ```
