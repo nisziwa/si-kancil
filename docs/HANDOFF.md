@@ -75,3 +75,13 @@ Status: Completed
 
 ## Last Commit
 Commit terakhir: `feat: improve travel report workflow and add POK integration` (dd8d576, menutup GitHub Issue #13).
+
+## Master POK Integration for Travel Report (Issue #13)
+Status: Completed
+- Struktur tabel POK: `master_program` <- `master_kegiatan` <- `master_output` <- `master_sub_output` <- `master_komponen`; `master_akun` berdiri sendiri. `master_rincian_pok` menyimpan `program_id`, `kegiatan_id`, `output_id`, `sub_output_id`, `komponen_id`, `akun_id` + kolom teks `rincian` (diindeks).
+- Relasi master: program 1-N kegiatan, kegiatan 1-N output, output 1-N sub output, sub output 1-N komponen; model `MasterProgram`, `MasterKegiatan`, `MasterOutput`, `MasterSubOutput`, `MasterKomponen`, `MasterAkun`, `MasterRincianPok` (relasi berantai, `pokRincian` di TravelReport).
+- Rincian pencarian: field "POK / Pembiayaan" pada generate laporan memanggil `GET /travel-reports/pok/search` -> `MasterRincianPok::where('rincian','like',...)` dengan eager-load rantai Program-Kegiatan-Output-Sub Output-Komponen-Akun.
+- Mapping kegiatan: 1 program bersama `054.01.GG` + 1 akun `521213`; 3 kegiatan baru -> 8130 (Sumber Daya Hayati), 8131 (Mineral & Konstruksi), 2904 (Industri); tiap kegiatan punya output `{kode}.BMA`, sub output sendiri, komponen `005`. 9 rincian honor pendataan (KSA, SKP, Ubinan, SKGB, konstruksi, pertambangan, Captive Power, industri besar sedang, industri mikro kecil).
+- Penggunaan pada generate laporan perjalanan: nilai POK terpilih disimpan di `travel_reports.pok_rincian_id` lalu dibaca `TravelReportService->pokLines()` untuk mengisi bagian "5. Pembiayaan Kegiatan" pada DOCX/PDF.
+- Seeder idempotent (`updateOrCreate` dalam transaksi DB), aman dijalankan berulang; sudah di-wire ke `DatabaseSeeder`. 100 tests PASS.
+
