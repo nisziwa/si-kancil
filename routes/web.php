@@ -7,6 +7,7 @@ use App\Http\Controllers\FileUploadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RequestController;
 use App\Http\Controllers\RequestStatusController;
+use App\Http\Controllers\SkRatePerjalananController;
 use App\Http\Controllers\SpjChecklistController;
 use App\Http\Controllers\SuperkendisController;
 use App\Http\Controllers\TemplateController;
@@ -43,8 +44,9 @@ Route::middleware('auth')->group(function () {
     // Superkendis Routes
     Route::get('/requests/{requestId}/superkendis', [SuperkendisController::class, 'index'])->name('requests.superkendis');
     Route::post('/requests/{requestId}/superkendis/generate/{pelaksanaId}', [SuperkendisController::class, 'generate'])->name('requests.superkendis.generate');
-    Route::post('/requests/{requestId}/superkendis/bulk-separate', [SuperkendisController::class, 'bulkSeparate'])->name('requests.superkendis.bulk-separate');
-    Route::post('/requests/{requestId}/superkendis/bulk-merged', [SuperkendisController::class, 'bulkMerged'])->name('requests.superkendis.bulk-merged');
+    Route::post('/requests/{requestId}/superkendis/bulk', [SuperkendisController::class, 'bulk'])->name('requests.superkendis.bulk');
+    Route::post('/requests/{requestId}/superkendis/bulk-separate', [SuperkendisController::class, 'bulk'])->name('requests.superkendis.bulk-separate');
+    Route::post('/requests/{requestId}/superkendis/bulk-merged', [SuperkendisController::class, 'bulk'])->name('requests.superkendis.bulk-merged');
 
     // Calendar Routes
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
@@ -53,6 +55,9 @@ Route::middleware('auth')->group(function () {
     // Repository Template Routes
     Route::get('/templates/{id}/download', [TemplateController::class, 'download'])->name('templates.download');
     Route::resource('templates', TemplateController::class);
+
+    // SK Rate Perjalanan Routes
+    Route::resource('sk-rates', SkRatePerjalananController::class)->except(['show']);
 });
 
 require __DIR__.'/auth.php';

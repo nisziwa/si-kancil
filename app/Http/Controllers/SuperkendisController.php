@@ -4,16 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Request as FpaRequest;
 use App\Models\SkRatePerjalanan;
+use App\Support\Terbilang;
 use Illuminate\Http\Request;
 use PhpOffice\PhpWord\IOFactory;
-use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\Shared\ZipArchive;
-use PhpOffice\PhpWord\SimpleType\Jc;
+use PhpOffice\PhpWord\TemplateProcessor;
 
 class SuperkendisController extends Controller
 {
     const FORMATS = ['docx', 'pdf'];
+
+    const TEMPLATE_PATH = '[template] Superkendis.docx';
 
     /**
      * Ringkasan Superkendis untuk halaman detail FPA.
@@ -37,6 +39,7 @@ class SuperkendisController extends Controller
 
     /**
      * Generate Superkendis untuk satu pelaksana (dari Surat Tugas) pada detail FPA.
+     * Mendukung payload berbasis array (checkbox) maupun flat untuk kompatibilitas.
      */
     public function generate(Request $request, $requestId, $pelaksanaId)
     {
@@ -47,100 +50,87 @@ class SuperkendisController extends Controller
 
         $requestModel = FpaRequest::with('checklists.suratTugasDetail.pelaksanas')->findOrFail($requestId);
 
-        $pelaksana = $requestModel->checklists
-            ->flatMap(fn ($c) => $c->suratTugasDetail ? $c->suratTugasDetail->pelaksanas : collect())
-            ->first(fn ($p) => $p->id === (int) $pelaksanaId);
-
+        $pelaksana = $this->findPelaksana($requestModel, (int) $pelaksanaId);
         abort_if(! $pelaksana, 404, 'Pelaksana tidak ditemukan.');
 
-        $data = $this->buildData($request, $requestModel, $pelaksana->nama_pelaksana, $pelaksana->nomor_surat);
+        $data = $this->buildDataForPelaksana($request, $requestModel, $pelaksana, (int) $pelaksanaId);
 
-        $filename = 'Superkendis_'.$this->slug($pelaksana->nama_pelaksana).'.'.$format;
+        $filename = 'Superkendis_' . $this->slug($pelaksana->nama_pelaksana) . '.' . $format;
 
         return $this->buildDocument($data, $format, $filename);
     }
 
     /**
-     * Bulk download semua pelaksana Superkendis (Pisah file -> ZIP).
+     * Bulk download beberapa pelaksana Superkendis terpilih.
+     * Payload: pilihan[] (id pelaksana) + pelaksana[id][...].
      */
-    public function bulkSeparate(Request $request, $requestId)
+    public function bulk(Request $request, $requestId)
     {
         $requestModel = FpaRequest::with('checklists.suratTugasDetail.pelaksanas')->findOrFail($requestId);
 
-        $pelaksanas = $requestModel->checklists
-            ->flatMap(fn ($c) => $c->suratTugasDetail ? $c->suratTugasDetail->pelaksanas : collect());
+        $pelaksanas = $this->selectedPelaksanas($request, $requestModel);
+        abort_if($pelaksanas->isEmpty(), 422, 'Pilih minimal satu pelaksana untuk generate Superkendis.');
 
-        abort_if($pelaksanas->isEmpty(), 422, 'Tidak ada pelaksana Superkendis.');
-
-        $this->ensureValidForExport($request, $requestModel, $pelaksanas);
+        $this->ensureValidForExport($request, $pelaksanas);
 
         $format = $request->input('format', 'docx');
         if (! in_array($format, self::FORMATS, true)) {
             $format = 'docx';
         }
 
-        $tmpDir = storage_path('app/superkendis-tmp/'.uniqid());
+        $method = $request->input('method', 'separate');
+
+        $datas = $pelaksanas->map(fn ($p) => [
+            'pelaksana' => $p,
+            'data' => $this->buildDataForPelaksana($request, $requestModel, $p, (int) $p->id),
+        ]);
+
+        if ($method === 'merged') {
+            return $this->buildMerged($requestModel, $datas, $format);
+        }
+
+        return $this->buildSeparate($requestModel, $datas, $format);
+    }
+
+    protected function buildSeparate(FpaRequest $requestModel, $datas, string $format)
+    {
+        $tmpDir = storage_path('app/superkendis-tmp/' . uniqid());
         if (! is_dir($tmpDir)) {
             mkdir($tmpDir, 0777, true);
         }
 
-        foreach ($pelaksanas as $pelaksana) {
-            $data = $this->buildData($request, $requestModel, $pelaksana->nama_pelaksana, $pelaksana->nomor_surat);
-            $this->writeDocument($data, $format, $tmpDir.'/'.'Superkendis_'.$this->slug($pelaksana->nama_pelaksana).'.'.$format);
+        foreach ($datas as $item) {
+            $this->writeDocument($item['data'], $format, $tmpDir . '/' . 'Superkendis_' . $this->slug($item['pelaksana']->nama_pelaksana) . '.' . $format);
         }
 
         $zip = new ZipArchive;
-        $zipFile = storage_path('app/superkendis-tmp/superkendis-'.uniqid().'.zip');
+        $zipFile = storage_path('app/superkendis-tmp/superkendis-' . uniqid() . '.zip');
         if ($zip->open($zipFile, ZipArchive::CREATE) !== true) {
             abort(500, 'Gagal membuat arsip ZIP.');
         }
 
-        foreach (glob($tmpDir.'/*.'.$format) as $file) {
+        foreach (glob($tmpDir . '/*.' . $format) as $file) {
             $zip->addFile($file, basename($file));
         }
         $zip->close();
 
-        // Bersihkan folder temp
-        array_map('unlink', glob($tmpDir.'/*.'.$format) ?: []);
+        array_map('unlink', glob($tmpDir . '/*.' . $format) ?: []);
         rmdir($tmpDir);
 
         return response()->download($zipFile, 'Superkendis_Pisah.zip')->deleteFileAfterSend(true);
     }
 
-    /**
-     * Bulk download Superkendis gabungan menjadi satu file.
-     */
-    public function bulkMerged(Request $request, $requestId)
+    protected function buildMerged(FpaRequest $requestModel, $datas, string $format)
     {
-        $requestModel = FpaRequest::with('checklists.suratTugasDetail.pelaksanas')->findOrFail($requestId);
-
-        $pelaksanas = $requestModel->checklists
-            ->flatMap(fn ($c) => $c->suratTugasDetail ? $c->suratTugasDetail->pelaksanas : collect());
-
-        abort_if($pelaksanas->isEmpty(), 422, 'Tidak ada pelaksana Superkendis.');
-
-        $this->ensureValidForExport($request, $requestModel, $pelaksanas);
-
-        $format = $request->input('format', 'docx');
-        if (! in_array($format, self::FORMATS, true)) {
-            $format = 'docx';
-        }
-
-        $phpWord = new PhpWord;
+        $phpWord = new \PhpOffice\PhpWord\PhpWord;
         $phpWord->getSettings()->setUpdateFields(true);
-        $section = $phpWord->addSection();
 
-        $first = true;
-        foreach ($pelaksanas as $pelaksana) {
-            if (! $first) {
-                $section = $phpWord->addSection();
-            }
-            $first = false;
-            $data = $this->buildData($request, $requestModel, $pelaksana->nama_pelaksana, $pelaksana->nomor_surat);
-            $this->populateDocument($section, $data);
+        foreach ($datas as $index => $item) {
+            $section = $index === 0 ? $phpWord->addSection() : $phpWord->addSection();
+            $this->populateViaTemplate($section, $item['data']);
         }
 
-        $filename = 'Superkendis_Gabungan.'.$format;
+        $filename = 'Superkendis_Gabungan.' . $format;
 
         return $this->downloadPhpWord($phpWord, $filename, $format);
     }
@@ -148,35 +138,195 @@ class SuperkendisController extends Controller
     /**
      * Data Superkendis untuk satu pelaksana.
      */
-    protected function buildData(Request $request, FpaRequest $requestModel, string $nama, ?string $nomorSurat): array
+    protected function buildDataForPelaksana(Request $request, FpaRequest $requestModel, $pelaksana, ?int $pelaksanaId): array
     {
-        $kecamatan = trim($request->input('kecamatan') ?? '');
+        // Dukungan payload array per pelaksana (checkbox) dan flat (legacy).
+        $input = $request->input('pelaksana.' . $pelaksanaId, $request->all());
+
+        $kecamatan = trim((string) ($input['kecamatan'] ?? ''));
         $rate = $kecamatan !== ''
             ? SkRatePerjalanan::where('kecamatan', $kecamatan)->first()
             : null;
 
+        $besaran = $rate ? (float) $rate->besaran_biaya_transport : 0;
+
         return [
-            'nama_pelaksana' => $nama,
-            'nip' => $this->normalizeNip($request->input('nip') ?? ''),
+            'nama_pelaksana' => $pelaksana->nama_pelaksana,
+            'nip' => $this->normalizeNip((string) ($input['nip'] ?? '')),
             'kecamatan' => $kecamatan,
-            'tanggal_perjalanan' => $request->input('tanggal_perjalanan') ?? '',
-            'besaran_biaya' => $rate ? number_format((float) $rate->besaran_biaya_transport, 0, ',', '.') : '-',
-            'nomor_surat' => $nomorSurat ?: '-',
+            'tanggal_perjalanan' => (string) ($input['tanggal_perjalanan'] ?? ''),
+            'besaran_biaya' => $rate ? number_format($besaran, 0, ',', '.') : '-',
+            'terbilang' => $rate ? ucwords(Terbilang::convert($besaran)) . ' Rupiah' : '-',
+            'jabatan' => (string) ($input['jabatan'] ?? 'Petugas'),
+            'jenis_perjalanan' => (string) ($input['jenis_perjalanan'] ?? 'pendataan lapangan'),
+            'nomor_surat' => $pelaksana->nomor_surat ?: '-',
+            'tanggal_surat_tugas' => $pelaksana->suratTugasDetail->tanggal_surat_tugas ?? '',
             'fpa' => $requestModel->nomor_fpa ?: 'Belum ada nomor FPA',
             'deskripsi' => $requestModel->deskripsi_permintaan,
         ];
     }
 
+    protected function selectedPelaksanas(Request $request, FpaRequest $requestModel)
+    {
+        $all = $requestModel->checklists
+            ->flatMap(fn ($c) => $c->suratTugasDetail ? $c->suratTugasDetail->pelaksanas : collect());
+
+        // Jika payload berbasis checkbox (ada key pelaksana), gunakan id yang dipilih.
+        if ($request->has('pelaksana')) {
+            $ids = collect($request->input('pelaksana', []))
+                ->map(fn ($_, $id) => (int) $id)
+                ->values();
+
+            return $all->filter(fn ($p) => $ids->contains((int) $p->id))->values();
+        }
+
+        // Backward compat: tanpa payload per pelaksana, gunakan semua pelaksana.
+        return $all;
+    }
+
+    protected function findPelaksana(FpaRequest $requestModel, int $pelaksanaId)
+    {
+        return $requestModel->checklists
+            ->flatMap(fn ($c) => $c->suratTugasDetail ? $c->suratTugasDetail->pelaksanas : collect())
+            ->first(fn ($p) => (int) $p->id === $pelaksanaId);
+    }
+
+    protected function ensureValidForExport(Request $request, $pelaksanas)
+    {
+        foreach ($pelaksanas as $pelaksana) {
+            $input = $request->input('pelaksana.' . $pelaksana->id, $request->all());
+            if (trim((string) ($input['kecamatan'] ?? '')) === '' || (string) ($input['tanggal_perjalanan'] ?? '') === '') {
+                abort(422, 'Kecamatan tujuan dan tanggal perjalanan wajib diisi untuk setiap pelaksana yang dipilih.');
+            }
+        }
+    }
+
+    protected function buildDocument(array $data, string $format, string $filename)
+    {
+        $phpWord = new \PhpOffice\PhpWord\PhpWord;
+        $phpWord->getSettings()->setUpdateFields(true);
+        $section = $phpWord->addSection();
+        $this->populateViaTemplate($section, $data);
+
+        return $this->downloadPhpWord($phpWord, $filename, $format);
+    }
+
     /**
-     * NIP tidak wajib; jika kosong atau format tidak sesuai, isi "-".
+     * Mengisi template Superkendis.docx menggunakan TemplateProcessor,
+     * lalu menyalin elemen hasil ke section tujuan.
      */
+    protected function populateViaTemplate($section, array $data)
+    {
+        $templatePath = $this->templatePath();
+
+        $template = new TemplateProcessor($templatePath);
+        $template->setMacroChars('{{', '}}');
+
+        $tanggalSurat = $data['tanggal_surat_tugas'] ? date('Y-m-d', strtotime($data['tanggal_surat_tugas'])) : '';
+        $tanggalPerjalanan = $data['tanggal_perjalanan'] ? date('d-m-Y', strtotime($data['tanggal_perjalanan'])) : '';
+
+        $values = [
+            'nama' => $data['nama_pelaksana'],
+            'Nama' => $data['nama_pelaksana'],
+            'NIP' => $data['nip'],
+            'nomor surat tugas' => $data['nomor_surat'],
+            'tanggal surat tugas' => $tanggalSurat,
+            'tanggal perjalanan' => $tanggalPerjalanan,
+            'biaya sk' => $data['besaran_biaya'],
+            'terbilangnya berapa' => $data['terbilang'],
+            'list dari 4 pilihan dropdown' => $data['jenis_perjalanan'],
+            'Bisa Supervisor, PCL atau PML' => $data['jabatan'],
+        ];
+
+        foreach ($values as $key => $value) {
+            try {
+                $template->setValue($key, (string) $value);
+            } catch (\Throwable $e) {
+                // Abaikan placeholder yang tidak cocok persis.
+            }
+        }
+
+        $tempDocx = storage_path('app/superkendis-filled-' . uniqid() . '.docx');
+        $template->saveAs($tempDocx);
+
+        // Bersihkan placeholder yang terpecah antar-run / membungkus field Word.
+        $this->cleanupTemplate($tempDocx, $data);
+
+        $filled = IOFactory::load($tempDocx);
+        foreach ($filled->getSections() as $filledSection) {
+            foreach ($filledSection->getElements() as $element) {
+                if ($element instanceof \PhpOffice\PhpWord\Element\Text) {
+                    $section->addText($element->getText(), $element->getFontStyle(), $element->getParagraphStyle());
+                } elseif ($element instanceof \PhpOffice\PhpWord\Element\TextRun) {
+                    $texts = collect($element->getElements())
+                        ->map(fn ($r) => $r instanceof \PhpOffice\PhpWord\Element\Text ? $r->getText() : '')
+                        ->implode('');
+                    $section->addText($texts);
+                } elseif ($element instanceof \PhpOffice\PhpWord\Element\Table) {
+                    $section->addText('');
+                }
+            }
+        }
+
+        @unlink($tempDocx);
+    }
+
+    protected function templatePath(): string
+    {
+        $path = storage_path('app/public/' . self::TEMPLATE_PATH);
+        if (file_exists($path)) {
+            return $path;
+        }
+        abort(500, 'Template Superkendis.docx tidak ditemukan.');
+    }
+
+    /**
+     * Membersihkan placeholder yang terpecah antar-run XML atau membungkus field Word
+     * (mis. {{terbilangnya berapa: ...}} yang berisi MERGEFIELD). Placeholder tersebut
+     * tidak bisa diganti TemplateProcessor secara langsung.
+     */
+    protected function cleanupTemplate(string $docxPath, array $data): void
+    {
+        $zip = new ZipArchive;
+        if ($zip->open($docxPath) !== true) {
+            return;
+        }
+
+        $xml = $zip->getFromName('word/document.xml');
+        if ($xml === false) {
+            $zip->close();
+            return;
+        }
+
+        // Gabungkan run teks yang berurutan menjadi satu agar placeholder kontigu.
+        $xml = preg_replace(
+            '#</w:t></w:r><w:r\b[^>]*>(?:<w:rPr>.*?</w:rPr>)?<w:t\b[^>]*>#s',
+            '',
+            $xml
+        );
+
+        $replacements = [
+            '#\{\{terbilangnya berapa:.*?\}\}#s' => $data['terbilang'],
+            '#\{\{list dari 4 pilihan dropdown:.*?\}\}#s' => $data['jenis_perjalanan'],
+            '#\{\{list dari.*?\}\}#s' => $data['jenis_perjalanan'],
+            '#\{\{Bisa.*?\}\}#s' => $data['jabatan'] ?: 'Petugas',
+        ];
+
+        foreach ($replacements as $pattern => $replacement) {
+            $xml = preg_replace($pattern, $replacement, $xml);
+        }
+
+        $zip->deleteName('word/document.xml');
+        $zip->addFromString('word/document.xml', $xml);
+        $zip->close();
+    }
+
     protected function normalizeNip(string $nip): string
     {
         $nip = trim($nip);
         if ($nip === '') {
             return '-';
         }
-        // Format NIP standar: 18 digit (YYYYMMDD YYYYMMDD NNN), sering ditulis dgn/tanpa spasi
         $digits = preg_replace('/\D/', '', $nip);
         if (strlen($digits) < 15 || strlen($digits) > 18) {
             return '-';
@@ -185,67 +335,19 @@ class SuperkendisController extends Controller
         return $nip;
     }
 
-    protected function ensureValidForExport(Request $request, FpaRequest $requestModel, $pelaksanas)
-    {
-        $tujuan = trim((string) $request->input('kecamatan'));
-        $tanggal = (string) $request->input('tanggal_perjalanan');
-
-        if ($tujuan === '' || $tanggal === '') {
-            abort(422, 'Tempat tujuan dan tanggal perjalanan wajib diisi untuk export Superkendis.');
-        }
-    }
-
-    protected function buildDocument(array $data, string $format, string $filename)
-    {
-        $phpWord = new PhpWord;
-        $phpWord->getSettings()->setUpdateFields(true);
-        $section = $phpWord->addSection();
-        $this->populateDocument($section, $data);
-
-        return $this->downloadPhpWord($phpWord, $filename, $format);
-    }
-
-    protected function populateDocument($section, array $data)
-    {
-        $section->addText(
-            'SURAT KETERANGAN BUKAN KENDARAAN DINAS',
-            ['bold' => true, 'size' => 12],
-            ['alignment' => Jc::CENTER]
-        );
-        $section->addText('Nomor : '.($data['nomor_surat'] ?: '-'), null, ['alignment' => Jc::CENTER]);
-        $section->addTextBreak();
-
-        $section->addText('Yang bertanda tangan di bawah ini menerangkan bahwa:');
-        $section->addTextBreak();
-
-        $this->addLabeledLine($section, 'Nama', $data['nama_pelaksana']);
-        $this->addLabeledLine($section, 'NIP', $data['nip']);
-        $this->addLabeledLine($section, 'Kecamatan Tujuan', $data['kecamatan']);
-        $this->addLabeledLine($section, 'Tanggal Perjalanan', $data['tanggal_perjalanan'] ? date('d-m-Y', strtotime($data['tanggal_perjalanan'])) : '');
-        $this->addLabeledLine($section, 'Besaran Biaya Transport', 'Rp '.$data['besaran_biaya']);
-        $this->addLabeledLine($section, 'Nomor FPA', $data['fpa']);
-        $this->addLabeledLine($section, 'Uraian Kegiatan', $data['deskripsi']);
-    }
-
-    protected function addLabeledLine($section, string $label, string $value)
-    {
-        $section->addText($label.'  :  '.$value.'   ');
-        $section->addTextBreak(0);
-    }
-
-    protected function downloadPhpWord(PhpWord $phpWord, string $filename, string $format)
+    protected function downloadPhpWord(\PhpOffice\PhpWord\PhpWord $phpWord, string $filename, string $format)
     {
         if ($format === 'pdf') {
             $this->configurePdfRenderer();
             $writer = IOFactory::createWriter($phpWord, 'PDF');
-            $temp = storage_path('app/superkendis-'.uniqid().'.pdf');
+            $temp = storage_path('app/superkendis-' . uniqid() . '.pdf');
             $writer->save($temp);
 
             return response()->download($temp, $filename)->deleteFileAfterSend(true);
         }
 
         $writer = IOFactory::createWriter($phpWord, 'Word2007');
-        $temp = storage_path('app/superkendis-'.uniqid().'.docx');
+        $temp = storage_path('app/superkendis-' . uniqid() . '.docx');
         $writer->save($temp);
 
         return response()->download($temp, $filename)->deleteFileAfterSend(true);
@@ -253,10 +355,10 @@ class SuperkendisController extends Controller
 
     protected function writeDocument(array $data, string $format, string $path)
     {
-        $phpWord = new PhpWord;
+        $phpWord = new \PhpOffice\PhpWord\PhpWord;
         $phpWord->getSettings()->setUpdateFields(true);
         $section = $phpWord->addSection();
-        $this->populateDocument($section, $data);
+        $this->populateViaTemplate($section, $data);
 
         if ($format === 'pdf') {
             $this->configurePdfRenderer();

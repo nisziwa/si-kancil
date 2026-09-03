@@ -104,6 +104,16 @@ Aplikasi web Laravel untuk membantu Sekretaris Tim mengontrol proses administras
 - Tabel `sk_rate_perjalanan` (kecamatan + besaran biaya transport)
 - Library baru: `phpoffice/phpword`, `dompdf/dompdf`
 
+### Sprint 10 — Master SK Rate Management & Peningkatan Generate Superkendis
+- Halaman management SK Rate Perjalanan (index dengan pencarian/filter, create, edit, destroy)
+- Tabel & model baru `sk_rate_perjalanan_histories` untuk riwayat perubahan SK Rate (data sebelum/sesudah, aksi, user, waktu); riwayat tetap tersimpan walau rate dihapus (FK `nullOnDelete`)
+- Rework halaman generate Superkendis: pilihan pelaksana via checkbox, setiap pelaksana memiliki input sendiri (kecamatan tujuan, tanggal perjalanan, NIP)
+- Export Superkendis dari pilihan pelaksana: format DOCX/PDF, metode Pisah ZIP / Gabung satu file; validasi setiap pelaksana terpilih wajib isi kecamatan & tanggal
+- Generate dokumen berbasis template (`TemplateProcessor`) menggunakan `storage/app/public/[template] Superkendis.docx` dengan placeholder `{{...}}` (bukan hardcode)
+- Placeholder didukung: nama, NIP, nomor & tanggal surat tugas, tanggal perjalanan, biaya transport (dari SK Rate), terbilang, jenis perjalanan, jabatan
+- Helper baru `App\Support\Terbilang` untuk konversi angka → kata (berbasis data SK Rate)
+- Integrasi SK Rate: besaran biaya transport & terbilang diambil dari kecamatan tujuan sesuai SK Rate
+
 ---
 
 ## Struktur Database Final
@@ -116,7 +126,8 @@ checklist_histories    (id, checklist_id, status_lama, status_baru, catatan, use
 request_status_histories (id, request_id, status_lama, status_baru, catatan, file_bukti, user_id)
 surat_tugas_details    (id, checklist_id, nomor_surat_tugas, tanggal_surat_tugas, pelaksana [nullable/legacy], isi_tugas)
 surat_tugas_pelaksanas (id, surat_tugas_detail_id, nama_pelaksana, nomor_surat, urutan)
-sk_rate_perjalanan     (id, kecamatan, besaran_biaya_transport, keterangan)
+sk_rate_perjalanan     (id, kecamatan, ibukota_kecamatan, besaran_biaya_transport, keterangan)
+sk_rate_perjalanan_histories (id, sk_rate_perjalanan_id [nullable, nullOnDelete], data_sebelum, data_sesudah, aksi, user_id)
 travel_details         (id, checklist_id, nomor_spd, nama_pelaksana, maksud_perjalanan, tempat_berangkat, tempat_tujuan, tanggal_berangkat, tanggal_kembali, transportasi)
 real_expense_details   (id, checklist_id, nomor_surat_tugas, tanggal_surat_tugas, nama_pelaksana, jabatan, tanggal_kegiatan, uraian_pengeluaran, jumlah_pengeluaran, keterangan)
 travel_reports         (id, checklist_id, nama_pelaksana, tujuan, uraian_kegiatan, tanggal_kegiatan, dokumentasi)

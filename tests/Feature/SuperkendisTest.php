@@ -75,6 +75,7 @@ class SuperkendisTest extends TestCase
 
         SkRatePerjalanan::create([
             'kecamatan' => 'Kecamatan Muara',
+            'ibukota_kecamatan' => 'Muara',
             'besaran_biaya_transport' => 150000,
             'keterangan' => 'test',
         ]);
@@ -125,12 +126,28 @@ class SuperkendisTest extends TestCase
 
     public function test_bulk_merged_generates_gabungan_file(): void
     {
+        $pelaksana1 = SuratTugasPelaksana::orderBy('urutan')->first();
+        $pelaksana2 = SuratTugasPelaksana::orderBy('urutan')->skip(1)->first();
+
         $response = $this->actingAs($this->user)->post(
-            route('requests.superkendis.bulk-merged', $this->fpaRequest->id),
+            route('requests.superkendis.bulk', $this->fpaRequest->id),
             [
-                'kecamatan' => 'Kecamatan Muara',
-                'tanggal_perjalanan' => '2026-08-26',
                 'format' => 'docx',
+                'method' => 'merged',
+                'pelaksana' => [
+                    $pelaksana1->id => [
+                        'selected' => 1,
+                        'kecamatan' => 'Kecamatan Muara',
+                        'tanggal_perjalanan' => '2026-08-26',
+                        'nip' => '',
+                    ],
+                    $pelaksana2->id => [
+                        'selected' => 1,
+                        'kecamatan' => 'Kecamatan Muara',
+                        'tanggal_perjalanan' => '2026-08-26',
+                        'nip' => '',
+                    ],
+                ],
             ]
         );
 
@@ -140,12 +157,21 @@ class SuperkendisTest extends TestCase
 
     public function test_bulk_separate_generates_zip(): void
     {
+        $pelaksana1 = SuratTugasPelaksana::orderBy('urutan')->first();
+
         $response = $this->actingAs($this->user)->post(
-            route('requests.superkendis.bulk-separate', $this->fpaRequest->id),
+            route('requests.superkendis.bulk', $this->fpaRequest->id),
             [
-                'kecamatan' => 'Kecamatan Muara',
-                'tanggal_perjalanan' => '2026-08-26',
                 'format' => 'docx',
+                'method' => 'separate',
+                'pelaksana' => [
+                    $pelaksana1->id => [
+                        'selected' => 1,
+                        'kecamatan' => 'Kecamatan Muara',
+                        'tanggal_perjalanan' => '2026-08-26',
+                        'nip' => '',
+                    ],
+                ],
             ]
         );
 
@@ -153,15 +179,38 @@ class SuperkendisTest extends TestCase
         $this->assertStringContainsString('Superkendis_Pisah.zip', $response->headers->get('content-disposition'));
     }
 
-    public function test_bulk_export_requires_tujuan_and_tanggal(): void
+    public function test_bulk_export_requires_tujuan_and_tanggal_per_pelaksana(): void
     {
-        // Tanpa tanggal & kecamatan, export ditolak
+        $pelaksana1 = SuratTugasPelaksana::orderBy('urutan')->first();
+
+        // Tanpa kecamatan & tanggal untuk pelaksana terpilih, export ditolak
         $response = $this->actingAs($this->user)->post(
-            route('requests.superkendis.bulk-merged', $this->fpaRequest->id),
+            route('requests.superkendis.bulk', $this->fpaRequest->id),
             [
-                'kecamatan' => '',
-                'tanggal_perjalanan' => '',
                 'format' => 'docx',
+                'method' => 'merged',
+                'pelaksana' => [
+                    $pelaksana1->id => [
+                        'selected' => 1,
+                        'kecamatan' => '',
+                        'tanggal_perjalanan' => '',
+                        'nip' => '',
+                    ],
+                ],
+            ]
+        );
+
+        $response->assertStatus(422);
+    }
+
+    public function test_bulk_requires_at_least_one_pelaksana(): void
+    {
+        $response = $this->actingAs($this->user)->post(
+            route('requests.superkendis.bulk', $this->fpaRequest->id),
+            [
+                'format' => 'docx',
+                'method' => 'separate',
+                'pelaksana' => [],
             ]
         );
 

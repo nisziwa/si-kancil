@@ -109,3 +109,19 @@ Ringkasan Perubahan:
 - Library baru: `phpoffice/phpword` & `dompdf/dompdf`
 - Automated feature testing (RequestStatusTest, DocumentDetailTest, SuperkendisTest) untuk workflow status, FPA tanpa nomor, pelaksana sub-nomor, pengecekan nomor FPA live (AJAX) & Superkendis DOCX/PDF
 - Verifikasi menyeluruh: seluruh 48 unit & feature tests berhasil 100% (PASS)
+
+## Sprint 10 — Master SK Rate Management & Peningkatan Generate Superkendis
+Status: Completed
+Tanggal Selesai: 2026-09-03
+Ringkasan Perubahan:
+- Halaman management SK Rate Perjalanan baru (index dengan pencarian/filter, create, edit, destroy) + menu navigasi "SK Rate"
+- Tabel & model baru `sk_rate_perjalanan_histories` untuk riwayat perubahan SK Rate (data sebelum/sesudah, aksi create/update/delete, user, waktu); FK `nullOnDelete` agar riwayat tetap tersimpan walau rate dihapus
+- Rework halaman generate Superkendis: pilihan pelaksana via checkbox + input per pelaksana (kecamatan tujuan, tanggal perjalanan, NIP) menggantikan form berbagi satu set input
+- Export Superkendis terpilih: format DOCX/PDF, metode Pisah ZIP / Gabung satu file; setiap pelaksana terpilih wajib isi kecamatan & tanggal
+- Generate dokumen berbasis template `TemplateProcessor` dengan `storage/app/public/[template] Superkendis.docx` (placeholder `{{...}}`), bukan hardcode
+- Placeholder didukung: nama, NIP, nomor & tanggal surat tugas, tanggal perjalanan, biaya transport (dari SK Rate), terbilang, jenis perjalanan, jabatan; cleanup placeholder yang membungkus field Word/MERGEFIELD
+- Helper baru `App\Support\Terbilang` untuk konversi angka → kata
+- Integrasi SK Rate: besaran biaya transport & terbilang diambil dari kecamatan tujuan sesuai SK Rate
+- DatabaseSeederTest diperbaiki: verifikasi seeder (18 SK Rate, tanpa dummy lama); SuperkendisTest diperbarui ke alur per-pelaksana (checkbox)
+- Automated feature testing: SuperkendisTest (per-pelaksana, bulk merged/separate, validasi) & SkRatePerjalananTest (CRUD, search, history create/update/delete)
+- Verifikasi menyeluruh: seluruh 55 unit & feature tests berhasil 100% (PASS)

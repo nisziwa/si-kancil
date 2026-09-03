@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SkRatePerjalanan extends Model
 {
@@ -13,5 +14,10 @@ class SkRatePerjalanan extends Model
     protected function casts(): array
     {
         return ['besaran_biaya_transport' => 'decimal:2'];
+    }
+
+    public function histories(): HasMany
+    {
+        return $this->hasMany(SkRatePerjalananHistory::class, 'sk_rate_perjalanan_id');
     }
 }

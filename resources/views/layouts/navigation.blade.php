@@ -27,6 +27,10 @@
                     <x-nav-link :href="route('templates.index')" :active="request()->routeIs('templates.*')">
                         {{ __('Repository Template') }}
                     </x-nav-link>
+
+                    <x-nav-link :href="route('sk-rates.index')" :active="request()->routeIs('sk-rates.*')">
+                        {{ __('SK Rate') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -93,6 +97,10 @@
 
             <x-responsive-nav-link :href="route('templates.index')" :active="request()->routeIs('templates.*')">
                 {{ __('Repository Template') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('sk-rates.index')" :active="request()->routeIs('sk-rates.*')">
+                {{ __('SK Rate') }}
             </x-responsive-nav-link>
         </div>
 
