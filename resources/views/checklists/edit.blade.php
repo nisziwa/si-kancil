@@ -140,6 +140,37 @@
                                     </tbody>
                                 </table>
                                 <button type="button" id="add-pelaksana" class="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-800">+ Tambah Pelaksana</button>
+
+                                <!-- Input Massal Pelaksana dengan Preview & Konfirmasi -->
+                                <div class="p-4 mt-4 rounded-md border border-indigo-200 bg-indigo-50">
+                                    <label class="block text-sm font-semibold text-indigo-800">Input Pelaksana Massal</label>
+                                    <p class="text-xs text-gray-600 mb-2">Masukkan banyak nama sekaligus lalu pilih pemisah dan lihat pratinjau sebelum ditambahkan.</p>
+                                    <textarea id="bulk-pelaksana" rows="3" class="block w-full border-gray-300 rounded-md shadow-sm sm:text-sm" placeholder="Contoh:&#10;Hamdia;Holil;Onal"></textarea>
+
+                                    <div class="flex flex-wrap items-center gap-4 mt-3 text-sm">
+                                        <span class="font-medium text-gray-700">Pemisah:</span>
+                                        <label class="inline-flex items-center gap-1">
+                                            <input type="radio" name="bulk_separator" value="newline" checked class="accent-indigo-600"> Baris baru
+                                        </label>
+                                        <label class="inline-flex items-center gap-1">
+                                            <input type="radio" name="bulk_separator" value="semicolon" class="accent-indigo-600"> Titik koma (;)
+                                        </label>
+                                        <label class="inline-flex items-center gap-1">
+                                            <input type="radio" name="bulk_separator" value="comma" class="accent-indigo-600"> Koma (,)
+                                        </label>
+                                    </div>
+
+                                    <div class="flex gap-2 mt-3">
+                                        <button type="button" id="preview-pelaksana" class="px-3 py-1 text-xs font-bold text-white bg-indigo-600 rounded hover:bg-indigo-700">Pratinjau</button>
+                                        <button type="button" id="confirm-pelaksana" class="px-3 py-1 text-xs font-bold text-white bg-green-600 rounded hover:bg-green-700" disabled>Tambah ke Daftar</button>
+                                        <span id="bulk-hint" class="text-xs font-bold mt-1 text-red-600"></span>
+                                    </div>
+
+                                    <div id="bulk-preview" class="hidden mt-3 p-3 bg-white rounded border border-gray-200 text-sm">
+                                        <p class="text-xs font-semibold text-gray-600 mb-1">Pratinjau ({<span id="preview-count">0</span>} nama):</p>
+                                        <ol id="preview-list" class="pl-5 list-decimal"></ol>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -330,6 +361,69 @@
                     tbody.appendChild(tr);
                     bindRemove();
                     updateNumbering();
+                });
+
+                // --- Input Massal Pelaksana ---
+                function addPelaksanaRow(name) {
+                    const count = tbody.querySelectorAll('tr').length;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-3 py-2 text-gray-500 pel-urutan">${count + 1}</td>
+                        <td class="px-3 py-2"><input type="text" name="pelaksana_nama[]" value="${name.replace(/"/g, '&quot;')}" class="block w-full border-gray-300 rounded-md shadow-sm sm:text-sm"></td>
+                        <td class="px-3 py-2 text-gray-400">-</td>
+                        <td class="px-3 py-2 text-center"><button type="button" class="remove-pelaksana text-red-600 hover:text-red-800 font-semibold text-xs">Hapus</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                    bindRemove();
+                    updateNumbering();
+                }
+
+                function parseBulk() {
+                    const raw = document.getElementById('bulk-pelaksana').value;
+                    const sep = document.querySelector('input[name="bulk_separator"]:checked').value;
+                    let parts = [];
+                    if (sep === 'newline') {
+                        parts = raw.split(/\r?\n/);
+                    } else if (sep === 'semicolon') {
+                        parts = raw.split(';');
+                    } else {
+                        parts = raw.split(',');
+                    }
+                    return parts.map(s => s.trim()).filter(s => s !== '');
+                }
+
+                document.getElementById('preview-pelaksana').addEventListener('click', function () {
+                    const names = parseBulk();
+                    const preview = document.getElementById('bulk-preview');
+                    const list = document.getElementById('preview-list');
+                    const hint = document.getElementById('bulk-hint');
+                    list.innerHTML = '';
+                    hint.textContent = '';
+                    document.getElementById('preview-count').textContent = names.length;
+                    if (names.length === 0) {
+                        hint.textContent = 'Tidak ada nama yang ditemukan.';
+                        document.getElementById('confirm-pelaksana').disabled = true;
+                        preview.classList.add('hidden');
+                        return;
+                    }
+                    names.forEach(function (n) {
+                        const li = document.createElement('li');
+                        li.textContent = n;
+                        list.appendChild(li);
+                    });
+                    preview.classList.remove('hidden');
+                    document.getElementById('confirm-pelaksana').disabled = false;
+                });
+
+                document.getElementById('confirm-pelaksana').addEventListener('click', function () {
+                    const names = parseBulk();
+                    if (names.length === 0) return;
+                    if (!confirm('Tambahkan ' + names.length + ' pelaksana ke daftar?')) return;
+                    names.forEach(addPelaksanaRow);
+                    document.getElementById('bulk-pelaksana').value = '';
+                    document.getElementById('bulk-preview').classList.add('hidden');
+                    document.getElementById('preview-list').innerHTML = '';
+                    document.getElementById('confirm-pelaksana').disabled = true;
                 });
 
                 bindRemove();

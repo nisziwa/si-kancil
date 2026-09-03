@@ -130,6 +130,16 @@ Aplikasi web Laravel untuk membantu Sekretaris Tim mengontrol proses administras
 - `cleanupTemplate` digeneralisasi: setelah penggabungan run, seluruh placeholder `{{key}}` diganti dari data agar tidak ada yang tertinggal (menangani `{{jenis kegiatan}}` yang terpecah antar-run)
 - Mempertahankan perbaikan layout: tabel Daftar Pengeluaran Riil tetap muncul, border sesuai template, posisi tanda tangan tetap, nama tidak menempel teks sebelumnya
 
+### Surat Tugas Completion Validation & Superkendis Flow
+- Validasi status "Lengkap" Surat Tugas secara terpusat lewat service `App\Services\SuratTugasService` (garis syarat: Nomor Surat Tugas, Tanggal Surat Tugas, Isi Tugas, minimal 1 Pelaksana) agar tidak ada duplikasi logic
+- Dropdown status (`SpjChecklistController@update`) dan kanban drag-and-drop (`ChecklistKanbanController@updateStatus`) memakai validasi yang sama
+- Dropdown: bila meminta "Lengkap" namun data belum lengkap → perubahan dibatalkan, kembali dengan pesan kekurangan data (contoh: "Surat Tugas belum lengkap. Lengkapi Nomor Surat Tugas, Tanggal Surat Tugas, Isi Tugas, minimal 1 Pelaksana.")
+- Kanban: bila dipindah ke "Lengkap" dan gagal validasi → respons `success=false` (HTTP 422), card dikembalikan ke kolom semula, notifikasi ditampilkan
+- Tombol "Generate Superkendis" di halaman Detail FPA hanya muncul jika Status Surat Tugas = Lengkap (dan memiliki pelaksana)
+- Input pelaksana massal pada form Surat Tugas: textarea + pilihan pemisah (Baris baru / Titik koma `;` / Koma `,`) + pratinjau bernomor + konfirmasi sebelum ditambahkan ke daftar; tetap mempertahankan "Tambah Pelaksana satu per satu"
+- Nomor surat sub otomatis dipertahankan (contoh: `B-1041/75040/KP.650/2026` → `B-1041.1/...`, `B-1041.2/...`, `B-1041.3/...`)
+- Generate Superkendis mengambil data dari Daftar Pelaksana Surat Tugas (nama, nomor surat sub); tidak membuat form detail baru "Pengeluaran Riil & Surat Non Kendaraan Dinas"
+
 ---
 
 ## Struktur Database Final

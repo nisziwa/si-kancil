@@ -52,6 +52,8 @@
                     const newColumn = itemEl.closest('.kanban-column');
                     const newStatus = newColumn.getAttribute('data-status');
                     const itemId = itemEl.getAttribute('data-id');
+                    const fromColumn = evt.from ? evt.from.closest('.kanban-column') : null;
+                    const fromStatus = fromColumn ? fromColumn.getAttribute('data-status') : null;
 
                     // Lakukan request AJAX
                     fetch(`/checklists/${itemId}/status`, {
@@ -65,8 +67,17 @@
                             status: newStatus
                         })
                     })
-                    .then(response => response.json())
-                    .then(data => {
+                    .then(response => response.json().then(data => ({ ok: response.ok, data })))
+                    .then(({ ok, data }) => {
+                        // Bila validasi gagal, kembalikan card ke kolom semula.
+                        if (!ok || (data && data.success === false)) {
+                            if (fromColumn && fromColumn !== newColumn) {
+                                fromColumn.querySelector('.kanban-items').appendChild(itemEl);
+                            }
+                            const msg = (data && data.message) ? data.message : 'Gagal update status';
+                            alert(msg);
+                            return;
+                        }
                         if (data.success && data.history) {
                             // Update sidebar history
                             const historyList = document.getElementById('history-list');

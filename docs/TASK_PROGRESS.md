@@ -147,3 +147,16 @@ Ringkasan Perubahan:
 - `cleanupTemplate` digeneralisasi: setelah penggabungan run, semua placeholder `{{key}}` diganti dari data (menangani `{{jenis kegiatan}}` yang terpecah antar-run)
 - Layout tetap dipertahankan: tabel Daftar Pengeluaran Riil muncul, border sesuai template, tanda tangan benar, nama tidak menempel teks sebelumnya, semua placeholder terganti
 - Verifikasi: seluruh 55 unit & feature tests berhasil 100% (PASS)
+
+## Sprint 12 — Surat Tugas Completion Validation & Superkendis Flow
+Status: Completed
+Ringkasan Perubahan:
+- Service terpusat baru `App\Services\SuratTugasService` untuk validasi kelengkapan Surat Tugas (Nomor Surat Tugas, Tanggal Surat Tugas, Isi Tugas, minimal 1 Pelaksana) — dipakai bersama dropdown & kanban agar logic tidak terduplikasi
+- Validasi dropdown (`SpjChecklistController@update`): meminta status "Lengkap" saat data belum lengkap → perubahan dibatalkan + pesan kekurangan data
+- Validasi kanban (`ChecklistKanbanController@updateStatus`): dipindah ke "Lengkap" saat gagal → `success=false` (HTTP 422), card kembali ke kolom semula + notifikasi
+- Tombol "Generate Superkendis" di Detail FPA hanya muncul jika Surat Tugas berstatus Lengkap
+- Input pelaksana massal pada form Surat Tugas: textarea + pemisah (Baris baru / `;` / `,`) + pratinjau bernomor + konfirmasi; tetap ada "Tambah Pelaksana satu per satu"
+- Nomor surat sub otomatis dipertahankan (`B-1041/75040/KP.650/2026` → `.1/.2/.3`)
+- Generate Superkendis membaca data dari Daftar Pelaksana Surat Tugas; tidak ada form detail baru
+- Automated feature testing baru: `SuratTugasValidationTest` (tanpa nomor/tanggal/uraian/pelaksana tidak bisa Lengkap, dropdown tervalidasi, kanban tervalidasi, tombol hanya muncul bila lengkap, input massal pelaksana, nomor sub otomatis)
+- Verifikasi menyeluruh: seluruh 66 unit & feature tests berhasil 100% (PASS)

@@ -9,6 +9,7 @@ use App\Models\SuratTugasDetail;
 use App\Models\SuratTugasPelaksana;
 use App\Models\TravelDetail;
 use App\Models\TravelReport;
+use App\Services\SuratTugasService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -82,7 +83,27 @@ class SpjChecklistController extends Controller
         $validated = $request->validate($rules);
 
         $oldStatus = $checklist->status;
-        $newStatus = $validated['status'];
+        $requestedStatus = $validated['status'];
+        $isSuratTugas = SuratTugasService::isSuratTugas($checklist);
+
+        // Validasi terpusat: Surat Tugas hanya boleh "Lengkap" bila memenuhi syarat.
+        // Berlaku sebelum data disimpan sehingga perubahan dibatalkan bila tidak lengkap.
+        if ($isSuratTugas && $requestedStatus === 'Lengkap') {
+            $missing = SuratTugasService::missingRequirementsFromFields(
+                $request->input('nomor_surat_tugas'),
+                $request->input('tanggal_surat_tugas'),
+                $request->input('isi_tugas'),
+                $request->input('pelaksana_nama', [])
+            );
+
+            if ($missing !== []) {
+                return back()
+                    ->withInput()
+                    ->with('error', SuratTugasService::completenessMessage($missing));
+            }
+        }
+
+        $newStatus = $requestedStatus;
 
         $checklist->status = $newStatus;
         $checklist->catatan = $validated['catatan'] ?? null;
@@ -97,8 +118,8 @@ class SpjChecklistController extends Controller
 
         $checklist->save();
 
-        // Simpan Surat Tugas Detail jika relevan
-        if (str_contains($docName, 'Surat Tugas')) {
+        // Simpan data Surat Tugas.
+        if ($isSuratTugas) {
             $stDetail = SuratTugasDetail::updateOrCreate(
                 ['checklist_id' => $checklist->id],
                 [
@@ -108,7 +129,6 @@ class SpjChecklistController extends Controller
                 ]
             );
 
-            // Simpan banyak pelaksana + nomor sub otomatis
             $this->syncPelaksana($stDetail, $request->input('nomor_surat_tugas') ?? '', $request->input('pelaksana_nama', []));
         }
 

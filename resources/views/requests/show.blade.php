@@ -124,24 +124,28 @@
             @include('partials.status-workflow', ['fpaRequest' => $fpaRequest])
 
             <!-- Baris 8: Superkendis -->
+            @php
+                $stChecklist = $fpaRequest->checklists->first(fn($c) => str_contains($c->nama_dokumen, 'Surat Tugas'));
+                $stReady = $stChecklist
+                    && $stChecklist->status === 'Lengkap'
+                    && $stChecklist->suratTugasDetail
+                    && $stChecklist->suratTugasDetail->pelaksanas->count() > 0;
+            @endphp
             <div class="p-6 mb-6 overflow-hidden bg-white shadow-sm sm:rounded-lg">
                 <div class="flex items-center justify-between pb-3 mb-4 border-b">
                     <div>
                         <h3 class="text-lg font-bold text-gray-800">Superkendis</h3>
                         <p class="text-xs text-gray-500">Generate Surat Keterangan Bukan Kendaraan Dinas (Superkendis) untuk para pelaksana Surat Tugas.</p>
                     </div>
-                    <a href="{{ route('requests.superkendis', $fpaRequest->id) }}"
-                       class="px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded hover:bg-indigo-700"
-                       @if(!$fpaRequest->checklists->contains(fn($c) => str_contains($c->nama_dokumen, 'Surat Tugas'))) @endif>
-                        Generate Superkendis
-                    </a>
+                    @if($stReady)
+                        <a href="{{ route('requests.superkendis', $fpaRequest->id) }}"
+                           class="px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded hover:bg-indigo-700">
+                            Generate Superkendis
+                        </a>
+                    @endif
                 </div>
 
-                @php
-                    $stChecklist = $fpaRequest->checklists->first(fn($c) => str_contains($c->nama_dokumen, 'Surat Tugas'));
-                @endphp
-
-                @if($stChecklist && $stChecklist->status === 'Lengkap' && $stChecklist->suratTugasDetail && $stChecklist->suratTugasDetail->pelaksanas->count() > 0)
+                @if($stReady)
                     <table class="min-w-full text-sm divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
