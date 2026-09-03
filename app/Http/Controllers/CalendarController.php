@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Request as FpaRequest;
+use App\Support\Tanggal;
 use Illuminate\Http\JsonResponse;
 
 class CalendarController extends Controller
@@ -48,7 +49,7 @@ class CalendarController extends Controller
                     'nomor_fpa' => $fpa->nomor_fpa,
                     'status_spj' => $fpa->status_spj,
                     'lokasi' => $fpa->lokasi ?: '-',
-                    'deadline' => $fpa->deadline_spj ? $fpa->deadline_spj->format('d-m-Y') : '-',
+                    'deadline' => $fpa->deadline_spj ? Tanggal::format($fpa->deadline_spj) : '-',
                     'jenis_pengeluaran' => $fpa->expenseType->nama ?? '-',
                 ],
             ];

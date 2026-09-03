@@ -167,7 +167,7 @@
                                             </div>
                                             @if($fpa->deadline_spj)
                                                 <div class="text-[10px] text-gray-500 mt-0.5">
-                                                    Deadline: {{ $fpa->deadline_spj->format('d-m-Y') }}
+                                                    Deadline: {{ \App\Support\Tanggal::format($fpa->deadline_spj) }}
                                                     @if($priority['terlambat']) <span class="text-red-600 font-bold">(Terlambat)</span> @endif
                                                 </div>
                                             @endif
@@ -279,7 +279,7 @@
                                     </td>
                                     <td class="px-4 py-3 font-medium text-gray-900">{{ $fpa->deskripsi_permintaan }}</td>
                                     <td class="px-4 py-3 text-gray-500 whitespace-nowrap">{{ $fpa->expenseType->nama ?? '-' }}</td>
-                                    <td class="px-4 py-3 text-red-600 whitespace-nowrap">{{ $fpa->deadline_spj ? $fpa->deadline_spj->format('d-m-Y') : '-' }}</td>
+                                    <td class="px-4 py-3 text-red-600 whitespace-nowrap">{{ \App\Support\Tanggal::format($fpa->deadline_spj) }}</td>
                                     <td class="px-4 py-3 whitespace-nowrap">
                                         <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold
                                             @if($fpa->status_spj == 'Persiapan') bg-gray-100 text-gray-800

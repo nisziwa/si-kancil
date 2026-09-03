@@ -205,6 +205,24 @@ users                  (default Laravel users table)
 - BUG #8 (Low): UI cleanup - query `ChecklistHistory` dipindah ke `RequestController@show()` (`$checklistHistory`), flash `session('error')` di dashboard & superkendis, lebar halaman checklist `max-w-7xl`.
 - Automated testing: `RequestStatusTest` (parity Selesai dropdown/kanban, catatan optional, edit hanya Persiapan), `SuperkendisTest@test_bulk_merged_page_break_between_pelaksana` (unit reflection `appendBody`). Total 82 unit & feature tests PASS.
 
+## Indonesian Date Display Standard
+- Standar tampilan tanggal di aplikasi menggunakan format Indonesia **`dd MMMM yyyy`** (mis. `02 September 2026`), bukan `d-m-Y`/`d/m/Y` agar tidak ambigu.
+- Database tetap menyimpan tanggal dengan format **`Y-m-d`** (tipe kolom `date` tidak diubah) dan input `<input type="date">` tetap mengirim nilai `Y-m-d`; hanya teks tampilan yang diformat Indonesia.
+- Formatter tanggal Indonesia **terpusat** di `App\Support\Tanggal` (pola sama dengan helper `App\Support\Terbilang`):
+  - `Tanggal::format($value)` → `dd MMMM yyyy`
+  - `Tanggal::formatDateTime($value)` → `dd MMMM yyyy HH:mm`
+  - Menerima `CarbonInterface`/`DateTimeInterface`/string; mengembalikan nilai fallback saat kosong/tidak valid.
+- Seluruh tampilan memakai formatter terpusat ini, TIDAK membuat formatter berulang di tiap Blade.
+- Area yang sudah diterapkan:
+  - FPA: `requests/show.blade.php` (periode kegiatan, deadline SPJ, riwayat status)
+  - Dashboard: `dashboard.blade.php` (deadline pada card kanban FPA & tabel ringkasan)
+  - Status SPJ / history: `partials/status-workflow.blade.php` (timeline riwayat status SPJ)
+  - Checklist Dokumen: `partials/kanban-checklist.blade.php` + `ChecklistKanbanController` (timestamp riwayat status checklist via AJAX)
+  - SK Rate history: `sk_rates/edit.blade.php` (timestamp riwayat perubahan)
+  - Kalender: `CalendarController` (deadline pada event detail)
+  - Generate dokumen Superkendis (DOCX/PDF): `SuperkendisController` memakai `Tanggal::format` untuk `{{tanggal surat tugas}}` & `{{tanggal perjalanan}}` → `02 September 2026`
+- Helper label/input diperbarui agar menyebut format Indonesia (mis. "Akan ditampilkan dalam format Indonesia, contoh: 02 September 2026") tanpa mengubah input maupun penyimpanan.
+
 ## Sprint 16 - Superkendis UX & Format Tanggal Global
 - Kebijakan tanggal: input `<input type="date">` tetap (browser kirim `Y-m-d`, DB tidak berubah); YANG DIUBAH hanya teks tampilan menjadi `dd-mm-yyyy` (mis. `04-09-2026`); timestamp `d/m/Y H:i` → `d-m-Y H:i`. Tidak mengubah DB maupun nilai input.
 - Daftar file teks tanggal diubah menjadi `d-m-Y` / `d-m-Y H:i`: `requests/show.blade.php`, `dashboard.blade.php`, `partials/status-workflow.blade.php`, `sk_rates/edit.blade.php`, `ChecklistKanbanController.php`, `CalendarController.php`.

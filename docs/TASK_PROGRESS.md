@@ -216,6 +216,15 @@ Ringkasan Perubahan (atas 5 keluhan user setelah Sprint 15):
 - #5 Border PDF tidak lagi seluruhnya tebal: PhpWord writer HTML menyuntikkan CSS global `table {border: 1px solid black}` & `td {border: 1px solid black}` yang membuat SEMUA tabel/ sel bergaris tebal di PDF. Ditangani via API resmi `setEditCallback()` pada `SuperkendisController@pdfWriter` (dipakai `downloadFinal` & `writeDocument`) → `stripDefaultTableBorders()` menghapus border default tsb, mengaktifkan `border-collapse: collapse`, dan mempertahankan border asli template (hanya tabel yang memang perlu garis, 0.2pt).
 - Automated testing: test baru `SuperkendisTest@test_index_autochecks_pelaksana_with_stored_superkendis_and_prefills` (centang otomatis + prefill) dan verifikasi `stripDefaultTableBorders`/`editCallback` (border default hilang, border template dipertahankan, PDF tetap ter-generate). Seluruh 83 unit & feature tests berhasil 100% (PASS). Kode diformat ulang dengan Laravel Pint.
 
+## Indonesian Date Display Standard
+Status: Completed
+Ringkasan Perubahan:
+- Standar tampilan tanggal **Indonesia `dd MMMM yyyy`** (mis. `02 September 2026`) menggantikan `d-m-Y`/`d/m/Y` agar tidak ambigu; database tetap `Y-m-d`, tipe kolom `date` tidak diubah, dan input `<input type="date">` tetap mengirim `Y-m-d` (hanya teks tampilan yang diformat).
+- Formatter tanggal terpusat baru `App\Support\Tanggal` (`Tanggal::format` → `dd MMMM yyyy`, `Tanggal::formatDateTime` → `dd MMMM yyyy HH:mm`), menerima Carbon/DateTime/string, dengan fallback; pola mengikuti `App\Support\Terbilang`. Tidak ada formatter berulang di tiap Blade.
+- Diterapkan ke: `requests/show.blade.php` (periode & deadline), `dashboard.blade.php` (deadline kanban & tabel), `partials/status-workflow.blade.php` (timeline status SPJ), `partials/kanban-checklist.blade.php` + `ChecklistKanbanController` (timestamp riwayat checklist via AJAX), `sk_rates/edit.blade.php` (riwayat SK Rate), `CalendarController` (deadline kalender), dan `SuperkendisController` (tanggal surat tugas & perjalanan pada generate DOCX/PDF).
+- Label/helper input diperbarui ke format Indonesia (contoh: "02 September 2026") tanpa mengubah input/persistensi.
+- Automated testing baru: `TanggalTest` (format nama bulan, Carbon, fallback kosong/tidak valid, format datetime). Seluruh unit & feature tests PASS.
+
 ## Sprint 16 - Superkendis UX & Format Tanggal Global
 Status: Completed
 Ringkasan Perubahan:

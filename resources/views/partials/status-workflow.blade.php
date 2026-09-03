@@ -125,7 +125,7 @@
                             <a href="{{ asset('storage/' . $history->file_bukti) }}" target="_blank" class="text-xs text-blue-500 hover:underline mt-1 inline-block">📎 Lihat Bukti</a>
                         @endif
                         <p class="text-xs text-gray-400 mt-1">
-                            Oleh {{ $history->user->name ?? '-' }} — {{ $history->created_at->format('d-m-Y H:i') }}
+                            Oleh {{ $history->user->name ?? '-' }} — {{ \App\Support\Tanggal::formatDateTime($history->created_at) }}
                         </p>
                     </div>
                 </div>

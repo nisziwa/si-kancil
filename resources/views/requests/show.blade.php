@@ -74,14 +74,14 @@
                     <div>
                         <p class="text-sm text-gray-500">Tanggal Mulai - Selesai</p>
                         <p class="font-semibold">
-                            {{ $fpaRequest->tanggal_mulai ? $fpaRequest->tanggal_mulai->format('d-m-Y') : '-' }}
+                            {{ \App\Support\Tanggal::format($fpaRequest->tanggal_mulai) }}
                             s/d
-                            {{ $fpaRequest->tanggal_selesai ? $fpaRequest->tanggal_selesai->format('d-m-Y') : '-' }}
+                            {{ \App\Support\Tanggal::format($fpaRequest->tanggal_selesai) }}
                         </p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-500">Deadline SPJ</p>
-                        <p class="font-semibold text-red-600">{{ $fpaRequest->deadline_spj ? $fpaRequest->deadline_spj->format('d-m-Y') : '-' }}</p>
+                        <p class="font-semibold text-red-600">{{ \App\Support\Tanggal::format($fpaRequest->deadline_spj) }}</p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-500">Pembuat FPA</p>
@@ -104,7 +104,7 @@
                                 {{ $priority['label'] }}
                             </span>
                         </div>
-                        <p class="mt-1 text-xs text-gray-500">Deadline: {{ $fpaRequest->deadline_spj->format('d-m-Y') }} | Sisa hari: {{ $priority['sisa_hari'] }} | Keterlambatan: {{ $priority['terlambat'] ? 'Ya' : 'Tidak' }}</p>
+                        <p class="mt-1 text-xs text-gray-500">Deadline: {{ \App\Support\Tanggal::format($fpaRequest->deadline_spj) }} | Sisa hari: {{ $priority['sisa_hari'] }} | Keterlambatan: {{ $priority['terlambat'] ? 'Ya' : 'Tidak' }}</p>
                     </div>
                 @endif
             </div>
@@ -211,7 +211,7 @@
                             <li class="pb-2 mb-2 text-sm border-b">
                                 <span class="font-semibold text-gray-800">{{ $history->checklist->nama_dokumen ?? 'Dokumen' }}</span>
                                 diubah ke <span class="text-blue-600">{{ $history->status_baru }}</span>
-                                <br><span class="text-xs text-gray-500">Oleh {{ $history->user->name ?? '-' }} pada {{ $history->created_at->format('d-m-Y H:i') }}</span>
+                                <br><span class="text-xs text-gray-500">Oleh {{ $history->user->name ?? '-' }} pada {{ \App\Support\Tanggal::formatDateTime($history->created_at) }}</span>
                             </li>
                         @empty
                             <li class="text-xs italic text-gray-500" id="empty-history">Belum ada riwayat perubahan.</li>

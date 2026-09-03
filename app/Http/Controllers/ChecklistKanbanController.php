@@ -6,6 +6,7 @@ use App\Models\ChecklistHistory;
 use App\Models\SpjChecklist;
 use App\Models\TravelReportPelaksana;
 use App\Services\SuratTugasService;
+use App\Support\Tanggal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -64,7 +65,7 @@ class ChecklistKanbanController extends Controller
                 'history' => [
                     'status_baru' => $newStatus,
                     'user' => Auth::user()->name,
-                    'time' => now()->format('d-m-Y H:i'),
+                    'time' => Tanggal::formatDateTime(now()),
                     'document' => $checklist->nama_dokumen,
                 ],
             ]);
@@ -156,7 +157,7 @@ class ChecklistKanbanController extends Controller
             'history' => [
                 'status_baru' => 'Lengkap',
                 'user' => Auth::user()->name,
-                'time' => now()->format('d-m-Y H:i'),
+                'time' => Tanggal::formatDateTime(now()),
                 'document' => $checklist->nama_dokumen,
             ],
         ]);

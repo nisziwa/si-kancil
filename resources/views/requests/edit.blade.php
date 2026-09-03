@@ -71,12 +71,14 @@
                         <div>
                             <label for="tanggal_mulai" class="block text-sm font-medium text-gray-700">Tanggal Mulai</label>
                             <input type="date" name="tanggal_mulai" id="tanggal_mulai" value="{{ old('tanggal_mulai', $fpaRequest->tanggal_mulai?->format('Y-m-d')) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <p class="text-xs text-gray-500 mt-1">Gunakan date picker. Akan ditampilkan dalam format Indonesia, contoh: 02 September 2026.</p>
                         </div>
 
                         <!-- Tanggal Selesai -->
                         <div>
                             <label for="tanggal_selesai" class="block text-sm font-medium text-gray-700">Tanggal Selesai</label>
                             <input type="date" name="tanggal_selesai" id="tanggal_selesai" value="{{ old('tanggal_selesai', $fpaRequest->tanggal_selesai?->format('Y-m-d')) }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <p class="text-xs text-gray-500 mt-1">Gunakan date picker. Akan ditampilkan dalam format Indonesia, contoh: 02 September 2026.</p>
                         </div>
 
                         <!-- Deadline SPJ -->

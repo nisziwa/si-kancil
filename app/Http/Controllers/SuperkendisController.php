@@ -6,6 +6,7 @@ use App\Models\ChecklistHistory;
 use App\Models\Request as FpaRequest;
 use App\Models\SkRatePerjalanan;
 use App\Models\Superkendis;
+use App\Support\Tanggal;
 use App\Support\Terbilang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -445,26 +446,6 @@ class SuperkendisController extends Controller
         };
     }
 
-    /**
-     * Format tanggal ke format Indonesia, mis. "25 Juli 2026".
-     */
-    protected function formatTanggalIndonesia($value): string
-    {
-        $value = trim((string) $value);
-        if ($value === '') {
-            return '';
-        }
-
-        $ts = strtotime($value);
-        if ($ts === false) {
-            return $value;
-        }
-
-        $bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-
-        return date('j', $ts).' '.$bulan[(int) date('n', $ts) - 1].' '.date('Y', $ts);
-    }
-
     protected function selectedPelaksanas(Request $request, FpaRequest $requestModel)
     {
         $all = $requestModel->checklists
@@ -525,8 +506,8 @@ class SuperkendisController extends Controller
         $template->setMacroChars('{{', '}}');
 
         // Seluruh tanggal wajib dalam format Indonesia (mis. "25 Juli 2026").
-        $tanggalSurat = $this->formatTanggalIndonesia($data['tanggal_surat_tugas']);
-        $tanggalPerjalanan = $this->formatTanggalIndonesia($data['tanggal_perjalanan']);
+        $tanggalSurat = Tanggal::format($data['tanggal_surat_tugas'], '');
+        $tanggalPerjalanan = Tanggal::format($data['tanggal_perjalanan'], '');
 
         $values = [
             'nama' => $data['nama_pelaksana'],
@@ -591,8 +572,8 @@ class SuperkendisController extends Controller
             $xml
         );
 
-        $tanggalSurat = $this->formatTanggalIndonesia($data['tanggal_surat_tugas']);
-        $tanggalPerjalanan = $this->formatTanggalIndonesia($data['tanggal_perjalanan']);
+        $tanggalSurat = Tanggal::format($data['tanggal_surat_tugas'], '');
+        $tanggalPerjalanan = Tanggal::format($data['tanggal_perjalanan'], '');
 
         $map = [
             'nama' => $data['nama_pelaksana'],

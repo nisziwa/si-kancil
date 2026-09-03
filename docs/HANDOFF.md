@@ -52,5 +52,11 @@ Keputusan penting:
 - UX input NIP di `requests/superkendis.blade.php`: scroll horizontal mengikuti cursor saat mengetik, reset ke awal saat blur; value tidak diubah. Tabel Superkendis `table-layout: fixed` + `<colgroup>` min-width (50/220/260/220/160/200/180/180/130/120) + scroll horizontal; dropdown tampil label lengkap.
 - Automated testing: `SuperkendisTest@test_superkendis_index_page_renders` diperkuat. Seluruh 83 test PASS (269 assertions). Kode diformat ulang dengan Laravel Pint.
 
+## Indonesian Date Display Standard
+- Standar tampilan tanggal Indonesia `dd MMMM yyyy` (mis. `02 September 2026`); database tetap `Y-m-d`, tipe kolom `date` tidak diubah, input `<input type="date">` tetap mengirim `Y-m-d` — hanya teks tampilan yang diformat agar tidak ambigu.
+- Formatter terpusat `App\Support\Tanggal` (`format` → `dd MMMM yyyy`, `formatDateTime` → `dd MMMM yyyy HH:mm`), menerima Carbon/DateTime/string, fallback saat kosong; pola sama dengan `App\Support\Terbilang`, dipakai di semua Blade (bukan formatter per-Blade).
+- Area diterapkan: `requests/show.blade.php`, `dashboard.blade.php`, `partials/status-workflow.blade.php`, `partials/kanban-checklist.blade.php` + `ChecklistKanbanController`, `sk_rates/edit.blade.php`, `CalendarController`, `SuperkendisController` (tanggal surat tugas & perjalanan DOCX/PDF). Label/helper input diperbarui ke format Indonesia.
+- Test baru `TanggalTest`. Komit: `feat: standardize Indonesian date display format` (menutup GitHub Issue #10).
+
 ## Last Commit
 Commit terakhir: `fix: improve superkendis ux and date formatting` (menutup GitHub Issue #9).

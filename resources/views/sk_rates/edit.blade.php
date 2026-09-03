@@ -73,7 +73,7 @@
                                         {{ $history->aksi }}
                                     </span>
                                     <span class="text-xs text-gray-500">
-                                        {{ $history->created_at ? $history->created_at->format('d-m-Y H:i') : '-' }}
+                                        {{ \App\Support\Tanggal::formatDateTime($history->created_at) }}
                                         @if($history->user)
                                             oleh {{ $history->user->name }}
                                         @endif
