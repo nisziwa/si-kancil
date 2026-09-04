@@ -357,14 +357,9 @@
                                 </table>
                             </div>
 
-                            <div class="mt-4 flex items-center gap-3">
-                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm">
-                                    Simpan Perubahan
-                                </button>
-                                <p class="text-xs text-gray-500">
-                                    Checklist <strong>Laporan Perjalanan</strong> hanya menjadi <strong>Lengkap</strong> bila seluruh pelaksana sudah mengumpulkan.
-                                </p>
-                            </div>
+                            <p class="mt-4 text-xs text-gray-500">
+                                Checklist <strong>Laporan Perjalanan</strong> hanya menjadi <strong>Lengkap</strong> bila seluruh pelaksana sudah mengumpulkan.
+                            </p>
                         @else
                             <p class="text-gray-500 italic text-sm">Isi terlebih dahulu checklist <strong>Surat Tugas</strong> supaya daftar pelaksana tersedia.</p>
                         @endif
@@ -428,7 +423,7 @@
                         Batal
                     </a>
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded text-sm">
-                        Simpan Semua Perubahan
+                        Simpan Perubahan
                     </button>
                 </div>
             </form>

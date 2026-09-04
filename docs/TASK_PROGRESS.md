@@ -270,3 +270,12 @@ Status: Completed
 - Perbaiki `SpjChecklistController@update` validasi nested: `report_status.*` -> `report_status.status.*` (nilai skalar) sehingga simpan "Sudah Mengumpulkan" via form utama tidak lagi memicu `validation.in`.
 - Perbaiki `TravelReportController@bulkPelaksanaStatus` agar mengembalikan JSON (bukan redirect `back()`) sehingga aksi bulk tidak lagi gagal parsing JSON ("Terjadi kesalahan koneksi").
 - Tambah regression test `test_main_form_saves_sudah_mengumpulkan_without_validation_in_error`; 101 tests PASS.
+
+## Laporan Perjalanan Save Action Simplification (Issue #14)
+Status: Completed
+- Masalah: halaman *Kelola Dokumen — Laporan Perjalanan* memiliki dua tombol simpan yang membingungkan: "Simpan Perubahan" (bagian Detail Laporan Perjalanan) dan "Simpan Semua Perubahan" (footer).
+- Penyebab: kedua tombol adalah `type="submit"` di dalam form utama yang sama (`checklists.update`), sehingga keduanya melakukan submit form yang identik tanpa perbedaan fungsi.
+- Solusi: menghapus tombol simpan duplikat di bagian Detail Laporan Perjalanan dan mempertahankan satu tombol simpan di footer; label diubah menjadi "Simpan Perubahan" (kata "Semua" tak lagi diperlukan).
+- Hasil akhir: hanya satu tombol simpan pada halaman. Tidak ada perubahan backend/endpoint — checkbox pelaksana, dropdown status, bulk action, upload, dan generate laporan tetap berjalan.
+- Verifikasi: 101 tests PASS; `view:cache` sukses.
+
