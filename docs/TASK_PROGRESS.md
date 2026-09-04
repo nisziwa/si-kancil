@@ -287,3 +287,16 @@ Status: Completed
 - Solusi: memindahkan modal Generate Laporan beserta `#generate-form` keluar dari form utama (ditempatkan setelah `</form>`), dibungkus `@if` Laporan Perjalanan yang sama. Form utama kini bersih tanpa nested form, dan tombol "Simpan Perubahan" footer berfungsi normal.
 - Dampak: generate tetap berjalan (dikirim via fetch + CSRF header), tidak ada perubahan endpoint/logic backend. Verifikasi struktur: form utama (baris 27-377) berisi tombol simpan; `#generate-form` (387-428) di luar form utama. 101 tests PASS.
 
+
+---
+
+## Regression Test - Save Button in Main Form (Issue #14 root fix)
+- Added permanent regression test 	ests/Feature/ChecklistSaveButtonTest.php that renders the Laporan Perjalanan edit page and asserts (via DOMDocument, mimicking browser parsing):
+  - exactly ONE "Simpan Perubahan" button exists,
+  - that button is a POST submit located INSIDE the main checklists/{id} form (not inside the generate form, not outside any form).
+- Guards against the nested <form> bug that made the footer save button silently do nothing.
+- Full suite: 102 tests PASS (342 assertions).
+
+## Hard refresh note for "simpan perubahan ga jalan"
+- The current blade structure is verified correct (DOMDocument confirms the single save button is inside the main form; only status is required and always has a value; backend save covered by tests).
+- If the button still appears unresponsive in the browser, it is the STALE page from before commit c9cbffa — do a hard refresh (Ctrl+F5) or clear the site cache.
