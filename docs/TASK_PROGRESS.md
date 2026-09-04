@@ -279,3 +279,11 @@ Status: Completed
 - Hasil akhir: hanya satu tombol simpan pada halaman. Tidak ada perubahan backend/endpoint — checkbox pelaksana, dropdown status, bulk action, upload, dan generate laporan tetap berjalan.
 - Verifikasi: 101 tests PASS; `view:cache` sukses.
 
+
+## Root Fix - Save button tidak jalan pada Laporan Perjalanan (Issue #14)
+Status: Completed
+- Masalah lanjutan: setelah tombol simpan dirapikan menjadi satu, tombol simpan (footer) ternyata tidak berfungsi saat diklik.
+- Akar penyebab: form generate laporan (`#generate-form`) berada *di dalam* form utama (`checklists.update`) yang sama — nested `<form>` tidak valid di HTML dan menyebabkan browser menutup form utama lebih awal, sehingga tombol "Simpan Perubahan" (footer, yang berada setelah form generate) jatuh di luar form dan tidak melakukan submit.
+- Solusi: memindahkan modal Generate Laporan beserta `#generate-form` keluar dari form utama (ditempatkan setelah `</form>`), dibungkus `@if` Laporan Perjalanan yang sama. Form utama kini bersih tanpa nested form, dan tombol "Simpan Perubahan" footer berfungsi normal.
+- Dampak: generate tetap berjalan (dikirim via fetch + CSRF header), tidak ada perubahan endpoint/logic backend. Verifikasi struktur: form utama (baris 27-377) berisi tombol simpan; `#generate-form` (387-428) di luar form utama. 101 tests PASS.
+

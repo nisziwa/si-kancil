@@ -364,58 +364,6 @@
                             <p class="text-gray-500 italic text-sm">Isi terlebih dahulu checklist <strong>Surat Tugas</strong> supaya daftar pelaksana tersedia.</p>
                         @endif
                     </div>
-
-                    <!-- Modal Generate Laporan Perjalanan -->
-                    <div id="generate-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                            <div class="flex items-center justify-between px-5 py-3 border-b border-indigo-200 bg-indigo-50 rounded-t-lg sticky top-0">
-                                <h4 class="font-bold text-indigo-800">Generate Laporan Perjalanan</h4>
-                                <button type="button" id="generate-modal-close" class="text-indigo-500 hover:text-indigo-800 font-bold text-lg leading-none">&times;</button>
-                            </div>
-                            <form id="generate-form" method="POST" enctype="multipart/form-data">
-                                @csrf
-                                <input type="hidden" name="pelaksana_id" id="gen-pelaksana-id">
-                                <input type="hidden" name="format" value="docx">
-
-                                <div class="px-5 py-4 space-y-4 text-sm">
-                                    <p class="text-xs text-gray-500">Pelaksana: <strong id="gen-pelaksana-nama"></strong></p>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Jenis Laporan *</label>
-                                        <select name="jenis_laporan" id="gen-jenis" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
-                                            @foreach(\App\Models\TravelReport::JENIS_LIST as $jenis)
-                                                <option value="{{ $jenis }}">{{ \App\Models\TravelReport::JENIS_LABELS[$jenis] }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Judul Laporan *</label>
-                                        <input type="text" name="judul_laporan" id="gen-judul" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm" placeholder="Contoh: SURVEI UBINAN PALAWIJA SUBROUND 3 TAHUN 2026">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Tanggal Laporan *</label>
-                                        <input type="text" name="tanggal_laporan" id="gen-tanggal" class="datepicker mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm bg-white">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">POK / Pembiayaan *</label>
-                                        <input type="text" id="gen-pok-search" autocomplete="off" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm" placeholder="Ketik rincian pembiayaan...">
-                                        <input type="hidden" name="pok_rincian_id" id="gen-pok-id">
-                                        <div id="gen-pok-results" class="hidden mt-1 border border-gray-200 rounded bg-white shadow divide-y divide-gray-100 max-h-60 overflow-y-auto"></div>
-                                        <div id="gen-pok-detail" class="hidden mt-3 p-3 bg-gray-50 rounded border border-gray-200 text-xs space-y-1"></div>
-                                        <p class="text-xs text-red-600 mt-1" id="gen-pok-error"></p>
-                                    </div>
-                                </div>
-
-                                <div class="px-5 py-3 border-t border-gray-200 flex justify-end gap-2">
-                                    <button type="button" id="generate-modal-close2" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded text-sm">Batal</button>
-                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm">Generate & Unduh</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
                 @endif
 
                 <div class="flex justify-end gap-3">
@@ -427,6 +375,60 @@
                     </button>
                 </div>
             </form>
+
+            @if(str_contains($checklist->nama_dokumen, 'Laporan Perjalanan'))
+                <!-- Modal Generate Laporan Perjalanan (di luar form utama agar tidak merusak form simpan) -->
+                <div id="generate-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div class="flex items-center justify-between px-5 py-3 border-b border-indigo-200 bg-indigo-50 rounded-t-lg sticky top-0">
+                            <h4 class="font-bold text-indigo-800">Generate Laporan Perjalanan</h4>
+                            <button type="button" id="generate-modal-close" class="text-indigo-500 hover:text-indigo-800 font-bold text-lg leading-none">&times;</button>
+                        </div>
+                        <form id="generate-form" method="POST" enctype="multipart/form-data">
+                            @csrf
+                            <input type="hidden" name="pelaksana_id" id="gen-pelaksana-id">
+                            <input type="hidden" name="format" value="docx">
+
+                            <div class="px-5 py-4 space-y-4 text-sm">
+                                <p class="text-xs text-gray-500">Pelaksana: <strong id="gen-pelaksana-nama"></strong></p>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Jenis Laporan *</label>
+                                    <select name="jenis_laporan" id="gen-jenis" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm">
+                                        @foreach(\App\Models\TravelReport::JENIS_LIST as $jenis)
+                                            <option value="{{ $jenis }}">{{ \App\Models\TravelReport::JENIS_LABELS[$jenis] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Judul Laporan *</label>
+                                    <input type="text" name="judul_laporan" id="gen-judul" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm" placeholder="Contoh: SURVEI UBINAN PALAWIJA SUBROUND 3 TAHUN 2026">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Tanggal Laporan *</label>
+                                    <input type="text" name="tanggal_laporan" id="gen-tanggal" class="datepicker mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm bg-white">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">POK / Pembiayaan *</label>
+                                    <input type="text" id="gen-pok-search" autocomplete="off" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm" placeholder="Ketik rincian pembiayaan...">
+                                    <input type="hidden" name="pok_rincian_id" id="gen-pok-id">
+                                    <div id="gen-pok-results" class="hidden mt-1 border border-gray-200 rounded bg-white shadow divide-y divide-gray-100 max-h-60 overflow-y-auto"></div>
+                                    <div id="gen-pok-detail" class="hidden mt-3 p-3 bg-gray-50 rounded border border-gray-200 text-xs space-y-1"></div>
+                                    <p class="text-xs text-red-600 mt-1" id="gen-pok-error"></p>
+                                </div>
+                            </div>
+
+                            <div class="px-5 py-3 border-t border-gray-200 flex justify-end gap-2">
+                                <button type="button" id="generate-modal-close2" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded text-sm">Batal</button>
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm">Generate & Unduh</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            @endif
 
         </div>
     </div>
