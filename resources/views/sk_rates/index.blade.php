@@ -40,9 +40,9 @@
 
             <!-- List SK Rate -->
             <x-ui.card class="overflow-hidden">
-                <div class="overflow-x-auto overflow-y-auto max-h-[65vh]">
+                <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="sticky-thead bg-gray-50">
+                        <thead class="bg-gray-50">
                             <tr>
                                 <x-ui.th>No</x-ui.th>
                                 <x-ui.th>Kecamatan</x-ui.th>

@@ -11,12 +11,13 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <!-- Search Form -->
-                <form method="GET" action="{{ route('requests.index') }}" class="sticky-search bg-white p-4 rounded-lg shadow-sm mb-6 flex gap-4">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nomor, deskripsi, periode..." class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full md:w-1/3">
-                    <select name="status" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full md:w-1/4">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+
+            <!-- Search Card -->
+            <div class="sticky-search bg-white p-4 rounded-lg shadow-sm">
+                <form method="GET" action="{{ route('requests.index') }}" class="flex flex-col md:flex-row md:items-center gap-4">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nomor, deskripsi, periode..." class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm flex-1">
+                    <select name="status" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm md:w-1/4">
                         <option value="">Semua Status</option>
                         @foreach($statuses as $status)
                             <option value="{{ $status }}" {{ request('status') === $status ? 'selected' : '' }}>{{ $status }}</option>
@@ -25,6 +26,9 @@
                     <button type="submit" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cari</button>
                     <a href="{{ route('requests.index') }}" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">Reset</a>
                 </form>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
 
                 @if(session('success'))
                     <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -38,9 +42,9 @@
                     </div>
                 @endif
 
-                <div class="overflow-x-auto overflow-y-auto max-h-[65vh]">
+                <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="sticky-thead bg-gray-50">
+                        <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No FPA</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis</th>

@@ -247,9 +247,9 @@
                 <!-- Hasil Bulk Move -->
                 <div id="bulk-result" class="hidden mb-4 p-4 rounded border text-sm"></div>
 
-                <div class="overflow-x-auto overflow-y-auto max-h-[65vh]">
+                <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="sticky-thead bg-gray-50">
+                        <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-4 py-3 text-left font-semibold text-gray-600 uppercase text-xs w-10">
                                     <input type="checkbox" id="table-select-all" class="rounded border-gray-300 text-indigo-600">
