@@ -173,3 +173,13 @@ Generated PDF
 - Kartu "Detail Pengeluaran Riil & Surat Non Kendaraan Dinas" menampilkan tombol "Generate / Kelola Superkendis" yang scroll ke form di bawah.
 - `SpjChecklistController@edit` kini memasok `$superkendisDone`, `$selectedPelaksanaIds` (helper statis `SuperkendisController::parseSelectedPelaksanaIds`), dan `$kecamatans`.
 - Automated testing: `SuperkendisTest` baru (form tampil saat ST Lengkap, form disembunyikan saat ST belum Lengkap). Seluruh 107 tests PASS (361 assertions).
+
+---
+
+## Perbaikan UX Pemilihan POK Generate Laporan Perjalanan
+- Dropdown POK pada modal Generate Laporan (`checklists/edit.blade.php`) kini **grouped per kegiatan**: header `kode_kegiatan` + `nama_kegiatan`, rincian di-indent (bukan list datar).
+- Seluruh POK otomatis dimuat saat field difokuskan / modal dibuka (`/travel-reports/pok/search` tanpa `q`, tanpa limit).
+- Filtering realtime berbasis `nama_rincian_pok`; grouping dipertahankan; kata kunci kosong menampilkan semua.
+- `TravelReportController@searchPok` menambah `kegiatan_kode` & `kegiatan_nama` per item; shape `data` tetap array datar (kompatibel), grouping di JS.
+- `pok_rincian_id` & validasi wajib POK tidak berubah; data lama kompatibel.
+- Testing: `TravelReportPOKTest` +1 tes. Seluruh **108 tests PASS (368 assertions)**.

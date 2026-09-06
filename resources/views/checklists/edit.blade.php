@@ -428,7 +428,7 @@
 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">POK / Pembiayaan *</label>
-                                    <input type="text" id="gen-pok-search" autocomplete="off" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm" placeholder="Ketik rincian pembiayaan...">
+                                    <input type="text" id="gen-pok-search" autocomplete="off" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm" placeholder="Klik untuk memilih POK, ketik untuk menyaring...">
                                     <input type="hidden" name="pok_rincian_id" id="gen-pok-id">
                                     <div id="gen-pok-results" class="hidden mt-1 border border-gray-200 rounded bg-white shadow divide-y divide-gray-100 max-h-60 overflow-y-auto"></div>
                                     <div id="gen-pok-detail" class="hidden mt-3 p-3 bg-gray-50 rounded border border-gray-200 text-xs space-y-1"></div>
@@ -721,6 +721,7 @@
                         document.getElementById('gen-pok-detail').classList.add('hidden');
                         if (btn.dataset.pok) { loadPokDetail(btn.dataset.pok); }
                         openGenerateModal(pid, nama);
+                        loadPokSearch('');
                     });
                 });
 
@@ -732,17 +733,39 @@
                         box.classList.remove('hidden');
                         return;
                     }
+                    const groups = {};
                     items.forEach(function (it) {
-                        const div = document.createElement('div');
-                        div.className = 'px-3 py-2 cursor-pointer hover:bg-indigo-50';
-                        div.textContent = it.rincian;
-                        div.addEventListener('click', function () {
-                            document.getElementById('gen-pok-search').value = it.rincian;
-                            document.getElementById('gen-pok-id').value = it.id;
-                            box.classList.add('hidden');
-                            renderPokDetail(it);
+                        const key = it.kegiatan_kode || '-';
+                        if (!groups[key]) {
+                            groups[key] = { kode: key, nama: it.kegiatan_nama || '', items: [] };
+                        }
+                        groups[key].items.push(it);
+                    });
+                    Object.keys(groups).forEach(function (key) {
+                        const g = groups[key];
+                        const hdr = document.createElement('div');
+                        hdr.className = 'px-3 py-1.5 bg-gray-100 border-b border-gray-200';
+                        const codeLine = document.createElement('div');
+                        codeLine.className = 'font-bold text-gray-800 text-sm';
+                        codeLine.textContent = g.kode;
+                        const nameLine = document.createElement('div');
+                        nameLine.className = 'text-xs font-semibold text-gray-600';
+                        nameLine.textContent = g.nama;
+                        hdr.appendChild(codeLine);
+                        hdr.appendChild(nameLine);
+                        box.appendChild(hdr);
+                        g.items.forEach(function (it) {
+                            const div = document.createElement('div');
+                            div.className = 'px-3 py-2 pl-8 cursor-pointer hover:bg-indigo-50';
+                            div.textContent = it.rincian;
+                            div.addEventListener('click', function () {
+                                document.getElementById('gen-pok-search').value = it.rincian;
+                                document.getElementById('gen-pok-id').value = it.id;
+                                box.classList.add('hidden');
+                                renderPokDetail(it);
+                            });
+                            box.appendChild(div);
                         });
-                        box.appendChild(div);
                     });
                     box.classList.remove('hidden');
                 }
@@ -771,19 +794,22 @@
                         .catch(() => {});
                 }
 
-                document.getElementById('gen-pok-search').addEventListener('input', function () {
+                function loadPokSearch(q) {
                     clearTimeout(pokTimer);
-                    const q = this.value;
-                    if (q.length < 3) {
-                        document.getElementById('gen-pok-results').classList.add('hidden');
-                        return;
-                    }
                     pokTimer = setTimeout(function () {
                         fetch(`/travel-reports/pok/search?q=${encodeURIComponent(q)}`)
                             .then(res => res.json())
                             .then(d => { if (d.success) renderPokResults(d.data); })
                             .catch(() => {});
-                    }, 300);
+                    }, 200);
+                }
+
+                document.getElementById('gen-pok-search').addEventListener('focus', function () {
+                    loadPokSearch(this.value.trim());
+                });
+
+                document.getElementById('gen-pok-search').addEventListener('input', function () {
+                    loadPokSearch(this.value.trim());
                 });
 
                 genForm.addEventListener('submit', function (e) {

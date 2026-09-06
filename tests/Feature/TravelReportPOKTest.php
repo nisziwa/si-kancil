@@ -124,6 +124,20 @@ class TravelReportPOKTest extends TestCase
         $this->assertStringContainsString('survei captive power', $response->json('data.0.rincian'));
     }
 
+    public function test_pok_search_without_query_returns_all_grouped_fields(): void
+    {
+        $response = $this->actingAs($this->user)->getJson('/travel-reports/pok/search')
+            ->assertOk();
+
+        $this->assertTrue($response->json('success'));
+        $data = $response->json('data');
+        $this->assertNotEmpty($data);
+        $this->assertSame('2897', $data[0]['kegiatan_kode']);
+        $this->assertSame('Kegiatan Data', $data[0]['kegiatan_nama']);
+        $this->assertArrayHasKey('rincian', $data[0]);
+        $this->assertArrayHasKey('id', $data[0]);
+    }
+
     public function test_kanban_popup_returns_not_collected_count_and_message(): void
     {
         // Belum ada pelaksana yang mengumpulkan -> 1 belum mengumpulkan.

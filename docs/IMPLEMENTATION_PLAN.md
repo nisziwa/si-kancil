@@ -336,3 +336,12 @@ Generated PDF
 ### Troubleshooting
 - `LibreOffice/soffice belum tersedia pada server.` -> install LibreOffice atau set `LIBREOFFICE_PATH`.
 - `Gagal melakukan konversi dokumen DOCX ke PDF.` -> pastikan file DOCX valid dan folder output writable; jalankan soffice manual untuk melihat error asli.
+
+---
+
+## Perbaikan UX Pemilihan POK Generate Laporan Perjalanan
+- **Grouped dropdown per kegiatan**: hasil pencarian POK ditampilkan per kelompok `kode_kegiatan` + `nama_kegiatan`, rincian di-indent — tidak lagi list datar. Grouping dilakukan client-side di `checklists/edit.blade.php`; server mengirim item datar dengan tambahan `kegiatan_kode` & `kegiatan_nama`.
+- **Load on focus**: field POK langsung memuat seluruh rincian (query `q` kosong -> tanpa `limit(10)`) saat modal dibuka/difokuskan.
+- **Filtering realtime**: input memicu pencarian `like %q%` pada `rincian`; kata kunci pendek/kosong menampilkan semua, grouping tetap.
+- **Detail setelah pilih**: `renderPokDetail` menampilkan Program/Kegiatan/Output/Sub Output/Komponen/Akun; `pok_rincian_id` disimpan identik (validasi wajib tetap, data lama kompatibel).
+- File: `app/Http/Controllers/TravelReportController.php` (`searchPok`), `resources/views/checklists/edit.blade.php` (JS modal + placeholder), `tests/Feature/TravelReportPOKTest.php`.

@@ -31,9 +31,19 @@ class TravelReportController extends Controller
             $query->where('rincian', 'like', '%'.$q.'%');
         }
 
-        $result = $query->orderBy('rincian')->limit(10)->get()->map(fn ($pok) => [
+        // Tanpa kata kunci tampilkan seluruh rincian (dipakai saat field difokuskan),
+        // dikelompokkan per kegiatan; dengan kata kunci batasi hasil pencarian.
+        if ($q === '') {
+            $query->orderBy('rincian');
+        } else {
+            $query->orderBy('rincian')->limit(10);
+        }
+
+        $result = $query->get()->sortBy(fn ($pok) => $pok->kegiatan ? $pok->kegiatan->kode_kegiatan : '')->map(fn ($pok) => [
             'id' => $pok->id,
             'rincian' => $pok->rincian,
+            'kegiatan_kode' => $pok->kegiatan ? (string) $pok->kegiatan->kode_kegiatan : '',
+            'kegiatan_nama' => $pok->kegiatan ? $pok->kegiatan->nama_kegiatan : '',
             'program' => $pok->program ? $pok->program->kode_program.' - '.$pok->program->nama_program : '-',
             'kegiatan' => $pok->kegiatan ? $pok->kegiatan->kode_kegiatan.' - '.$pok->kegiatan->nama_kegiatan : '-',
             'output' => $pok->output ? $pok->output->kode_output.' - '.$pok->output->nama_output : '-',
