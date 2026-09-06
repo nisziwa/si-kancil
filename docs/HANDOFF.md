@@ -189,3 +189,8 @@ Generated PDF
 - `pokReqSeq` sequence guard mencegah race response menimpa hasil filter.
 - Highlight kuning (`<mark class="bg-yellow-200">`) untuk kata kunci yang cocok + `escapeHtml()`. `pok_rincian_id` & validasi tidak berubah.
 - Testing: seluruh **108 tests PASS (368 assertions)**.
+
+## Hotfix - No-Store POK Search (cache kosong)
+- Dropdown POK menampilkan pesan kosong padahal data ada (9 rincian lokal) karena respons GET `/travel-reports/pok/search` di-cache tanpa `Cache-Control`.
+- Fix: header `Cache-Control: no-store, no-cache, must-revalidate` di `searchPok` & `pokDetail` + `fetch({ cache: 'no-store' })` di `loadPokSearch`/`loadPokDetail`.
+- Testing: seluruh **108 tests PASS (368 assertions)**.

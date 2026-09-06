@@ -52,7 +52,8 @@ class TravelReportController extends Controller
             'akun' => $pok->akun ? $pok->akun->kode_akun.' - '.$pok->akun->nama_akun : '-',
         ]);
 
-        return response()->json(['success' => true, 'data' => $result]);
+        return response()->json(['success' => true, 'data' => $result])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     /**
@@ -77,7 +78,7 @@ class TravelReportController extends Controller
                 'komponen' => $pok->komponen ? $pok->komponen->kode_komponen.' - '.$pok->komponen->nama_komponen : '-',
                 'akun' => $pok->akun ? $pok->akun->kode_akun.' - '.$pok->akun->nama_akun : '-',
             ],
-        ]);
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     /**

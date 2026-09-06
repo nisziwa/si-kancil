@@ -370,3 +370,9 @@ Generated PDF
 - Fix race condition: `pokReqSeq` (sequence guard) memastikan hanya respons paling akhir yang dirender; respons lambat tidak menimpa hasil filter.
 - Fitur baru: kata kunci yang cocok di-highlight kuning (`<mark class="bg-yellow-200">`) pada tiap item list; teks di-escape sebelum dirender (anti XSS). Grouping dan detail setelah pilih tetap.
 - Automated testing: seluruh **108 tests PASS (368 assertions)**.
+
+## Hotfix - No-Store POK Search (cache kosong)
+- Gejala: dropdown POK menampilkan "Belum ada data POK." / "Tidak ada POK yang cocok." padahal DB berisi 9 rincian; pencarian tertentu (misal "skp") tampil, "sk" tidak.
+- Akar masalah: respons GET `/travel-reports/pok/search` tidak menyertakan `Cache-Control`, sehingga browser/proxy meng-cache respons lama (termasuk yang kosong dari sesi sebelumnya).
+- Fix: `TravelReportController@searchPok` & `pokDetail` mengirim header `Cache-Control: no-store, no-cache, must-revalidate`; `fetch` di `loadPokSearch` & `loadPokDetail` memakai opsi `{ cache: 'no-store' }`.
+- Automated testing: seluruh **108 tests PASS (368 assertions)**.

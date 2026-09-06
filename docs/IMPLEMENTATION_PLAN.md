@@ -350,3 +350,7 @@ Generated PDF
 - Pesan kosong di `checklists/edit.blade.php` dipisah: query kosong -> "Belum ada data POK.", pencarian tanpa cocok -> "Tidak ada POK yang cocok."; box di-clear + "Memuat POK..." saat fetch.
 - `pokReqSeq` (sequence guard) mencegah race response menimpa hasil filter.
 - Kata kunci tercocok di-highlight `<mark class="bg-yellow-200">` dengan `escapeHtml()` (anti XSS). DB & `pok_rincian_id` tidak berubah.
+
+## Hotfix - No-Store POK Search (cache kosong)
+- Respons `searchPok` & `pokDetail` diberi header `Cache-Control: no-store, no-cache, must-revalidate`.
+- `fetch` POK memakai `{ cache: 'no-store' }` untuk mencegah dropdown menampilkan respons lama yang kosong.

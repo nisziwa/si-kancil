@@ -814,7 +814,7 @@
                 }
 
                 function loadPokDetail(id) {
-                    fetch(`/travel-reports/pok/${id}`)
+                    fetch(`/travel-reports/pok/${id}`, { cache: 'no-store' })
                         .then(res => res.json())
                         .then(d => { if (d.success) renderPokDetail(d.data); })
                         .catch(() => {});
@@ -831,7 +831,7 @@
                     setPokLoading();
                     const seq = ++pokReqSeq;
                     pokTimer = setTimeout(function () {
-                        fetch(`/travel-reports/pok/search?q=${encodeURIComponent(q)}`)
+                        fetch(`/travel-reports/pok/search?q=${encodeURIComponent(q)}`, { cache: 'no-store' })
                             .then(res => res.json())
                             .then(d => {
                                 if (seq !== pokReqSeq) return;
