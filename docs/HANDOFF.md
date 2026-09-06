@@ -183,3 +183,9 @@ Generated PDF
 - `TravelReportController@searchPok` menambah `kegiatan_kode` & `kegiatan_nama` per item; shape `data` tetap array datar (kompatibel), grouping di JS.
 - `pok_rincian_id` & validasi wajib POK tidak berubah; data lama kompatibel.
 - Testing: `TravelReportPOKTest` +1 tes. Seluruh **108 tests PASS (368 assertions)**.
+
+## Hotfix - UX POK Selector (empty state & highlight)
+- Fix pesan salah "Tidak ada POK yang cocok" saat belum mengetik: box di-clear saat modal dibuka, state "Memuat POK...", pesan kosong dibedakan (query kosong vs pencarian tak ada cocok).
+- `pokReqSeq` sequence guard mencegah race response menimpa hasil filter.
+- Highlight kuning (`<mark class="bg-yellow-200">`) untuk kata kunci yang cocok + `escapeHtml()`. `pok_rincian_id` & validasi tidak berubah.
+- Testing: seluruh **108 tests PASS (368 assertions)**.

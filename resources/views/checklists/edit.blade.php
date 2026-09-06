@@ -682,6 +682,7 @@
                 const genModal = document.getElementById('generate-modal');
                 const genForm = document.getElementById('generate-form');
                 let pokTimer = null;
+                let pokReqSeq = 0;
 
                 function showGenError(msg) {
                     document.getElementById('gen-pok-error').textContent = msg || '';
@@ -717,6 +718,7 @@
                         }
                         document.getElementById('gen-pok-search').value = '';
                         document.getElementById('gen-pok-id').value = btn.dataset.pok || '';
+                        document.getElementById('gen-pok-results').innerHTML = '';
                         document.getElementById('gen-pok-results').classList.add('hidden');
                         document.getElementById('gen-pok-detail').classList.add('hidden');
                         if (btn.dataset.pok) { loadPokDetail(btn.dataset.pok); }
@@ -725,11 +727,35 @@
                     });
                 });
 
-                function renderPokResults(items) {
+                function escapeHtml(value) {
+                    return String(value == null ? '' : value)
+                        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                }
+
+                function highlightMatch(text, q) {
+                    const raw = String(text == null ? '' : text);
+                    const needle = (q || '').trim();
+                    if (!needle) return escapeHtml(raw);
+                    const lower = raw.toLowerCase();
+                    const parts = [];
+                    let idx = 0, i;
+                    while ((i = lower.indexOf(needle.toLowerCase(), idx)) !== -1) {
+                        parts.push(escapeHtml(raw.slice(idx, i)));
+                        parts.push('<mark class="bg-yellow-200 rounded px-0.5">');
+                        parts.push(escapeHtml(raw.slice(i, i + needle.length)));
+                        parts.push('</mark>');
+                        idx = i + needle.length;
+                    }
+                    parts.push(escapeHtml(raw.slice(idx)));
+                    return parts.join('');
+                }
+
+                function renderPokResults(items, q) {
                     const box = document.getElementById('gen-pok-results');
                     box.innerHTML = '';
                     if (!items.length) {
-                        box.innerHTML = '<div class="px-3 py-2 text-gray-500">Tidak ada POK yang cocok.</div>';
+                        box.innerHTML = '<div class="px-3 py-2 text-gray-500">' + (q ? 'Tidak ada POK yang cocok.' : 'Belum ada data POK.') + '</div>';
                         box.classList.remove('hidden');
                         return;
                     }
@@ -757,7 +783,7 @@
                         g.items.forEach(function (it) {
                             const div = document.createElement('div');
                             div.className = 'px-3 py-2 pl-8 cursor-pointer hover:bg-indigo-50';
-                            div.textContent = it.rincian;
+                            div.innerHTML = highlightMatch(it.rincian, q);
                             div.addEventListener('click', function () {
                                 document.getElementById('gen-pok-search').value = it.rincian;
                                 document.getElementById('gen-pok-id').value = it.id;
@@ -794,13 +820,29 @@
                         .catch(() => {});
                 }
 
+                function setPokLoading() {
+                    const box = document.getElementById('gen-pok-results');
+                    box.innerHTML = '<div class="px-3 py-2 text-gray-500">Memuat POK...</div>';
+                    box.classList.remove('hidden');
+                }
+
                 function loadPokSearch(q) {
                     clearTimeout(pokTimer);
+                    setPokLoading();
+                    const seq = ++pokReqSeq;
                     pokTimer = setTimeout(function () {
                         fetch(`/travel-reports/pok/search?q=${encodeURIComponent(q)}`)
                             .then(res => res.json())
-                            .then(d => { if (d.success) renderPokResults(d.data); })
-                            .catch(() => {});
+                            .then(d => {
+                                if (seq !== pokReqSeq) return;
+                                if (d.success) renderPokResults(d.data, q);
+                            })
+                            .catch(() => {
+                                if (seq !== pokReqSeq) return;
+                                const box = document.getElementById('gen-pok-results');
+                                box.innerHTML = '<div class="px-3 py-2 text-gray-500">Gagal memuat POK.</div>';
+                                box.classList.remove('hidden');
+                            });
                     }, 200);
                 }
 

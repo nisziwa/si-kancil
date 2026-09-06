@@ -364,3 +364,9 @@ Generated PDF
 - Detail setelah dipilih tetap menampilkan Program, Kegiatan, Output, Sub Output, Komponen, Akun (+ Rincian) via `renderPokDetail` / `pokDetail`.
 - Penyimpanan `pok_rincian_id` dan validasi wajib POK pada generate laporan **tidak berubah**; data lama tetap kompatibel.
 - Automated testing: `TravelReportPOKTest@test_pok_search_without_query_returns_all_grouped_fields` baru. Seluruh **108 tests PASS (368 assertions)**.
+
+## Hotfix - UX POK Selector (empty state & highlight)
+- Fix "Tidak ada POK yang cocok" muncul saat field belum diketik: box hasil kini dibersihkan saat modal dibuka, ada state "Memuat POK...", dan pesan kosong dibedakan — query kosong menampilkan "Belum ada data POK.", hasil pencarian kosong menampilkan "Tidak ada POK yang cocok.".
+- Fix race condition: `pokReqSeq` (sequence guard) memastikan hanya respons paling akhir yang dirender; respons lambat tidak menimpa hasil filter.
+- Fitur baru: kata kunci yang cocok di-highlight kuning (`<mark class="bg-yellow-200">`) pada tiap item list; teks di-escape sebelum dirender (anti XSS). Grouping dan detail setelah pilih tetap.
+- Automated testing: seluruh **108 tests PASS (368 assertions)**.

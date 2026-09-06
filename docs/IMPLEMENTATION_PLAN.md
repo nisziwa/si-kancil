@@ -345,3 +345,8 @@ Generated PDF
 - **Filtering realtime**: input memicu pencarian `like %q%` pada `rincian`; kata kunci pendek/kosong menampilkan semua, grouping tetap.
 - **Detail setelah pilih**: `renderPokDetail` menampilkan Program/Kegiatan/Output/Sub Output/Komponen/Akun; `pok_rincian_id` disimpan identik (validasi wajib tetap, data lama kompatibel).
 - File: `app/Http/Controllers/TravelReportController.php` (`searchPok`), `resources/views/checklists/edit.blade.php` (JS modal + placeholder), `tests/Feature/TravelReportPOKTest.php`.
+
+## Hotfix - UX POK Selector (empty state & highlight)
+- Pesan kosong di `checklists/edit.blade.php` dipisah: query kosong -> "Belum ada data POK.", pencarian tanpa cocok -> "Tidak ada POK yang cocok."; box di-clear + "Memuat POK..." saat fetch.
+- `pokReqSeq` (sequence guard) mencegah race response menimpa hasil filter.
+- Kata kunci tercocok di-highlight `<mark class="bg-yellow-200">` dengan `escapeHtml()` (anti XSS). DB & `pok_rincian_id` tidak berubah.
