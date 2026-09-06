@@ -4,6 +4,7 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ChecklistKanbanController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FileUploadController;
+use App\Http\Controllers\MasterPokController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RequestController;
 use App\Http\Controllers\RequestStatusController;
@@ -73,6 +74,14 @@ Route::middleware('auth')->group(function () {
 
     // SK Rate Perjalanan Routes
     Route::resource('sk-rates', SkRatePerjalananController::class)->except(['show']);
+
+    // Master POK Routes (tanpa hard delete; pakai aktif/nonaktif)
+    Route::get('/master-pok', [MasterPokController::class, 'index'])->name('master-pok.index');
+    Route::get('/master-pok/{tab}/create', [MasterPokController::class, 'create'])->name('master-pok.create');
+    Route::post('/master-pok/{tab}', [MasterPokController::class, 'store'])->name('master-pok.store');
+    Route::get('/master-pok/{tab}/{id}/edit', [MasterPokController::class, 'edit'])->name('master-pok.edit');
+    Route::put('/master-pok/{tab}/{id}', [MasterPokController::class, 'update'])->name('master-pok.update');
+    Route::patch('/master-pok/{tab}/{id}/toggle', [MasterPokController::class, 'toggle'])->name('master-pok.toggle');
 });
 
 require __DIR__.'/auth.php';

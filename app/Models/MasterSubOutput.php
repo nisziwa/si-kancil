@@ -10,7 +10,12 @@ class MasterSubOutput extends Model
 {
     protected $table = 'master_sub_output';
 
-    protected $fillable = ['output_id', 'kode_sub_output', 'nama_sub_output'];
+    protected $fillable = ['output_id', 'kode_sub_output', 'nama_sub_output', 'is_active'];
+
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean'];
+    }
 
     public function output(): BelongsTo
     {

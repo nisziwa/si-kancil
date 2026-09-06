@@ -358,3 +358,12 @@ Generated PDF
 ## Hotfix - POK Search Data List vs Object (root fix)
 - `searchPok` menambahkan `->values()` setelah `->sortBy()->map()` agar `data` selalu JSON array, bukan object keyed collection (`{"1":..,"0":..}`) yang membuat `items.length`/`forEach` gagal di frontend.
 - Frontend `loadPokSearch()` defensif: `renderPokResults(Object.values(d.data || {}), q)`.
+
+## Master POK Management Module with Active/Inactive Support
+- **Ruang lingkup**: menu Master POK di navbar, halaman /master-pok bertabs (Program, Kegiatan, Output, Sub Output, Komponen, Akun, Rincian POK; default Rincian POK), mengikuti pola UI SK Rate.
+- **Struktur data**: tabel existing (tanpa tabel baru). Hierarki Program -> Kegiatan -> Output -> Sub Output -> Komponen; Akun standalone; master_rincian_pok menyimpan gabungan program_id, kegiatan_id, output_id, sub_output_id, komponen_id, akun_id, rincian.
+- **Aktif/nonaktif**: migration menambah is_active boolean default true ke ketujuh tabel master POK; data baru otomatis aktif; toggle digunakan menggantikan hard delete agar histori (travel_reports.pok_rincian_id, dokumen/docx existing) tidak hilang atau rusak.
+- **Aturan & validasi**: parent wajib dan harus aktif; kode unique per tabel; unique Rincian POK berbasis kombinasi FK+rincian (bukan teks) sehingga nama rincian sama di cabang berbeda tetap boleh.
+- **Keamanan**: MasterPokController config-driven; tab whitelist -> invalid tab bort(404); mapping model hanya dari konstanta internal, tidak pernah dari input URL.
+- **Non-pertimbangan**: TravelReportController (searchPok/pokDetail), TravelReportService, dan generate dokumen existing **tidak diubah**. Snapshot text POK pada dokumen adalah improvement terpisah.
+- **Dokumen terkait**: outes/web.php, layouts/navigation.blade.php, view esources/views/master_pok/*, 	ests/Feature/MasterPokCrudTest.php. Hasil: **118 tests PASS (406 assertions)**.

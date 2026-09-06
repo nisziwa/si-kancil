@@ -9,7 +9,12 @@ class MasterKomponen extends Model
 {
     protected $table = 'master_komponen';
 
-    protected $fillable = ['sub_output_id', 'kode_komponen', 'nama_komponen'];
+    protected $fillable = ['sub_output_id', 'kode_komponen', 'nama_komponen', 'is_active'];
+
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean'];
+    }
 
     public function subOutput(): BelongsTo
     {

@@ -8,5 +8,10 @@ class MasterAkun extends Model
 {
     protected $table = 'master_akun';
 
-    protected $fillable = ['kode_akun', 'nama_akun'];
+    protected $fillable = ['kode_akun', 'nama_akun', 'is_active'];
+
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean'];
+    }
 }

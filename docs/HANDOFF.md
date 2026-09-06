@@ -198,3 +198,13 @@ Generated PDF
 ## Hotfix - POK Search Data List vs Object (root fix)
 - Root cause sebenarnya: `get()->sortBy()->map()` mempertahankan keys → `data` dapat terkirim sebagai object keyed (`{"1":..,"0":..}`). Fix: `->values()` di `searchPok` (data selalu array) + `Object.values(d.data || {})` di `loadPokSearch`.
 - Testing: seluruh **109 tests PASS (374 assertions)**.
+
+## Master POK Management Module with Active/Inactive Support
+- **Menu**: "Master POK" di navbar (desktop + responsive), route /master-pok, satu halaman dengan tabs (default **Rincian POK**).
+- **Struktur**: Program -> Kegiatan -> Output -> Sub Output -> Komponen; Akun standalone; Rincian POK = 6 FK + incian (data final yang dikonsumsi searchPok/generate Laporan Perjalanan).
+- **Aktif/nonaktif**: migration 2026_09_06_070832_add_is_active_to_master_pok_tables menambah is_active boolean default true ke 7 tabel master POK. Index default aktif-only + checkbox "Tampilkan data tidak aktif"; status ditampilkan (Aktif/Tidak Aktif).
+- **Tanpa hard delete** agar histori laporan terjaga: mengganti delete dengan toggle aktif/nonaktif (tidak ada route destroy, tidak ada tombol Delete, tidak ada cascade delete dari UI).
+- **Cara pakai**: buka menu Master POK -> pilih tab -> + Tambah -> isi form (dropdown parent hanya menampilkan parent aktif; tab Rincian memakai cascading dropdown) -> Simpan. Untuk mengubah status: Edit (perbaiki data) atau Nonaktifkan/Aktifkan kembali.
+- **Aturan unik**: Rincian POK unique berdasarkan kombinasi semua FK + rincian, bukan teks saja (nama rincian yang sama di cabang berbeda diizinkan).
+- **Routing**: 6 route master-pok.* dalam grup auth; tab whitelist, invalid tab bort(404); controller config-driven tanpa model dinamis dari URL.
+- **Testing**: 	ests/Feature/MasterPokCrudTest.php (9 tes). Seluruh **118 tests PASS (406 assertions)**.

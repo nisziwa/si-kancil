@@ -9,7 +9,12 @@ class MasterProgram extends Model
 {
     protected $table = 'master_program';
 
-    protected $fillable = ['kode_program', 'nama_program'];
+    protected $fillable = ['kode_program', 'nama_program', 'is_active'];
+
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean'];
+    }
 
     public function kegiatans(): HasMany
     {

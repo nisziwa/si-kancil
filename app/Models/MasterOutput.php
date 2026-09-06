@@ -10,7 +10,12 @@ class MasterOutput extends Model
 {
     protected $table = 'master_output';
 
-    protected $fillable = ['kegiatan_id', 'kode_output', 'nama_output'];
+    protected $fillable = ['kegiatan_id', 'kode_output', 'nama_output', 'is_active'];
+
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean'];
+    }
 
     public function kegiatan(): BelongsTo
     {

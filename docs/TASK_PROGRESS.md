@@ -390,3 +390,15 @@ Generated PDF
 - Gejala: saat klik tombol Generate Laporan Perjalanan, muncul gap/margin di bagian atas popup.
 - Akar masalah: `#generate-modal` adalah direct child container `.space-y-6`; aturan Tailwind `.space-y-6 > :not([hidden]) ~ :not([hidden])` menambah `margin-top: 24px` ke modal saat `hidden` dilepas (modal `position:fixed; top:0` → box turun dari atas viewport).
 - Fix: tambah `style="margin-top:0"` pada div `#generate-modal` (`checklists/edit.blade.php:396`).
+
+## Master POK Management Module with Active/Inactive Support
+- Menu baru **Master POK** di navbar (desktop + responsive) mengikuti pola UI SK Rate (halaman penuh, tabel, search, pagination, form create/edit terpisah).
+- URL /master-pok dengan tabs (default **Rincian POK**): Program, Kegiatan, Output, Sub Output, Komponen, Akun, Rincian POK.
+- Hierarki: Program -> Kegiatan -> Output -> Sub Output -> Komponen; Akun standalone; Rincian POK menyimpan gabungan 6 FK + rincian (data final yang dipakai fitur generate laporan).
+- **Tanpa hard delete**: hanya aksi Edit + Aktifkan/Nonaktifkan (toggle). Kolom is_active boolean default true ditambahkan ke 7 tabel master POK (migration 2026_09_06_070832_add_is_active_to_master_pok_tables).
+- Index default hanya menampilkan data aktif; checkbox "Tampilkan data tidak aktif" menampilkan keduanya dengan indikator status.
+- Dropdown form hanya memakai parent aktif; saat edit, parent milik data tetap disertakan walau nonaktif.
+- Validasi parent wajib (child tanpa parent ditolak) + parent harus aktif; kode unique per tabel; Rincian POK unique berdasarkan **kombinasi** program+kegiatan+output+sub_output+komponen+akun+rincian (nama sama di cabang berbeda tetap boleh).
+- Controller MasterPokController config-driven, tab whitelist (invalid -> 404), tidak ada model dinamis dari URL.
+- Flow existing (TravelReportController searchPok/pokDetail, TravelReportService, generate dokumen) **tidak diubah**; pok_rincian_id tetap.
+- Automated testing: +	ests/Feature/MasterPokCrudTest.php (9 tes: invalid tab 404, default aktif, toggle nonaktif/aktif, index aktif-only, show_inactive, child tanpa parent ditolak, duplicate rincian kombinasi sama ditolak, rincian sama cabang beda boleh, edit). Seluruh **118 tests PASS (406 assertions)**.

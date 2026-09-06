@@ -10,7 +10,12 @@ class MasterKegiatan extends Model
 {
     protected $table = 'master_kegiatan';
 
-    protected $fillable = ['program_id', 'kode_kegiatan', 'nama_kegiatan'];
+    protected $fillable = ['program_id', 'kode_kegiatan', 'nama_kegiatan', 'is_active'];
+
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean'];
+    }
 
     public function program(): BelongsTo
     {

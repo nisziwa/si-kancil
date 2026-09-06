@@ -31,6 +31,10 @@
                     <x-nav-link :href="route('sk-rates.index')" :active="request()->routeIs('sk-rates.*')">
                         {{ __('SK Rate') }}
                     </x-nav-link>
+
+                    <x-nav-link :href="route('master-pok.index')" :active="request()->routeIs('master-pok.*')">
+                        {{ __('Master POK') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -101,6 +105,10 @@
 
             <x-responsive-nav-link :href="route('sk-rates.index')" :active="request()->routeIs('sk-rates.*')">
                 {{ __('SK Rate') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('master-pok.index')" :active="request()->routeIs('master-pok.*')">
+                {{ __('Master POK') }}
             </x-responsive-nav-link>
         </div>
 

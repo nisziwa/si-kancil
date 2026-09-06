@@ -11,8 +11,13 @@ class MasterRincianPok extends Model
 
     protected $fillable = [
         'program_id', 'kegiatan_id', 'output_id', 'sub_output_id',
-        'komponen_id', 'akun_id', 'rincian',
+        'komponen_id', 'akun_id', 'rincian', 'is_active',
     ];
+
+    protected function casts(): array
+    {
+        return ['is_active' => 'boolean'];
+    }
 
     public function program(): BelongsTo
     {
