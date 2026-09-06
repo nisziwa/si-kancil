@@ -385,3 +385,8 @@ Generated PDF
   - Frontend `checklists/edit.blade.php` `loadPokSearch()`: `renderPokResults(Object.values(d.data || {}), q)` (defensive).
 - Endpoint, `gen-pok-id`, detail/grouping/highlight tidak berubah.
 - Automated testing: +`test_pok_search_multiple_results_returned_as_list` (assert `array_is_list`). Seluruh **109 tests PASS (374 assertions)**.
+
+## Hotfix - Margin top pada modal Generate (space-y-6)
+- Gejala: saat klik tombol Generate Laporan Perjalanan, muncul gap/margin di bagian atas popup.
+- Akar masalah: `#generate-modal` adalah direct child container `.space-y-6`; aturan Tailwind `.space-y-6 > :not([hidden]) ~ :not([hidden])` menambah `margin-top: 24px` ke modal saat `hidden` dilepas (modal `position:fixed; top:0` → box turun dari atas viewport).
+- Fix: tambah `style="margin-top:0"` pada div `#generate-modal` (`checklists/edit.blade.php:396`).

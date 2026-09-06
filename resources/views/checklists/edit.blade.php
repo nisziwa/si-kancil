@@ -393,7 +393,7 @@
 
             @if(str_contains($checklist->nama_dokumen, 'Laporan Perjalanan'))
                 <!-- Modal Generate Laporan Perjalanan (di luar form utama agar tidak merusak form simpan) -->
-                <div id="generate-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                <div id="generate-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" style="margin-top:0">
                     <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                         <div class="flex items-center justify-between px-5 py-3 border-b border-indigo-200 bg-indigo-50 rounded-t-lg sticky top-0">
                             <h4 class="font-bold text-indigo-800">Generate Laporan Perjalanan</h4>
