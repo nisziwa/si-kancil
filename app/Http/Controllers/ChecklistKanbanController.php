@@ -30,8 +30,26 @@ class ChecklistKanbanController extends Controller
             return response()->json([
                 'success' => false,
                 'revert' => true,
-                'message' => SuratTugasService::completenessMessageForChecklist($checklist),
+                'require_st_confirmation' => true,
+                'checklist_id' => $checklist->id,
+                'message' => SuratTugasService::ST_INCOMPLETE_MESSAGE,
             ], 422);
+        }
+
+        // Dokumen dependen (Laporan Perjalanan / Pengeluaran Riil) tidak boleh
+        // dipindahkan selama Surat Tugas pada request yang sama belum lengkap.
+        if ($oldStatus !== $newStatus
+            && SuratTugasService::isDependentDocument($checklist->nama_dokumen)) {
+            $stChecklist = $this->stChecklistFor($checklist);
+            if (SuratTugasService::dependentMoveBlocked($stChecklist, $oldStatus, $newStatus)) {
+                return response()->json([
+                    'success' => false,
+                    'revert' => true,
+                    'require_st_confirmation' => true,
+                    'checklist_id' => $stChecklist->id,
+                    'message' => SuratTugasService::ST_DEPENDENT_BLOCK_MESSAGE,
+                ], 422);
+            }
         }
 
         // Laporan Perjalanan hanya boleh "Lengkap" bila seluruh pelaksana mengumpulkan.
@@ -146,7 +164,17 @@ class ChecklistKanbanController extends Controller
      */
     protected function checkStatusChange(SpjChecklist $checklist, string $newStatus): ?string
     {
-        if ($newStatus !== 'Lengkap' || $checklist->status === 'Lengkap') {
+        if ($checklist->status === $newStatus) {
+            return null;
+        }
+
+        // Dokumen dependen tidak boleh dipindah selama Surat Tugas belum lengkap.
+        if (SuratTugasService::isDependentDocument($checklist->nama_dokumen)
+            && SuratTugasService::dependentMoveBlocked($this->stChecklistFor($checklist), $checklist->status, $newStatus)) {
+            return SuratTugasService::ST_DEPENDENT_BLOCK_MESSAGE;
+        }
+
+        if ($newStatus !== 'Lengkap') {
             return null;
         }
 
@@ -285,12 +313,17 @@ class ChecklistKanbanController extends Controller
 
     protected function stDetailFor(SpjChecklist $checklist)
     {
-        $stChecklist = SpjChecklist::where('request_id', $checklist->request_id)
-            ->where('nama_dokumen', 'like', '%Surat Tugas%')
-            ->with('suratTugasDetail.pelaksanas')
-            ->first();
+        $stChecklist = $this->stChecklistFor($checklist);
 
         return $stChecklist ? $stChecklist->suratTugasDetail : null;
+    }
+
+    /**
+     * Checklist "Surat Tugas" pada request yang sama.
+     */
+    protected function stChecklistFor(SpjChecklist $checklist)
+    {
+        return SuratTugasService::forRequest($checklist);
     }
 
     protected function applyLengkap(SpjChecklist $checklist): void

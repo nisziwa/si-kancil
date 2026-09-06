@@ -582,10 +582,15 @@
                     sel.addEventListener('change', function () {
                         if (sel.value === 'Belum Mengumpulkan' && prev !== 'Belum Mengumpulkan' && hasFile) {
                             const nama = row.querySelector('.report-check').closest('tr').querySelector('td:nth-child(2)').textContent.trim();
-                            if (!confirm('Pelaksana ' + nama + ' sudah memiliki laporan yang diunggah. Yakin ingin mengubah status menjadi Belum Mengumpulkan?')) {
-                                sel.value = prev;
-                                return;
-                            }
+                            askConfirm('Konfirmasi Status', 'Pelaksana ' + nama + ' sudah memiliki laporan yang diunggah. Yakin ingin mengubah status menjadi Belum Mengumpulkan?')
+                                .then(function (ok) {
+                                    if (!ok) {
+                                        sel.value = prev;
+                                        return;
+                                    }
+                                    prev = sel.value;
+                                });
+                            return;
                         }
                         prev = sel.value;
                     });
@@ -602,7 +607,7 @@
                 }
 
                 function flash(message, isError) {
-                    alert(message);
+                    window.appModalShow(isError ? 'Perhatian' : 'Informasi', message);
                 }
 
                 /* ---------- Bulk status massal (di luar tabel) ---------- */
@@ -901,6 +906,90 @@
                     })
                     .catch(() => showGenError('Terjadi kesalahan koneksi.'));
                 });
+            });
+        </script>
+    @endif
+
+    <!-- Modal Popup Umum (status block / konfirmasi / info) -->
+    <div id="app-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                <h4 id="app-modal-title" class="font-bold text-gray-800"></h4>
+                <button type="button" id="app-modal-close" class="text-gray-500 hover:text-gray-800 font-bold text-lg leading-none">&times;</button>
+            </div>
+            <div class="px-5 py-4">
+                <p id="app-modal-message" class="text-sm text-gray-700"></p>
+            </div>
+            <div class="px-5 py-3 border-t border-gray-200 flex justify-end gap-2 items-center">
+                <button type="button" id="app-modal-cancel" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded text-sm">Tutup</button>
+                <button type="button" id="app-modal-ok" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm">Lanjutkan</button>
+                <a href="#" id="app-modal-link" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm">Lengkapi Surat Tugas</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const appModal = document.getElementById('app-modal');
+            if (!appModal) return;
+            const appTitle = document.getElementById('app-modal-title');
+            const appMsg = document.getElementById('app-modal-message');
+            const appCancel = document.getElementById('app-modal-cancel');
+            const appOk = document.getElementById('app-modal-ok');
+            const appLink = document.getElementById('app-modal-link');
+            const appClose = document.getElementById('app-modal-close');
+
+            function appModalHide() {
+                appModal.classList.add('hidden');
+            }
+
+            appClose.addEventListener('click', appModalHide);
+            appModal.addEventListener('click', function (e) {
+                if (e.target === appModal) appModalHide();
+            });
+
+            window.appModalShow = function (title, message, opts) {
+                opts = opts || {};
+                appTitle.textContent = title;
+                appMsg.textContent = message;
+                appOk.classList.add('hidden');
+                appLink.classList.add('hidden');
+                appCancel.textContent = opts.cancelText || 'Tutup';
+                if (opts.linkHref) {
+                    appLink.href = opts.linkHref;
+                    appLink.textContent = opts.linkText || 'Lanjutkan';
+                    appLink.classList.remove('hidden');
+                }
+                appModal.classList.remove('hidden');
+                if (opts.confirm) {
+                    return new Promise(function (resolve) {
+                        const done = function (val) { appModalHide(); resolve(val); };
+                        appOk.onclick = function () { done(true); };
+                        appCancel.onclick = function () { done(false); };
+                        appClose.onclick = function () { done(false); };
+                    });
+                }
+                return Promise.resolve(true);
+            };
+            window.askConfirm = function (title, message) {
+                return window.appModalShow(title, message, { confirm: true, cancelText: 'Batal' });
+            };
+        });
+    </script>
+
+    @php $statusBlock = session('status_block'); @endphp
+    @if($statusBlock)
+        <script>
+            window.addEventListener('DOMContentLoaded', function () {
+                window.appModalShow(
+                    @json($statusBlock['title']),
+                    @json($statusBlock['message']),
+                    @if(isset($statusBlock['link_href']))
+                    { linkHref: @json($statusBlock['link_href']), linkText: @json($statusBlock['link_text'] ?? 'Lanjutkan'), cancelText: 'Tutup' }
+                    @else
+                    { cancelText: 'Tutup' }
+                    @endif
+                );
             });
         </script>
     @endif

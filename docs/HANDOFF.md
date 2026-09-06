@@ -225,3 +225,12 @@ Status: Completed (commit `feat(ui): add sticky navigation and table usability i
 - Dashboard: kanban **tidak** sticky (hindari nested scroll conflict); hanya navbar, page header, filter card, dan header tabel ringkasan.
 - Utility CSS di `resources/css/app.css` (`.sticky-navbar`, `.sticky-search`, `.sticky-thead th`). Tidak ada perubahan backend/database/CRUD.
 - Testing: `npm run build` + `php artisan view:cache` sukses; seluruh **118 tests PASS (406 assertions)**.
+
+## Kanban & Dropdown Status Validation - Surat Tugas / Laporan Perjalanan (GitHub Issue #20)
+Status: Completed
+- **Gate Surat Tugas (ST) untuk dokumen dependen** (Laporan Perjalanan & Pengeluaran Riil / Superkendis) di Kanban & dropdown: ST `Belum Ada` -> dependen tak boleh dipindah ke status apa pun; ST `Belum Lengkap` -> dependen hanya boleh di "Belum Lengkap"; ST `Lengkap`/`Perlu Perbaikan` -> validasi normal.
+- **Service terpusat** `SuratTugasService`: `ST_INCOMPLETE_MESSAGE`, `ST_DEPENDENT_BLOCK_MESSAGE`, `forRequest()`, `isDependentDocument()`, `dependentMoveBlocked()`. Kedua controller memakai `stChecklistFor()` untuk resolve ST pada request yang sama.
+- **Kanban**: respons 422 `{require_st_confirmation, checklist_id, message}`; modal **Konfirmasi Surat Tugas** / **Konfirmasi {dokumen}** + [Batal] [Lengkapi Isian] -> `/checklists/{stId}/edit`; `alert()` diganti modal `showLaporanModal(title, message, linkText, checklistId)`.
+- **Dropdown**: ST diblokir -> `back()` + `session('status_block')` (popup "Status Tidak Dapat Diperbarui" + link Lengkapi Surat Tugas); Laporan -> Lengkap saat belum semua terkumpul tetap di halaman (semua belum -> Belum Ada; sebagian -> Belum Lengkap); `guardTravelReportLengkap()` diganti `allTravelReportCollected`/`notCollectedCount`/`pelaksanaCount`/`collectedCount`. Modal global `#app-modal`/`window.appModalShow()`/`window.askConfirm()` menggantikan `alert()`/`confirm()` di `checklists/edit.blade.php`.
+- **Testing**: `tests/Feature/ChecklistStatusBlockTest.php` (12). Seluruh **130 tests PASS (445 assertions)**; build & view:cache sukses.
+- **Audit sisa `alert()`/`confirm()` di luar scope status (dibiarkan)**: delete FPA (`requests/show.blade.php:11`, `requests/index.blade.php:84`), delete template (`templates/index.blade.php:100`), delete SK Rate (`sk_rates/index.blade.php:67`), toggle aktif master POK (`master_pok/index.blade.php:116`), confirm tambah pelaksana massal ST (`checklists/edit.blade.php:~544`), alert "Laporan berhasil digenerate" (`checklists/edit.blade.php:~899`). Ini bukan bagian flow perpindahan status.

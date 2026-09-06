@@ -387,3 +387,19 @@ Generated PDF
 - **Pengecualian dashboard**: kanban 4 kolom tidak sticky karena sudah punya internal scrolling (hindari nested scroll conflict).
 - **Alasan desain**: box-scroll untuk tabel membuat thead tidak memerlukan offset bertumpuk terhadap navbar/header/search; satu-satunya offset terkunci `10rem` hanya dipakai di halaman berstruktur seragam.
 - **Testing**: `npm run build` + `php artisan view:cache` + seluruh **118 tests PASS (406 assertions)**.
+
+## Kanban & Dropdown Status Validation - Surat Tugas / Laporan Perjalanan (GitHub Issue #20)
+- **Gate Surat Tugas (ST) untuk dokumen dependen** (Laporan Perjalanan & Pengeluaran Riil / Superkendis) di Kanban dan dropdown:
+  - ST `Belum Ada` -> dokumen dependen **tidak boleh dipindah ke status apa pun**.
+  - ST `Belum Lengkap` -> dokumen dependen **hanya boleh berada di "Belum Lengkap"** (blokir ke Lengkap/Perlu Perbaikan/Belum Ada).
+  - ST `Lengkap`/`Perlu Perbaikan` -> validasi normal.
+- Logika gate terpusat di `SuratTugasService` (konstanta `ST_INCOMPLETE_MESSAGE`, `ST_DEPENDENT_BLOCK_MESSAGE`, `forRequest()`, `isDependentDocument()`, `dependentMoveBlocked()`) sehingga kanban & dropdown tidak menduplikasi aturan; helper `stChecklistFor()` dipakai kedua controller.
+- **Kanban** (`ChecklistKanbanController@updateStatus` + `bulkStatus`):
+  - ST -> Lengkap via drag saat belum lengkap -> respons `{require_st_confirmation:true, checklist_id, message:ST_INCOMPLETE_MESSAGE}` (HTTP 422); card kembali ke kolom asal; modal **Konfirmasi Surat Tugas** + tombol [Batal] [Lengkapi Isian] -> `/checklists/{st.id}/edit`.
+  - Dokumen dependen diblokir -> respons `{require_st_confirmation:true, checklist_id: stId, message:ST_DEPENDENT_BLOCK_MESSAGE}`; modal **Konfirmasi {dokumen}** + [Lengkapi Isian].
+  - Semua `alert()` di `partials/kanban-checklist.blade.php` diganti modal yang sama; modal generik `showLaporanModal(title, message, linkText, checklistId)` (link disembunyikan saat tanpa target).
+- **Dropdown** (`SpjChecklistController@update`):
+  - Gate ST dependen: bila diblokir -> status dikembalikan ke semula, `back()` + `session('status_block')` [Judul "Status Tidak Dapat Diperbarui", pesan ST, link "Lengkapi Surat Tugas" -> edit ST]; popup otomatis tampil via modal baru di `checklists/edit.blade.php`.
+  - Laporan Perjalanan -> Lengkap saat tidak semua terkumpul: tetap di halaman, tidak diubah diam-diam. Semua belum kumpul -> status **Belum Ada**; sebagian -> otomatis **Belum Lengkap**; pesan `status_block` sesuai. `guardTravelReportLengkap()` yang dimatikan diganti helper `allTravelReportCollected`/`notCollectedCount`/`pelaksanaCount`/`collectedCount`.
+  - `alert()` (flash) & `confirm()` (revert pelaksana ber-file) di `checklists/edit.blade.php` diganti modal popup global `#app-modal` + `window.appModalShow()` / `window.askConfirm()`.
+- **Testing**: `tests/Feature/ChecklistStatusBlockTest.php` (12 kasus: keempat jalur kanban gate ST, kelonggaran saat ST Lengkap/Perlu Perbaikan, dropdown semua/sebagian belum kumpul, dropdown blokir dependen, dropdown flow normal). Seluruh **130 tests PASS (445 assertions)**.

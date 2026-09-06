@@ -93,6 +93,12 @@ class SpjChecklistController extends Controller
         $oldStatus = $checklist->status;
         $requestedStatus = $validated['status'];
         $isSuratTugas = SuratTugasService::isSuratTugas($checklist);
+        $stChecklist = SuratTugasService::forRequest($checklist);
+
+        // Gate Surat Tugas untuk dokumen dependen: selama ST belum lengkap,
+        // Laporan Perjalanan / Pengeluaran Riil tidak boleh dipindah statusnya.
+        $dependentBlocked = SuratTugasService::isDependentDocument($docName)
+            && SuratTugasService::dependentMoveBlocked($stChecklist, $oldStatus, $requestedStatus);
 
         // Validasi terpusat: Surat Tugas hanya boleh "Lengkap" bila memenuhi syarat.
         // Berlaku sebelum data disimpan sehingga perubahan dibatalkan bila tidak lengkap.
@@ -148,9 +154,53 @@ class SpjChecklistController extends Controller
         // Simpan status pengumpulan Laporan Perjalanan per pelaksana (bulk checkbox).
         if (str_contains($docName, 'Laporan Perjalanan')) {
             $this->syncTravelReportPelaksana($checklist, $request->input('report_status', []));
-            // Checklist Laporan Perjalanan hanya boleh "Lengkap" bila seluruh
-            // pelaksana sudah mengumpulkan.
-            $this->guardTravelReportLengkap($checklist);
+        }
+
+        // Surat Tugas belum lengkap: status dokumen dependen dikembalikan ke
+        // status semula, tetap di halaman, dan tampilkan popup konfirmasi.
+        if ($dependentBlocked) {
+            $checklist->status = $oldStatus;
+            $checklist->save();
+
+            return back()->with('status_block', [
+                'title' => 'Status Tidak Dapat Diperbarui',
+                'message' => SuratTugasService::ST_DEPENDENT_BLOCK_MESSAGE,
+                'link_text' => 'Lengkapi Surat Tugas',
+                'link_href' => route('checklists.edit', $stChecklist->id),
+            ]);
+        }
+
+        // Laporan Perjalanan hanya boleh "Lengkap" bila seluruh pelaksana
+        // sudah mengumpulkan. Bila tidak: status ditentukan dari jumlah yang
+        // belum mengumpulkan dan pengguna tetap berada di halaman ini.
+        if (str_contains($docName, 'Laporan Perjalanan')
+            && $requestedStatus === 'Lengkap'
+            && ! $this->allTravelReportCollected($checklist)) {
+            $total = $this->pelaksanaCount($checklist);
+            $notCollected = $this->notCollectedCount($checklist);
+            $effectiveStatus = $notCollected >= $total ? 'Belum Ada' : 'Belum Lengkap';
+
+            $checklist->status = $effectiveStatus;
+            $checklist->save();
+
+            if ($oldStatus !== $effectiveStatus) {
+                ChecklistHistory::create([
+                    'checklist_id' => $checklist->id,
+                    'status_lama' => $oldStatus,
+                    'status_baru' => $effectiveStatus,
+                    'catatan' => $validated['catatan'] ?? null,
+                    'user_id' => Auth::id(),
+                ]);
+            }
+
+            $message = $effectiveStatus === 'Belum Ada'
+                ? 'Status tidak dapat diubah karena seluruh pelaksana belum mengumpulkan laporan perjalanan.'
+                : 'Status diubah menjadi Belum Lengkap karena masih terdapat '.$notCollected.' pelaksana yang belum mengumpulkan laporan perjalanan.';
+
+            return back()->with('status_block', [
+                'title' => 'Status Tidak Dapat Diperbarui',
+                'message' => $message,
+            ]);
         }
 
         // Log history jika ada perubahan status atau catatan
@@ -208,14 +258,19 @@ class SpjChecklistController extends Controller
     }
 
     /**
+     * Checklist "Surat Tugas" pada request yang sama (dengan detail & pelaksana).
+     */
+    protected function stChecklistFor(SpjChecklist $checklist)
+    {
+        return SuratTugasService::forRequest($checklist);
+    }
+
+    /**
      * Sumber pelaksana berasal dari checklist "Surat Tugas" pada request yang sama.
      */
     protected function stDetailFor(SpjChecklist $checklist)
     {
-        $stChecklist = SpjChecklist::where('request_id', $checklist->request_id)
-            ->where('nama_dokumen', 'like', '%Surat Tugas%')
-            ->with('suratTugasDetail.pelaksanas')
-            ->first();
+        $stChecklist = $this->stChecklistFor($checklist);
 
         return $stChecklist ? $stChecklist->suratTugasDetail : null;
     }
@@ -278,36 +333,58 @@ class SpjChecklistController extends Controller
                 );
             }
         }
-
-        // Checklist "Laporan Perjalanan" hanya boleh "Lengkap" bila seluruh
-        // pelaksana sudah mengumpulkan.
-        $this->guardTravelReportLengkap($checklist);
     }
 
     /**
-     * Jika checklist Laporan Perjalanan diubah menjadi "Lengkap" namun belum
-     * seluruh pelaksana mengumpulkan, kembalikan ke status sebelum ("Belum Lengkap").
+     * Seluruh pelaksana Surat Tugas sudah mengumpulkan laporan perjalanan.
      */
-    protected function guardTravelReportLengkap(SpjChecklist $checklist): void
+    protected function allTravelReportCollected(SpjChecklist $checklist): bool
     {
-        if ($checklist->status !== 'Lengkap') {
-            return;
-        }
-
         $st = $this->stDetailFor($checklist);
         if (! $st || $st->pelaksanas->isEmpty()) {
-            return;
+            return true;
         }
 
         $pelaksanaIds = $st->pelaksanas->pluck('id');
         $sudah = TravelReportPelaksana::where('checklist_id', $checklist->id)
             ->whereIn('surat_tugas_pelaksana_id', $pelaksanaIds)
             ->where('status', TravelReportPelaksana::STATUS_SUDAH)
-            ->pluck('surat_tugas_pelaksana_id');
+            ->count();
 
-        if ($sudah->count() < $pelaksanaIds->count()) {
-            $checklist->status = 'Belum Lengkap';
-            $checklist->save();
+        return $sudah >= $pelaksanaIds->count();
+    }
+
+    /**
+     * Jumlah pelaksana yang belum mengumpulkan laporan perjalanan.
+     */
+    protected function notCollectedCount(SpjChecklist $checklist): int
+    {
+        return $this->pelaksanaCount($checklist) - $this->collectedCount($checklist);
+    }
+
+    /**
+     * Jumlah pelaksana pada Surat Tugas yang sama.
+     */
+    protected function pelaksanaCount(SpjChecklist $checklist): int
+    {
+        $st = $this->stDetailFor($checklist);
+
+        return $st ? $st->pelaksanas->count() : 0;
+    }
+
+    /**
+     * Jumlah pelaksana yang sudah mengumpulkan laporan perjalanan.
+     */
+    protected function collectedCount(SpjChecklist $checklist): int
+    {
+        $st = $this->stDetailFor($checklist);
+        if (! $st || $st->pelaksanas->isEmpty()) {
+            return 0;
         }
+
+        return TravelReportPelaksana::where('checklist_id', $checklist->id)
+            ->whereIn('surat_tugas_pelaksana_id', $st->pelaksanas->pluck('id'))
+            ->where('status', TravelReportPelaksana::STATUS_SUDAH)
+            ->count();
     }
 }

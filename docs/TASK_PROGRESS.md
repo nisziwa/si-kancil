@@ -436,3 +436,22 @@ Tujuan: meningkatkan usability halaman panjang — menu, judul, pencarian/filter
 - **Alasan desain**: menghindari offset sticky bertumpuk yang rapuh (navbar → header → search → thead). Dengan pendekatan box-scroll (max-h + overflow-y-auto), thead tidak memerlukan offset relatif terhadap elemen sticky lain. Satu-satunya offset terkunci `top: 10rem` untuk search/filter dibakukan hanya pada halaman yang strukturnya seragam (navbar h-16 fixed + page header konsisten ±82px).
 - **File berubah**: `resources/css/app.css` (utilities sticky), `layouts/app.blade.php`, `layouts/navigation.blade.php`, 5 view index+dashboard. Tanpa perubahan backend/database/CRUD.
 - **Testing**: `npm run build` sukses (utility sticky ter-bundle ke asset CSS); `php artisan view:cache` sukses; seluruh **118 tests PASS (406 assertions)**. Validation visual manual disarankan di Chrome desktop + mobile (scroll halaman panjang, tidak ada overlap, z-index benar, horizontal scroll tabel tetap jalan).
+
+## Kanban & Dropdown Status Validation - Surat Tugas / Laporan Perjalanan (GitHub Issue #20)
+Status: Completed
+Ringkasan Perubahan:
+- **Gate Surat Tugas (ST) untuk dokumen dependen** (Laporan Perjalanan & Pengeluaran Riil / Superkendis) diterapkan di Kanban dan dropdown:
+  - ST `Belum Ada` -> dokumen dependen tidak dapat dipindah ke status apa pun.
+  - ST `Belum Lengkap` -> dokumen dependen hanya boleh berada di "Belum Lengkap" (blokir ke Lengkap/Perlu Perbaikan/Belum Ada).
+  - ST `Lengkap`/`Perlu Perbaikan` -> mengikuti validasi perpindahan status normal.
+- **`App\Services\SuratTugasService`** diperluas: konstanta `ST_INCOMPLETE_MESSAGE` ("...Lengkapi Nomor Surat Tugas, Tanggal Surat Tugas, Isi Tugas, dan minimal 1 Pelaksana.") dan `ST_DEPENDENT_BLOCK_MESSAGE` ("...terlebih dahulu."), helpers `forRequest()`, `isDependentDocument()`, `dependentMoveBlocked()` — satu sumber aturan untuk kanban & dropdown.
+- **Kanban** (`ChecklistKanbanController@updateStatus` + `bulkStatus`/`checkStatusChange`):
+  - ST -> Lengkap via drag saat belum lengkap -> 422 `{require_st_confirmation, checklist_id, message:ST_INCOMPLETE_MESSAGE}`; card kembali ke kolom asal; modal **Konfirmasi Surat Tugas** + [Batal] [Lengkapi Isian] -> `/checklists/{st.id}/edit`.
+  - Dokumen dependen diblokir -> 422 `{require_st_confirmation, checklist_id: stId, message:ST_DEPENDENT_BLOCK_MESSAGE}`; modal **Konfirmasi {dokumen}**.
+  - `partials/kanban-checklist.blade.php`: seluruh `alert()` diganti modal (`showLaporanModal(title, message, linkText, checklistId)`, tombol link disembunyikan saat tanpa target).
+- **Dropdown** (`SpjChecklistController@update`):
+  - Gate ST dependen: status dikembalikan ke semula + `back()` dengan `session('status_block')` [title "Status Tidak Dapat Diperbarui", pesan ST, link "Lengkapi Surat Tugas" -> edit ST].
+  - Laporan Perjalanan -> Lengkap saat tidak semua terkumpul: TIDAK diubah diam-diam lagi; tetap di halaman. Semua belum kumpul -> status **Belum Ada**; sebagian -> otomatis **Belum Lengkap**; `status_block` memuat pesan ("...seluruh pelaksana belum mengumpulkan laporan perjalanan." / "...masih terdapat X pelaksana yang belum mengumpulkan laporan perjalanan."). `guardTravelReportLengkap()` dihapus diganti helper `allTravelReportCollected`/`notCollectedCount`/`pelaksanaCount`/`collectedCount`.
+  - Modal popup global baru `#app-modal` + `window.appModalShow()` / `window.askConfirm()` di `checklists/edit.blade.php`; otomatis tampil saat ada `session('status_block')`; menggantikan `alert()` (flash) & `confirm()` (revert pelaksana ber-file).
+- **Automated testing**: `tests/Feature/ChecklistStatusBlockTest.php` (12 kasus): kanban ST -> Lengkap diminta konfirmasi; kanban Laporan diblokir saat ST Belum Ada (semua target) & Belum Lengkap (non-Belum Lengkap); kanban Pengeluaran Riil diblokir; kanban dependen bebas saat ST Lengkap/Perlu Perbaikan; dropdown Laporan Lengkap semua belum kumpul -> Belum Ada; sebagian -> Belum Lengkap; dropdown blokir ST (Laporan & Pengeluaran Riil) dengan link; dropdown ikut flow normal saat ST Lengkap.
+- **Verifikasi**: `php artisan test` **130 tests PASS (445 assertions)**; `npm run build` dan `php artisan view:cache` sukses.

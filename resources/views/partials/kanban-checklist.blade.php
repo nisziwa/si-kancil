@@ -49,7 +49,7 @@
 <div id="laporan-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
     <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
         <div class="flex items-center justify-between px-5 py-3 border-b border-indigo-200 bg-indigo-50 rounded-t-lg">
-            <h4 class="font-bold text-indigo-800">Konfirmasi Laporan Perjalanan</h4>
+            <h4 class="font-bold text-indigo-800" id="laporan-modal-title">Konfirmasi Laporan Perjalanan</h4>
             <button type="button" id="laporan-modal-close" class="text-indigo-500 hover:text-indigo-800 font-bold text-lg leading-none">&times;</button>
         </div>
         <div class="px-5 py-4">
@@ -68,8 +68,9 @@
     document.addEventListener('DOMContentLoaded', function () {
         const columns = document.querySelectorAll('.kanban-items');
 
-        /* ---------- Modal Konfirmasi Laporan Perjalanan ---------- */
+        /* ---------- Modal Konfirmasi Laporan Perjalanan / Surat Tugas ---------- */
         const modal = document.getElementById('laporan-modal');
+        const titleEl = document.getElementById('laporan-modal-title');
         const msgEl = document.getElementById('laporan-message');
         const linkBtn = document.getElementById('laporan-modal-link');
 
@@ -83,9 +84,16 @@
             if (e.target === modal) closeLaporanModal();
         });
 
-        function showLaporanModal(message, checklistId) {
+        function showLaporanModal(title, message, linkText, checklistId) {
+            titleEl.textContent = title;
             msgEl.textContent = message;
-            linkBtn.href = `/checklists/${checklistId}/edit`;
+            if (linkText && checklistId) {
+                linkBtn.textContent = linkText;
+                linkBtn.href = `/checklists/${checklistId}/edit`;
+                linkBtn.classList.remove('hidden');
+            } else {
+                linkBtn.classList.add('hidden');
+            }
             modal.classList.remove('hidden');
         }
 
@@ -106,13 +114,18 @@
                     if (fromColumn && fromColumn !== newColumn) {
                         fromColumn.querySelector('.kanban-items').appendChild(itemEl);
                     }
-                    // Bila ini Laporan Perjalanan yang butuh konfirmasi -> tampilkan popup baru.
-                    if (data && data.require_confirmation) {
-                        showLaporanModal(data.message, data.checklist_id);
+                    const itemName = itemEl.getAttribute('data-nama');
+                    // Surat Tugas belum lengkap -> modal Konfirmasi + Lengkapi Isian.
+                    if (data && data.require_st_confirmation) {
+                        showLaporanModal('Konfirmasi ' + itemName, data.message, 'Lengkapi Isian', data.checklist_id);
                         return;
                     }
-                    const msg = (data && data.message) ? data.message : 'Gagal update status';
-                    alert(msg);
+                    // Laporan Perjalanan belum terkumpul semua -> modal konfirmasi.
+                    if (data && data.require_confirmation) {
+                        showLaporanModal('Konfirmasi Laporan Perjalanan', data.message, 'Lengkapi Laporan', data.checklist_id);
+                        return;
+                    }
+                    showLaporanModal('Perhatian', (data && data.message) ? data.message : 'Gagal update status', null, null);
                     return;
                 }
                 if (data.success && data.history) {
@@ -128,7 +141,7 @@
                         historyList.prepend(newLi);
                     }
                 } else if (!data.success) {
-                    alert('Gagal update status');
+                    showLaporanModal('Perhatian', 'Gagal update status', null, null);
                 }
             })
             .catch(error => {
@@ -136,7 +149,7 @@
                 if (fromColumn && fromColumn !== newColumn) {
                     fromColumn.querySelector('.kanban-items').appendChild(itemEl);
                 }
-                alert('Terjadi kesalahan koneksi');
+                showLaporanModal('Perhatian', 'Terjadi kesalahan koneksi', null, null);
             });
         }
 
