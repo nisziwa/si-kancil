@@ -75,6 +75,7 @@ class ChecklistKanbanController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Status berhasil diubah',
+                'status_spj' => $fpa->status_spj,
                 'history' => [
                     'status_baru' => $newStatus,
                     'user' => Auth::user()->name,
@@ -209,6 +210,11 @@ class ChecklistKanbanController extends Controller
         $checklist = SpjChecklist::findOrFail($id);
         if ((int) $checklist->id !== (int) $request->input('checklist_id')) {
             return response()->json(['success' => false, 'message' => 'Checklist tidak cocok.'], 422);
+        }
+
+        // SPJ sudah Selesai: checklist dokumen tidak boleh diubah lagi.
+        if ($checklist->request->status_spj === 'Selesai') {
+            return response()->json(['success' => false, 'message' => ChecklistStatusGate::SPJ_SELESAI_BLOCK_MESSAGE], 422);
         }
 
         // Dokumentasi Belum Lengkap -> Laporan Perjalanan tidak boleh menjadi Lengkap.

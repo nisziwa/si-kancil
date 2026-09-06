@@ -49,7 +49,7 @@
                     <div>
                         <p class="text-sm text-gray-500">Status SPJ</p>
                         <p>
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                            <span id="status-spj-badge" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                 @if($fpaRequest->status_spj == 'Persiapan') bg-gray-100 text-gray-800
                                 @elseif($fpaRequest->status_spj == 'Dikirim ke PPK') bg-indigo-100 text-indigo-800
                                 @elseif($fpaRequest->status_spj == 'Perbaikan') bg-red-100 text-red-800

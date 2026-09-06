@@ -114,6 +114,73 @@
             modal.classList.remove('hidden');
         }
 
+        /* ---------- Update UI Status SPJ tanpa refresh ---------- */
+        const SPJ_STATUS_LIST = ['Persiapan', 'Dikirim ke PPK', 'Perbaikan', 'Selesai'];
+
+        const SPJ_BADGE_CLASSES = {
+            'Persiapan': 'bg-gray-100 text-gray-800',
+            'Dikirim ke PPK': 'bg-indigo-100 text-indigo-800',
+            'Perbaikan': 'bg-red-100 text-red-800',
+            'Selesai': 'bg-green-100 text-green-800'
+        };
+
+        function updateSpjStatusUi(status) {
+            const badge = document.getElementById('status-spj-badge');
+            if (badge) {
+                const cls = SPJ_BADGE_CLASSES[status];
+                if (cls) {
+                    Object.values(SPJ_BADGE_CLASSES).forEach(c => {
+                        c.split(' ').forEach(t => badge.classList.remove(t));
+                    });
+                    cls.split(' ').forEach(t => badge.classList.add(t));
+                }
+                badge.textContent = status;
+            }
+
+            const idx = SPJ_STATUS_LIST.indexOf(status);
+            document.querySelectorAll('.wf-step-item').forEach(item => {
+                const i = parseInt(item.getAttribute('data-index'), 10);
+                const circle = item.querySelector('.wf-circle');
+                const label = item.querySelector('.wf-label');
+                if (circle) {
+                    circle.className = 'wf-circle w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ' +
+                        (i < idx ? 'bg-green-500 text-white' : (i === idx ? 'bg-blue-600 text-white ring-4 ring-blue-200' : 'bg-gray-200 text-gray-500'));
+                    circle.textContent = i < idx ? '\u2713' : (i + 1);
+                }
+                if (label) {
+                    label.className = 'wf-label mt-2 text-xs text-center ' +
+                        (i === idx ? 'font-bold text-blue-600' : (i < idx ? 'text-green-600' : 'text-gray-400'));
+                }
+            });
+            document.querySelectorAll('.wf-connector').forEach(conn => {
+                const i = parseInt(conn.getAttribute('data-index'), 10);
+                conn.className = 'wf-connector flex-1 h-1 mx-1 rounded ' + (i < idx ? 'bg-green-400' : 'bg-gray-200');
+            });
+
+            // Sesuaikan pilihan "Ubah Status SPJ" dengan map transisi terbaru.
+            const sel = document.getElementById('status_baru');
+            if (sel) {
+                const options = (window.spjTransitions && window.spjTransitions[status]) || [];
+                sel.innerHTML = '<option value="">-- Pilih Status --</option>' +
+                    options.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+                ['field-tanggal-kirim', 'field-tanggal-selesai', 'field-file-bukti'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                });
+            }
+
+            // Saat Selesai, area "Ubah Status" diganti pesan selesai.
+            const formWrap = document.getElementById('status-change-wrap');
+            const doneWrap = document.getElementById('status-done-message');
+            if (status === 'Selesai') {
+                if (formWrap) formWrap.classList.add('hidden');
+                if (doneWrap) doneWrap.classList.remove('hidden');
+            } else {
+                if (formWrap) formWrap.classList.remove('hidden');
+                if (doneWrap) doneWrap.classList.add('hidden');
+            }
+        }
+
         function requestStatus(itemEl, fromColumn, newColumn, newStatus, itemId) {
             const sendPatch = function (confirmSpj) {
                 return fetch(`/checklists/${itemId}/status`, {
@@ -156,6 +223,15 @@
                     showLaporanModal('Perhatian', (data && data.message) ? data.message : 'Gagal update status', null, null);
                     return;
                 }
+                // Bila berhasil, pastikan kartu berada di kolom tujuan. Saat flow konfirmasi
+                // SPJ, kartu sempat dikembalikan ke kolom asal pada respons 422 pertama
+                // sehingga perlu dipindah DOM-nya agar langsung tercermin tanpa refresh.
+                if (ok && data.success && newColumn) {
+                    const targetItems = newColumn.querySelector('.kanban-items');
+                    if (targetItems && itemEl.parentElement !== targetItems) {
+                        targetItems.appendChild(itemEl);
+                    }
+                }
                 if (data.success && data.history) {
                     const historyList = document.getElementById('history-list');
                     if (historyList) {
@@ -170,6 +246,12 @@
                     }
                 } else if (!data.success) {
                     showLaporanModal('Perhatian', 'Gagal update status', null, null);
+                }
+
+                // Status SPJ ikut berubah (mis. Dikirim ke PPK -> Perbaikan):
+                // perbarui badge & workflow langsung tanpa refresh.
+                if (data.status_spj) {
+                    updateSpjStatusUi(data.status_spj);
                 }
             };
 

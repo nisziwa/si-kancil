@@ -238,6 +238,86 @@ class FpaKanbanStatusValidationFlowTest extends TestCase
         $this->assertEquals('Perbaikan', $this->fpa->fresh()->status_spj);
     }
 
+    /* ---------- Lock saat status SPJ sudah Selesai ---------- */
+
+    public function test_kanban_dokumen_tidak_bisa_pindah_saat_spj_selesai(): void
+    {
+        $this->setupSTLengkap();
+        $this->markAllCollected();
+        $this->fpa->update(['status_spj' => 'Selesai']);
+
+        $response = $this->actingAs($this->user)
+            ->patchJson(route('checklists.status', $this->laporanChecklist->id), ['status' => 'Lengkap']);
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'success' => false,
+            'require_confirmation' => false,
+            'message' => ChecklistStatusGate::SPJ_SELESAI_BLOCK_MESSAGE,
+        ]);
+        $this->assertEquals('Belum Lengkap', $this->laporanChecklist->fresh()->status);
+    }
+
+    public function test_bulk_dokumen_diblokir_saat_spj_selesai(): void
+    {
+        $this->setupSTLengkap();
+        $this->fpa->update(['status_spj' => 'Selesai']);
+
+        $response = $this->actingAs($this->user)
+            ->postJson(route('requests.checklists.bulk-status', $this->fpa->id), [
+                'ids' => [$this->laporanChecklist->id],
+                'status' => 'Perlu Perbaikan',
+            ]);
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => false,
+            'results' => ['failed' => [[
+                'id' => $this->laporanChecklist->id,
+                'nama' => 'Laporan Perjalanan',
+                'error' => ChecklistStatusGate::SPJ_SELESAI_BLOCK_MESSAGE,
+            ]]],
+        ]);
+        $this->assertEquals('Belum Lengkap', $this->laporanChecklist->fresh()->status);
+    }
+
+    public function test_dropdown_dokumen_diblokir_saat_spj_selesai(): void
+    {
+        $this->setupSTLengkap();
+        $this->fpa->update(['status_spj' => 'Selesai']);
+
+        $response = $this->actingAs($this->user)
+            ->from(route('checklists.edit', $this->laporanChecklist->id))
+            ->put(route('checklists.update', $this->laporanChecklist->id), [
+                'status' => 'Lengkap',
+                'catatan' => null,
+            ]);
+
+        $response->assertRedirect(route('checklists.edit', $this->laporanChecklist->id));
+        $response->assertSessionHas('status_block');
+        $this->assertEquals(ChecklistStatusGate::SPJ_SELESAI_BLOCK_MESSAGE, session('status_block')['message']);
+        $this->assertNull(session('status_block')['link_text']);
+        $this->assertEquals('Belum Lengkap', $this->laporanChecklist->fresh()->status);
+    }
+
+    public function test_kanban_spj_perbaikan_mengembalikan_status_spj_untuk_update_tanpa_refresh(): void
+    {
+        $this->setupSTLengkap();
+        $this->fpa->update(['status_spj' => 'Dikirim ke PPK']);
+
+        $response = $this->actingAs($this->user)
+            ->patchJson(route('checklists.status', $this->laporanChecklist->id), [
+                'status' => 'Perlu Perbaikan',
+                'confirm_spj' => 1,
+            ]);
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+            'status_spj' => 'Perbaikan',
+        ]);
+    }
+
     /* ---------- Konsistensi single vs bulk ---------- */
 
     public function test_bulk_validasi_sama_dengan_single_move(): void

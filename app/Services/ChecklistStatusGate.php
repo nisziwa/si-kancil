@@ -27,6 +27,12 @@ class ChecklistStatusGate
     public const CODE_LAPORAN_NOT_COLLECTED = 'laporan_not_collected';
     public const CODE_DOKUMENTASI_BELUM_LENGKAP = 'dokumentasi_belum_lengkap';
     public const CODE_SPJ_NEEDS_PERBAIKAN = 'spj_needs_perbaikan';
+    public const CODE_SPJ_SELESAI = 'spj_selesai';
+
+    /**
+     * Pesan popup: SPJ sudah Selesai, checklist dokumen tidak bisa dipindah lagi.
+     */
+    public const SPJ_SELESAI_BLOCK_MESSAGE = 'Status SPJ sudah Selesai, checklist dokumen tidak dapat dipindahkan.';
 
     /**
      * Pesan popup: Dokumentasi Belum Lengkap membatasi Laporan Perjalanan.
@@ -51,6 +57,15 @@ class ChecklistStatusGate
         }
 
         $fpa = $fpa ?? $checklist->request;
+
+        // SPJ sudah Selesai: checklist dokumen tidak boleh dipindahkan ke status apa pun.
+        if ($fpa && $fpa->status_spj === 'Selesai') {
+            return [
+                'code' => self::CODE_SPJ_SELESAI,
+                'checklist_id' => $checklist->id,
+                'message' => self::SPJ_SELESAI_BLOCK_MESSAGE,
+            ];
+        }
 
         // Gate Surat Tugas untuk dokumen dependen (Laporan / Pengeluaran Riil).
         if (SuratTugasService::isDependentDocument($checklist->nama_dokumen)) {

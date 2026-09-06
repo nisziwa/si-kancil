@@ -11,17 +11,17 @@
     <h3 class="text-lg font-bold mb-4 border-b pb-2">Workflow Status SPJ</h3>
 
     <!-- Progress Steps -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center justify-between mb-6" id="status-workflow-steps">
         @foreach($statusList as $index => $status)
-            <div class="flex flex-col items-center flex-1">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
+            <div class="wf-step-item flex flex-col items-center flex-1" data-index="{{ $index }}" data-status="{{ $status }}">
+                <div class="wf-circle w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
                     @if($index < $currentIndex) bg-green-500 text-white
                     @elseif($index === $currentIndex) bg-blue-600 text-white ring-4 ring-blue-200
                     @else bg-gray-200 text-gray-500
                     @endif">
                     @if($index < $currentIndex) ✓ @else {{ $index + 1 }} @endif
                 </div>
-                <p class="mt-2 text-xs text-center
+                <p class="wf-label mt-2 text-xs text-center
                     @if($index === $currentIndex) font-bold text-blue-600
                     @elseif($index < $currentIndex) text-green-600
                     @else text-gray-400
@@ -30,17 +30,17 @@
                 </p>
             </div>
             @if(!$loop->last)
-                <div class="flex-1 h-1 mx-1
+                <div class="wf-connector flex-1 h-1 mx-1
                     @if($index < $currentIndex) bg-green-400
                     @else bg-gray-200
-                    @endif rounded"></div>
+                    @endif rounded" data-index="{{ $index }}"></div>
             @endif
         @endforeach
     </div>
 
     <!-- Tombol Ubah Status -->
     @if($currentStatus !== 'Selesai')
-        <div class="border-t pt-4">
+        <div class="border-t pt-4" id="status-change-wrap">
             <h4 class="font-semibold text-gray-700 mb-3">Ubah Status SPJ</h4>
 
             @if(empty($allowedNext))
@@ -96,7 +96,7 @@
             @endif
         </div>
     @else
-        <div class="border-t pt-4 text-center">
+        <div class="border-t pt-4 text-center" id="status-done-message">
             <span class="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 font-semibold rounded-full text-sm">
                 ✓ SPJ telah Selesai
             </span>
@@ -137,6 +137,9 @@
 </div>
 
 <script>
+    // Map transisi status SPJ dibagikan ke JS kanban (untuk update UI tanpa refresh).
+    window.spjTransitions = @json(\App\Http\Controllers\RequestStatusController::TRANSITIONS);
+
     function toggleStatusFields(status) {
         document.getElementById('field-tanggal-kirim').classList.toggle('hidden', status !== 'Dikirim ke PPK');
         document.getElementById('field-tanggal-selesai').classList.toggle('hidden', status !== 'Selesai');
