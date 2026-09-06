@@ -376,3 +376,12 @@ Generated PDF
 - Akar masalah: respons GET `/travel-reports/pok/search` tidak menyertakan `Cache-Control`, sehingga browser/proxy meng-cache respons lama (termasuk yang kosong dari sesi sebelumnya).
 - Fix: `TravelReportController@searchPok` & `pokDetail` mengirim header `Cache-Control: no-store, no-cache, must-revalidate`; `fetch` di `loadPokSearch` & `loadPokDetail` memakai opsi `{ cache: 'no-store' }`.
 - Automated testing: seluruh **108 tests PASS (368 assertions)**.
+
+## Hotfix - POK Search Data List vs Object (root fix)
+- Gejala: dropdown POK kosong ("Tidak ada POK yang cocok." / "Belum ada data POK.") padahal respons API sukses dan berisi data.
+- Akar masalah: hasil `get()->sortBy(...)->map(...)` mempertahankan keys, jadi JSON `data` bisa terkirim sebagai **object keyed** (`{"1":..,"0":..}`) bukan array. `items.length`/`items.forEach()` di JS tidak jalan; hasil 1 item kebetulan jadi array sehingga beberapa pencarian tampak normal.
+- Fix dua lapis:
+  - Backend `TravelReportController@searchPok`: `->values()` setelah `map()` memastikan `data` selalu JSON array (list).
+  - Frontend `checklists/edit.blade.php` `loadPokSearch()`: `renderPokResults(Object.values(d.data || {}), q)` (defensive).
+- Endpoint, `gen-pok-id`, detail/grouping/highlight tidak berubah.
+- Automated testing: +`test_pok_search_multiple_results_returned_as_list` (assert `array_is_list`). Seluruh **109 tests PASS (374 assertions)**.

@@ -132,10 +132,25 @@ class TravelReportPOKTest extends TestCase
         $this->assertTrue($response->json('success'));
         $data = $response->json('data');
         $this->assertNotEmpty($data);
+        $this->assertTrue(array_is_list($data), 'POK search data harus berupa array list.');
         $this->assertSame('2897', $data[0]['kegiatan_kode']);
         $this->assertSame('Kegiatan Data', $data[0]['kegiatan_nama']);
         $this->assertArrayHasKey('rincian', $data[0]);
         $this->assertArrayHasKey('id', $data[0]);
+    }
+
+    public function test_pok_search_multiple_results_returned_as_list(): void
+    {
+        $this->pok->replicate()->fill(['rincian' => 'honor petugas pendataan lapangan survei lainnya'])->save();
+
+        $response = $this->actingAs($this->user)->getJson('/travel-reports/pok/search?q=honor')
+            ->assertOk();
+
+        $this->assertTrue($response->json('success'));
+        $data = $response->json('data');
+        $this->assertGreaterThan(1, count($data));
+        $this->assertTrue(array_is_list($data), 'Hasil dengan banyak item harus berupa array list.');
+        $this->assertSame(0, array_key_first($data));
     }
 
     public function test_kanban_popup_returns_not_collected_count_and_message(): void

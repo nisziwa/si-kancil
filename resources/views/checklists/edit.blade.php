@@ -835,7 +835,7 @@
                             .then(res => res.json())
                             .then(d => {
                                 if (seq !== pokReqSeq) return;
-                                if (d.success) renderPokResults(d.data, q);
+                                if (d.success) renderPokResults(Object.values(d.data || {}), q);
                             })
                             .catch(() => {
                                 if (seq !== pokReqSeq) return;

@@ -354,3 +354,7 @@ Generated PDF
 ## Hotfix - No-Store POK Search (cache kosong)
 - Respons `searchPok` & `pokDetail` diberi header `Cache-Control: no-store, no-cache, must-revalidate`.
 - `fetch` POK memakai `{ cache: 'no-store' }` untuk mencegah dropdown menampilkan respons lama yang kosong.
+
+## Hotfix - POK Search Data List vs Object (root fix)
+- `searchPok` menambahkan `->values()` setelah `->sortBy()->map()` agar `data` selalu JSON array, bukan object keyed collection (`{"1":..,"0":..}`) yang membuat `items.length`/`forEach` gagal di frontend.
+- Frontend `loadPokSearch()` defensif: `renderPokResults(Object.values(d.data || {}), q)`.

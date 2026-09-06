@@ -194,3 +194,7 @@ Generated PDF
 - Dropdown POK menampilkan pesan kosong padahal data ada (9 rincian lokal) karena respons GET `/travel-reports/pok/search` di-cache tanpa `Cache-Control`.
 - Fix: header `Cache-Control: no-store, no-cache, must-revalidate` di `searchPok` & `pokDetail` + `fetch({ cache: 'no-store' })` di `loadPokSearch`/`loadPokDetail`.
 - Testing: seluruh **108 tests PASS (368 assertions)**.
+
+## Hotfix - POK Search Data List vs Object (root fix)
+- Root cause sebenarnya: `get()->sortBy()->map()` mempertahankan keys → `data` dapat terkirim sebagai object keyed (`{"1":..,"0":..}`). Fix: `->values()` di `searchPok` (data selalu array) + `Object.values(d.data || {})` di `loadPokSearch`.
+- Testing: seluruh **109 tests PASS (374 assertions)**.

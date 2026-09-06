@@ -52,6 +52,10 @@ class TravelReportController extends Controller
             'akun' => $pok->akun ? $pok->akun->kode_akun.' - '.$pok->akun->nama_akun : '-',
         ]);
 
+        // values() memastikan `data` selalu bertipe LIST (array JSON),
+        // bukan object keyed collection hasil sortBy (mis. {"1": .., "0": ..}).
+        $result = $result->values();
+
         return response()->json(['success' => true, 'data' => $result])
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
