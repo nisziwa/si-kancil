@@ -14,7 +14,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <!-- Search Form -->
-                <form method="GET" action="{{ route('requests.index') }}" class="mb-6 flex gap-4">
+                <form method="GET" action="{{ route('requests.index') }}" class="sticky-search bg-white p-4 rounded-lg shadow-sm mb-6 flex gap-4">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nomor, deskripsi, periode..." class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full md:w-1/3">
                     <select name="status" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full md:w-1/4">
                         <option value="">Semua Status</option>
@@ -38,9 +38,9 @@
                     </div>
                 @endif
 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto overflow-y-auto max-h-[65vh]">
                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                        <thead class="sticky-thead bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No FPA</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis</th>

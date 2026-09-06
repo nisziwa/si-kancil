@@ -26,7 +26,7 @@
             @endif
 
             <!-- Filter Kategori & Search -->
-            <div class="bg-white p-4 rounded-lg shadow-sm">
+            <div class="sticky-search bg-white p-4 rounded-lg shadow-sm">
                 <form action="{{ route('templates.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                     <div>
                         <label for="kategori" class="block text-xs font-semibold text-gray-600 uppercase">Kategori Dokumen</label>
@@ -56,9 +56,9 @@
 
             <!-- List Template -->
             <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto overflow-y-auto max-h-[65vh]">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50">
+                        <thead class="sticky-thead bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left font-semibold text-gray-600 uppercase text-xs">No</th>
                                 <th class="px-6 py-3 text-left font-semibold text-gray-600 uppercase text-xs">Nama Template</th>

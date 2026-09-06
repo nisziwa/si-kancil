@@ -21,7 +21,7 @@
             @endif
 
             <!-- Search -->
-            <x-ui.card class="p-4">
+            <x-ui.card class="sticky-search p-4">
                 <form action="{{ route('sk-rates.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                     <div class="sm:col-span-2">
                         <label for="search" class="block text-xs font-semibold text-gray-600 uppercase">Cari Kecamatan / Ibukota / Keterangan</label>
@@ -40,9 +40,9 @@
 
             <!-- List SK Rate -->
             <x-ui.card class="overflow-hidden">
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto overflow-y-auto max-h-[65vh]">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50">
+                        <thead class="sticky-thead bg-gray-50">
                             <tr>
                                 <x-ui.th>No</x-ui.th>
                                 <x-ui.th>Kecamatan</x-ui.th>

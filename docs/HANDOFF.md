@@ -215,3 +215,13 @@ Generated PDF
 - Refensi pola: halaman SK Rate & Master POK. Diterapkan penuh di keduanya (index/create/edit). Modul lain dimigrasi bertahap.
 - Aturan: fitur baru WAJIB memakai x-ui.*, dilarang membuat variasi UI sendiri. Detail: lihat docs/TASK_PROGRESS.md > "UI Standard Freeze".
 - Testing: **118 tests PASS (406 assertions)**.
+
+## Sticky UI Enhancement (Issue #19)
+Status: Completed (commit `feat(ui): add sticky navigation and table usability improvements`)
+- Navbar sticky `top-0` (z-50) di semua halaman + menu mobile `max-h-[calc(100vh-4rem)] overflow-y-auto`.
+- Page header sticky di desktop (`sm:sticky sm:top-16 z-40`) via `layouts/app.blade.php`.
+- Search/filter card sticky di 5 halaman list (requests/index, templates/index, sk_rates/index, master_pok/index, dashboard) memakai utility `.sticky-search` (offset `top: 10rem`, non-sticky di mobile).
+- Table header terkunci memakai wrapper `overflow-x-auto overflow-y-auto max-h-[65vh]` + `.sticky-thead th` (sticky top-0, bg #f9fafb). Pagination tetap di luar area scroll; horizontal scroll tetap berjalan.
+- Dashboard: kanban **tidak** sticky (hindari nested scroll conflict); hanya navbar, page header, filter card, dan header tabel ringkasan.
+- Utility CSS di `resources/css/app.css` (`.sticky-navbar`, `.sticky-search`, `.sticky-thead th`). Tidak ada perubahan backend/database/CRUD.
+- Testing: `npm run build` + `php artisan view:cache` sukses; seluruh **118 tests PASS (406 assertions)**.

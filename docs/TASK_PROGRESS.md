@@ -416,3 +416,23 @@ Generated PDF
 - **Dibekukan**: navbar/sidebar (posisi, nama, urutan, active state, responsive), page layout (header slot -> content card -> table/form), page header (title kiri + action button kanan), button standard, table standard (action kolom kanan, pungination via $rows->links()), search/filter (kotak di card, posisi seragam), form standard (label -> input -> error), state standar.
 - **Aturan fitur baru**: wajib gunakan komponen x-ui.* di atas; tidak boleh membuat variasi button/badge/empty-state sendiri; ikuti struktur SK Rate/Master POK bila ragu; refactor modul lama ke standar ini dilakukan bertahap, bukan wajib menyentuh semua.
 - Diterapkan pada halaman SK Rate (index/create/edit) & Master POK (index/create/edit). Seluruh **118 tests PASS (406 assertions)**.
+
+## Sticky UI Enhancement (GitHub Issue #19)
+Status: Completed
+Tujuan: meningkatkan usability halaman panjang — menu, judul, pencarian/filter, dan header tabel tetap terlihat saat scroll.
+- **Komponen yang dibuat sticky**:
+  - **Navbar** (`resources/views/layouts/navigation.blade.php`): sticky `top-0` dengan `z-index` tertinggi (50) di semua halaman; menu mobile diberi `max-h-[calc(100vh-4rem)] overflow-y-auto` agar saat terbuka tetap bisa di-scroll internal dan tidak menutupi layar.
+  - **Page header** (`resources/views/layouts/app.blade.php`): sticky di desktop (`sm:sticky sm:top-16 z-40`, offset = tinggi navbar h-16); di mobile tidak sticky agar tidak membuat area layar sempit.
+  - **Search/filter card** (utility `.sticky-search`, offset `top: 10rem = 4rem navbar + 6rem header`): sticky di desktop (`sm:`) dan dimatikan di layar kecil (`max-width: 639px`).
+  - **Table header** (utility `.sticky-thead th`, `position: sticky; top: 0; background #f9fafb`): header tabel mengunci di dalam area scroll tabel.
+- **Halaman yang terdampak (5 halaman list saja)**:
+  - `resources/views/requests/index.blade.php`
+  - `resources/views/templates/index.blade.php`
+  - `resources/views/sk_rates/index.blade.php`
+  - `resources/views/master_pok/index.blade.php`
+  - `resources/views/dashboard.blade.php` (khusus tabel ringkasan dokumen FPA)
+- **Pendekatan table header**: wrapper tabel diubah dari `overflow-x-auto` menjadi `overflow-x-auto overflow-y-auto max-h-[65vh]`; thead/th sticky `top-0`. Ini menciptakan area box-scroll internal ber-tinggi ±65vh dengan header terkunci (pola DataTables) — konsisten lintas browser (Chrome/Firefox/Safari/mobile), horizontal scroll tetap berjalan, dan pagination tetap berada di luar area scroll.
+- **Pengecualian dashboard**: Kanban 4 kolom FPA **tidak** dibuat sticky karena sudah memiliki internal scrolling — menghindari nested scroll conflict. Hanya navbar + page header + filter card + header tabel ringkasan yang sticky.
+- **Alasan desain**: menghindari offset sticky bertumpuk yang rapuh (navbar → header → search → thead). Dengan pendekatan box-scroll (max-h + overflow-y-auto), thead tidak memerlukan offset relatif terhadap elemen sticky lain. Satu-satunya offset terkunci `top: 10rem` untuk search/filter dibakukan hanya pada halaman yang strukturnya seragam (navbar h-16 fixed + page header konsisten ±82px).
+- **File berubah**: `resources/css/app.css` (utilities sticky), `layouts/app.blade.php`, `layouts/navigation.blade.php`, 5 view index+dashboard. Tanpa perubahan backend/database/CRUD.
+- **Testing**: `npm run build` sukses (utility sticky ter-bundle ke asset CSS); `php artisan view:cache` sukses; seluruh **118 tests PASS (406 assertions)**. Validation visual manual disarankan di Chrome desktop + mobile (scroll halaman panjang, tidak ada overlap, z-index benar, horizontal scroll tabel tetap jalan).

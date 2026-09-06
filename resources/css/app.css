@@ -1,3 +1,36 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+    .sticky-navbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
+
+    /*
+        Standar offset sticky search/filter:
+        4rem (navbar h-16) + 6rem (page header ~5.1rem + gap) = 10rem.
+        Hanya dipakai di halaman list berstruktur seragam
+        (requests/index, templates/index, sk_rates/index, master_pok/index, dashboard).
+    */
+    .sticky-search {
+        position: sticky;
+        top: 10rem;
+        z-index: 30;
+    }
+}
+
+@media (max-width: 639px) {
+    .sticky-search {
+        position: static;
+    }
+}
+
+.sticky-thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f9fafb;
+}

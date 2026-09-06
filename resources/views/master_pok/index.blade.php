@@ -41,7 +41,7 @@
             </div>
 
             <!-- Search, filter & tampil nonaktif -->
-            <x-ui.card class="p-4">
+            <x-ui.card class="sticky-search p-4">
                 <form action="{{ route('master-pok.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                     <input type="hidden" name="tab" value="{{ $tab }}">
 
@@ -76,9 +76,9 @@
 
             <!-- Tabel data -->
             <x-ui.card class="overflow-hidden">
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto overflow-y-auto max-h-[65vh]">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50">
+                        <thead class="sticky-thead bg-gray-50">
                             <tr>
                                 <x-ui.th>No</x-ui.th>
                                 @foreach($config['columns'] as $col)

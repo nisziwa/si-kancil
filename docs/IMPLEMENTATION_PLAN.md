@@ -375,3 +375,15 @@ Generated PDF
 - **Layout beku**: header (title kiri, aksi kanan) -> content card -> table/form; navbar tidak berubah.
 - **Aturan dev**: pakai x-ui.*; tombol Edit/Aktifkan/Nonaktifkan = variant dit/success/warn size sm; empty = x-ui.state kind="empty"; flash = x-ui.alert; header kolom = x-ui.th; pagination = $rows->links().
 - **Scope**: diterapkan pada SK Rate & Master POK; refactor modul lain bertahap (tidak dipaksakan, menghindari risiko regression).
+
+## Sticky UI Enhancement (GitHub Issue #19)
+- **Tujuan**: meningkatkan usability halaman panjang — navbar, page header, search/filter, dan header tabel tetap terlihat saat scroll.
+- **Komponen sticky**:
+  - Navbar `top-0` z-50 (semua halaman) + menu mobile `max-h-[calc(100vh-4rem)] overflow-y-auto`.
+  - Page header `sm:sticky sm:top-16 z-40` (desktop saja, di bawah navbar h-16).
+  - Search/filter card `.sticky-search` (`top: 10rem` = 4rem navbar + 6rem header), non-sticky di mobile.
+  - Table header `.sticky-thead th` (`sticky top-0`, bg `#f9fafb`) di dalam wrapper baru `overflow-x-auto overflow-y-auto max-h-[65vh]` (box-scroll internal, pagination tetap di luar area scroll).
+- **Halaman terdampak** (list saja): requests/index, templates/index, sk_rates/index, master_pok/index, dashboard (tabel ringkasan FPA).
+- **Pengecualian dashboard**: kanban 4 kolom tidak sticky karena sudah punya internal scrolling (hindari nested scroll conflict).
+- **Alasan desain**: box-scroll untuk tabel membuat thead tidak memerlukan offset bertumpuk terhadap navbar/header/search; satu-satunya offset terkunci `10rem` hanya dipakai di halaman berstruktur seragam.
+- **Testing**: `npm run build` + `php artisan view:cache` + seluruh **118 tests PASS (406 assertions)**.
