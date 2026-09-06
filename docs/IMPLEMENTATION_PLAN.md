@@ -403,3 +403,17 @@ Generated PDF
   - Laporan Perjalanan -> Lengkap saat tidak semua terkumpul: tetap di halaman, tidak diubah diam-diam. Semua belum kumpul -> status **Belum Ada**; sebagian -> otomatis **Belum Lengkap**; pesan `status_block` sesuai. `guardTravelReportLengkap()` yang dimatikan diganti helper `allTravelReportCollected`/`notCollectedCount`/`pelaksanaCount`/`collectedCount`.
   - `alert()` (flash) & `confirm()` (revert pelaksana ber-file) di `checklists/edit.blade.php` diganti modal popup global `#app-modal` + `window.appModalShow()` / `window.askConfirm()`.
 - **Testing**: `tests/Feature/ChecklistStatusBlockTest.php` (12 kasus: keempat jalur kanban gate ST, kelonggaran saat ST Lengkap/Perlu Perbaikan, dropdown semua/sebagian belum kumpul, dropdown blokir dependen, dropdown flow normal). Seluruh **130 tests PASS (445 assertions)**.
+
+## Improve FPA Kanban Status Validation Flow (GitHub Issue #21)
+- **Template HONOR**: checklist bertambah jadi `KAK, FPA, Kuitansi BOS, Surat Tugas`; Surat Tugas ikut dihitung validasi kelengkapan dokumen (DocumentTemplateSeeder).
+- **Gate validasi checklist terpusat** di service baru `App\Services\ChecklistStatusGate::blockedReason()` — dipakai bersama kanban single, kanban bulk, dan dropdown (satu sumber aturan; hasil single = bulk):
+  - **Surat Tugas vs dokumen dependen** (Laporan Perjalanan & Pengeluaran Riil): ST `Belum Ada` -> dependen tak boleh pindah ke status apa pun; ST `Belum Lengkap` -> dependen hanya boleh `Belum Lengkap`; ST `Lengkap`/`Perlu Perbaikan` -> validasi normal.
+  - **Dokumentasi vs Laporan Perjalanan** (PERJADIN/TRANSLOK/TRANSLOK_DS): Dokumentasi `Belum Lengkap` -> Laporan maksimal `Belum Lengkap` (blokir ke Lengkap/Perlu Perbaikan); Dokumentasi `Lengkap`/`Perlu Perbaikan` -> Laporan bebas Lengkap/Perbaikan; status keduanya tidak harus sama.
+  - Laporan -> Lengkap tetap memerlukan seluruh pelaksana mengumpulkan laporan.
+  - ST -> Lengkap tetap memerlukan isian ST lengkap.
+  - Kode hasil pagar: `st_self_incomplete`, `st_dependent`, `dokumentasi_belum_lengkap`, `laporan_not_collected`, `spj_needs_perbaikan`.
+- **Checklist ke "Perlu Perbaikan" saat SPJ `Dikirim ke PPK`**:
+  - Kanban single: respons 422 `{require_spj_confirm: true, message}`; popup **Konfirmasi** + [Batal] [Ubah Status SPJ]; [Ubah Status SPJ] -> kirim ulang `confirm_spj=1` -> checklist `Perlu Perbaikan` + status SPJ menjadi `Perbaikan` (plus RequestStatusHistory).
+  - Dropdown & bulk: tanpa popup interaktif — keduanya otomatis mengubah SPJ menjadi `Perbaikan` (aturan yang sama).
+- **Transisi status SPJ (`RequestStatusService::TRANSITIONS`)**: `Perbaikan` -> hanya `Dikirim ke PPK` (tidak lagi ke Selesai); `Selesai` hanya dari `Dikirim ke PPK`. View `status-workflow` & kanban FPA otomatis mengikuti map.
+- **Testing**: `tests/Feature/FpaKanbanStatusValidationFlowTest.php` (11 kasus) + update `RequestStatusTest`. Seluruh **143 tests PASS (504 assertions)**.

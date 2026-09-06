@@ -155,9 +155,10 @@ class RequestStatusTest extends TestCase
         ]);
     }
 
-    public function test_dikirim_ke_ppk_to_perbaikan_then_selesai(): void
+    public function test_dikirim_ke_ppk_to_perbaikan_harus_balik_dulu_sebelum_selesai(): void
     {
         $this->fpaRequest->update(['status_spj' => 'Dikirim ke PPK']);
+        $this->createCompleteChecklists();
 
         // -> Perbaikan
         $response = $this->actingAs($this->user)->post(route('requests.status.update', $this->fpaRequest->id), [
@@ -170,13 +171,36 @@ class RequestStatusTest extends TestCase
             'status_spj' => 'Perbaikan',
         ]);
 
-        // Perbaikan -> Selesai
-        $response2 = $this->actingAs($this->user)->post(route('requests.status.update', $this->fpaRequest->id), [
+        // Perbaikan -> Selesai TIDAK diperbolehkan (harus lewat Dikirim ke PPK).
+        $responseBlocked = $this->actingAs($this->user)->post(route('requests.status.update', $this->fpaRequest->id), [
             'status_baru' => 'Selesai',
             'tanggal_selesai_spj' => now()->format('Y-m-d'),
             'catatan' => 'Selesai setelah perbaikan',
         ]);
-        $response2->assertRedirect();
+        $responseBlocked->assertSessionHasErrors('status_baru');
+        $this->assertDatabaseHas('requests', [
+            'id' => $this->fpaRequest->id,
+            'status_spj' => 'Perbaikan',
+        ]);
+
+        // Perbaikan -> Dikirim ke PPK diperbolehkan.
+        $responseBack = $this->actingAs($this->user)->post(route('requests.status.update', $this->fpaRequest->id), [
+            'status_baru' => 'Dikirim ke PPK',
+            'tanggal_kirim_ppk' => now()->format('Y-m-d'),
+        ]);
+        $responseBack->assertRedirect();
+        $this->assertDatabaseHas('requests', [
+            'id' => $this->fpaRequest->id,
+            'status_spj' => 'Dikirim ke PPK',
+        ]);
+
+        // Dikirim ke PPK -> Selesai diperbolehkan.
+        $responseSelesai = $this->actingAs($this->user)->post(route('requests.status.update', $this->fpaRequest->id), [
+            'status_baru' => 'Selesai',
+            'tanggal_selesai_spj' => now()->format('Y-m-d'),
+            'catatan' => 'Selesai setelah perbaikan',
+        ]);
+        $responseSelesai->assertRedirect();
         $this->assertDatabaseHas('requests', [
             'id' => $this->fpaRequest->id,
             'status_spj' => 'Selesai',

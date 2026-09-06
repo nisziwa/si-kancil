@@ -9,6 +9,7 @@ use App\Models\SuratTugasDetail;
 use App\Models\SuratTugasPelaksana;
 use App\Models\TravelDetail;
 use App\Models\TravelReportPelaksana;
+use App\Services\ChecklistStatusGate;
 use App\Services\SuratTugasService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -94,11 +95,25 @@ class SpjChecklistController extends Controller
         $requestedStatus = $validated['status'];
         $isSuratTugas = SuratTugasService::isSuratTugas($checklist);
         $stChecklist = SuratTugasService::forRequest($checklist);
+        $fpa = $checklist->request;
 
-        // Gate Surat Tugas untuk dokumen dependen: selama ST belum lengkap,
-        // Laporan Perjalanan / Pengeluaran Riil tidak boleh dipindah statusnya.
-        $dependentBlocked = SuratTugasService::isDependentDocument($docName)
-            && SuratTugasService::dependentMoveBlocked($stChecklist, $oldStatus, $requestedStatus);
+        // Gate validasi terpusat (ST dependen, Dokumentasi vs Laporan, pengumpulan laporan,
+        // konfirmasi SPJ). Kode SPJ_NEEDS_PERBAIKAN tidak memblokir di jalur dropdown:
+        // dokumen dipindah dan status SPJ ikut menjadi Perbaikan.
+        $reason = ChecklistStatusGate::blockedReason($checklist, $requestedStatus, $fpa);
+
+        // Kode yang bukan blokir terminal di jalur dropdown:
+        // - SPJ_NEEDS_PERBAIKAN: dokumen dipindah & SPJ ikut menjadi Perbaikan (tanpa popup).
+        // - ST_SELF_INCOMPLETE: sudah divalidasi dari isian form di bawah.
+        // - LAPORAN_NOT_COLLECTED: ditangani aturan pengumpulan khusus di bawah.
+        $blockedReason = $reason && ! in_array($reason['code'], [
+            ChecklistStatusGate::CODE_SPJ_NEEDS_PERBAIKAN,
+            ChecklistStatusGate::CODE_ST_SELF_INCOMPLETE,
+            ChecklistStatusGate::CODE_LAPORAN_NOT_COLLECTED,
+        ], true)
+            ? $reason
+            : null;
+        $spjNeedsPerbaikan = ChecklistStatusGate::spjNeedsPerbaikan($fpa, $checklist, $requestedStatus);
 
         // Validasi terpusat: Surat Tugas hanya boleh "Lengkap" bila memenuhi syarat.
         // Berlaku sebelum data disimpan sehingga perubahan dibatalkan bila tidak lengkap.
@@ -156,17 +171,29 @@ class SpjChecklistController extends Controller
             $this->syncTravelReportPelaksana($checklist, $request->input('report_status', []));
         }
 
-        // Surat Tugas belum lengkap: status dokumen dependen dikembalikan ke
-        // status semula, tetap di halaman, dan tampilkan popup konfirmasi.
-        if ($dependentBlocked) {
+        // Perpindahan diblokir (ST dependen / Dokumentasi belum lengkap):
+        // status dikembalikan, tetap di halaman, tampilkan popup + link ke dokumen terkait.
+        if ($blockedReason) {
             $checklist->status = $oldStatus;
             $checklist->save();
 
+            $link = match ($blockedReason['code']) {
+                ChecklistStatusGate::CODE_ST_DEPENDENT => [
+                    'link_text' => 'Lengkapi Surat Tugas',
+                    'link_href' => route('checklists.edit', $stChecklist->id),
+                ],
+                ChecklistStatusGate::CODE_DOKUMENTASI_BELUM_LENGKAP => [
+                    'link_text' => 'Lengkapi Dokumentasi',
+                    'link_href' => route('checklists.edit', $blockedReason['checklist_id']),
+                ],
+                default => ['link_text' => null, 'link_href' => null],
+            };
+
             return back()->with('status_block', [
                 'title' => 'Status Tidak Dapat Diperbarui',
-                'message' => SuratTugasService::ST_DEPENDENT_BLOCK_MESSAGE,
-                'link_text' => 'Lengkapi Surat Tugas',
-                'link_href' => route('checklists.edit', $stChecklist->id),
+                'message' => $blockedReason['message'],
+                'link_text' => $link['link_text'],
+                'link_href' => $link['link_href'],
             ]);
         }
 
@@ -175,9 +202,9 @@ class SpjChecklistController extends Controller
         // belum mengumpulkan dan pengguna tetap berada di halaman ini.
         if (str_contains($docName, 'Laporan Perjalanan')
             && $requestedStatus === 'Lengkap'
-            && ! $this->allTravelReportCollected($checklist)) {
+            && ! ChecklistStatusGate::allTravelReportCollected($checklist)) {
             $total = $this->pelaksanaCount($checklist);
-            $notCollected = $this->notCollectedCount($checklist);
+            $notCollected = ChecklistStatusGate::notCollectedCount($checklist);
             $effectiveStatus = $notCollected >= $total ? 'Belum Ada' : 'Belum Lengkap';
 
             $checklist->status = $effectiveStatus;
@@ -203,6 +230,12 @@ class SpjChecklistController extends Controller
             ]);
         }
 
+        // Dokumen dipindah ke "Perlu Perbaikan" saat SPJ "Dikirim ke PPK":
+        // status SPJ ikut diubah menjadi Perbaikan.
+        if ($spjNeedsPerbaikan) {
+            ChecklistStatusGate::applySpjPerbaikan($fpa, $validated['catatan'] ?? null);
+        }
+
         // Log history jika ada perubahan status atau catatan
         if ($oldStatus !== $newStatus || $request->filled('catatan')) {
             ChecklistHistory::create([
@@ -214,8 +247,12 @@ class SpjChecklistController extends Controller
             ]);
         }
 
+        $success = $spjNeedsPerbaikan
+            ? 'Dokumen ditandai perlu perbaikan dan status SPJ diubah menjadi Perbaikan.'
+            : 'Detail dokumen dan checklist berhasil diperbarui.';
+
         return redirect()->route('requests.show', $checklist->request_id)
-            ->with('success', 'Detail dokumen dan checklist berhasil diperbarui.');
+            ->with('success', $success);
     }
 
     /**
@@ -336,33 +373,6 @@ class SpjChecklistController extends Controller
     }
 
     /**
-     * Seluruh pelaksana Surat Tugas sudah mengumpulkan laporan perjalanan.
-     */
-    protected function allTravelReportCollected(SpjChecklist $checklist): bool
-    {
-        $st = $this->stDetailFor($checklist);
-        if (! $st || $st->pelaksanas->isEmpty()) {
-            return true;
-        }
-
-        $pelaksanaIds = $st->pelaksanas->pluck('id');
-        $sudah = TravelReportPelaksana::where('checklist_id', $checklist->id)
-            ->whereIn('surat_tugas_pelaksana_id', $pelaksanaIds)
-            ->where('status', TravelReportPelaksana::STATUS_SUDAH)
-            ->count();
-
-        return $sudah >= $pelaksanaIds->count();
-    }
-
-    /**
-     * Jumlah pelaksana yang belum mengumpulkan laporan perjalanan.
-     */
-    protected function notCollectedCount(SpjChecklist $checklist): int
-    {
-        return $this->pelaksanaCount($checklist) - $this->collectedCount($checklist);
-    }
-
-    /**
      * Jumlah pelaksana pada Surat Tugas yang sama.
      */
     protected function pelaksanaCount(SpjChecklist $checklist): int
@@ -370,21 +380,5 @@ class SpjChecklistController extends Controller
         $st = $this->stDetailFor($checklist);
 
         return $st ? $st->pelaksanas->count() : 0;
-    }
-
-    /**
-     * Jumlah pelaksana yang sudah mengumpulkan laporan perjalanan.
-     */
-    protected function collectedCount(SpjChecklist $checklist): int
-    {
-        $st = $this->stDetailFor($checklist);
-        if (! $st || $st->pelaksanas->isEmpty()) {
-            return 0;
-        }
-
-        return TravelReportPelaksana::where('checklist_id', $checklist->id)
-            ->whereIn('surat_tugas_pelaksana_id', $st->pelaksanas->pluck('id'))
-            ->where('status', TravelReportPelaksana::STATUS_SUDAH)
-            ->count();
     }
 }

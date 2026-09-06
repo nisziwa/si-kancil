@@ -11,7 +11,7 @@ class DocumentTemplateSeeder extends Seeder
     public function run(): void
     {
         $templates = [
-            'HONOR' => ['FPA', 'KAK', 'Kuitansi BOS'],
+            'HONOR' => ['KAK', 'FPA', 'Kuitansi BOS', 'Surat Tugas'],
             'TRANSLOK' => ['FPA', 'KAK', 'Surat Tugas', 'Laporan Perjalanan', 'Dokumentasi', 'Visum', 'Pengeluaran Riil + Surat Non Kendaraan Dinas'],
             'TRANSLOK_DS' => ['FPA', 'KAK', 'Surat Tugas', 'Laporan Perjalanan', 'Dokumentasi', 'Visum', 'Pengeluaran Riil + Surat Non Kendaraan Dinas'],
             'PERJADIN' => ['FPA', 'KAK', 'Surat Tugas', 'SPD/SPPD', 'Laporan Perjalanan', 'Dokumentasi', 'Visum', 'Pengeluaran Riil + Surat Non Kendaraan Dinas'],

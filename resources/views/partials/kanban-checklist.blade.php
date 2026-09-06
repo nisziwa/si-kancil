@@ -57,6 +57,7 @@
         </div>
         <div class="px-5 py-3 border-t border-gray-200 flex justify-end gap-2">
             <button type="button" id="laporan-modal-close2" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded text-sm">Batal</button>
+            <button type="button" id="laporan-modal-ok" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm">Ubah Status SPJ</button>
             <a href="#" id="laporan-modal-link" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm">Lengkapi Laporan</a>
         </div>
     </div>
@@ -73,6 +74,7 @@
         const titleEl = document.getElementById('laporan-modal-title');
         const msgEl = document.getElementById('laporan-message');
         const linkBtn = document.getElementById('laporan-modal-link');
+        const okBtn = document.getElementById('laporan-modal-ok');
 
         function closeLaporanModal() {
             modal.classList.add('hidden');
@@ -87,6 +89,8 @@
         function showLaporanModal(title, message, linkText, checklistId) {
             titleEl.textContent = title;
             msgEl.textContent = message;
+            okBtn.classList.add('hidden');
+            okBtn.onclick = null;
             if (linkText && checklistId) {
                 linkBtn.textContent = linkText;
                 linkBtn.href = `/checklists/${checklistId}/edit`;
@@ -97,32 +101,56 @@
             modal.classList.remove('hidden');
         }
 
+        function showSjpConfirmModal(title, message, onConfirm) {
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            linkBtn.classList.add('hidden');
+            okBtn.textContent = 'Ubah Status SPJ';
+            okBtn.classList.remove('hidden');
+            okBtn.onclick = function () {
+                closeLaporanModal();
+                onConfirm();
+            };
+            modal.classList.remove('hidden');
+        }
+
         function requestStatus(itemEl, fromColumn, newColumn, newStatus, itemId) {
-            fetch(`/checklists/${itemId}/status`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ status: newStatus })
-            })
-            .then(response => response.json().then(data => ({ ok: response.ok, data })))
-            .then(({ ok, data }) => {
+            const sendPatch = function (confirmSpj) {
+                return fetch(`/checklists/${itemId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus, confirm_spj: confirmSpj ? 1 : 0 })
+                })
+                .then(response => response.json().then(data => ({ ok: response.ok, data })));
+            };
+
+            const handleResult = function ({ ok, data }) {
                 // Bila validasi gagal, kembalikan card ke kolom semula.
                 if (!ok || (data && data.success === false)) {
                     if (fromColumn && fromColumn !== newColumn) {
                         fromColumn.querySelector('.kanban-items').appendChild(itemEl);
                     }
                     const itemName = itemEl.getAttribute('data-nama');
+                    // Dokumen dipindah ke Perlu Perbaikan saat SPJ "Dikirim ke PPK"
+                    // -> konfirmasi untuk ikut mengubah status SPJ menjadi Perbaikan.
+                    if (data && data.require_spj_confirm) {
+                        showSjpConfirmModal('Konfirmasi '+itemName, data.message, function () {
+                            sendPatch(true).then(handleResult);
+                        });
+                        return;
+                    }
                     // Surat Tugas belum lengkap -> modal Konfirmasi + Lengkapi Isian.
                     if (data && data.require_st_confirmation) {
                         showLaporanModal('Konfirmasi ' + itemName, data.message, 'Lengkapi Isian', data.checklist_id);
                         return;
                     }
-                    // Laporan Perjalanan belum terkumpul semua -> modal konfirmasi.
+                    // Laporan Perjalanan terkendala (pengumpulan / Dokumentasi) -> modal konfirmasi.
                     if (data && data.require_confirmation) {
-                        showLaporanModal('Konfirmasi Laporan Perjalanan', data.message, 'Lengkapi Laporan', data.checklist_id);
+                        showLaporanModal('Konfirmasi ' + itemName, data.message, data.link_text || 'Lengkapi Laporan', data.checklist_id);
                         return;
                     }
                     showLaporanModal('Perhatian', (data && data.message) ? data.message : 'Gagal update status', null, null);
@@ -143,14 +171,17 @@
                 } else if (!data.success) {
                     showLaporanModal('Perhatian', 'Gagal update status', null, null);
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                if (fromColumn && fromColumn !== newColumn) {
-                    fromColumn.querySelector('.kanban-items').appendChild(itemEl);
-                }
-                showLaporanModal('Perhatian', 'Terjadi kesalahan koneksi', null, null);
-            });
+            };
+
+            sendPatch(false)
+                .then(handleResult)
+                .catch(error => {
+                    console.error('Error:', error);
+                    if (fromColumn && fromColumn !== newColumn) {
+                        fromColumn.querySelector('.kanban-items').appendChild(itemEl);
+                    }
+                    showLaporanModal('Perhatian', 'Terjadi kesalahan koneksi', null, null);
+                });
         }
 
         columns.forEach(function(column) {

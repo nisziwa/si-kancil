@@ -467,3 +467,15 @@ Status: Completed
   - `SpjChecklistController@update`: `back()->withInput($request->except('status'))->with('error', ...)` — isian lain dipertahankan, tetapi **status tidak dipertahankan** (dropdown kembali ke nilai DB), konsisten dengan pesan error.
   - `tests/Feature/ChecklistStatusBlockTest.php`: 2 test baru (flash `error` berisi 4 field yang kurang + `_old_input` tidak memuat `status`; GET edit merender pesan inline).
 - **Verifikasi**: **132 tests PASS (457 assertions)**.
+
+## Improve FPA Kanban Status Validation Flow (GitHub Issue #21)
+Status: Completed
+- **Template HONOR**: `DocumentTemplateSeeder` kini berisi `KAK, FPA, Kuitansi BOS, Surat Tugas` — Surat Tugas ikut checklist kelengkapan dokumen FPA Honor.
+- **Gate validasi checklist terpusat** di service baru `App\Services\ChecklistStatusGate` (konstanta kode `st_self_incomplete`, `st_dependent`, `dokumentasi_belum_lengkap`, `laporan_not_collected`, `spj_needs_perbaikan`; pesan `DOKUMENTASI_BLOCK_MESSAGE`, `SPJ_PERBAIKAN_CONFIRM_MESSAGE`; helper `blockedReason`, `spjNeedsPerbaikan`, `dokumentasiFor`, `isLaporanPerjalanan`, `notCollectedCount`, `allTravelReportCollected`, `stDetailFor`, `applyChecklistStatus`, `applySpjPerbaikan` with RequestStatusHistory).
+- **Dokumentasi vs Laporan Perjalanan** (PERJADIN/TRANSLOK/TRANSLOK_DS): Dokumentasi `Belum Lengkap` -> Laporan diblokir ke `Lengkap`/`Perlu Perbaikan` (maksimal `Belum Lengkap`); Dokumentasi `Lengkap`/`Perlu Perbaikan` -> Laporan bebas. Berlaku sama di kanban single, kanban bulk, dan dropdown via satu gate.
+- **Checklist ke Perlu Perbaikan saat SPJ `Dikirim ke PPK`**:
+  - Kanban single: 422 `{require_spj_confirm: true, message}` -> modal **Konfirmasi** + [Batal] [Ubah Status SPJ]; [Ubah Status SPJ] -> kirim ulang `confirm_spj=1` -> checklist `Perlu Perbaikan` + SPJ -> `Perbaikan` (+ `request_status_histories`).
+  - Dropdown (`SpjChecklistController@update`) & bulk (`ChecklistKanbanController@bulkStatus`): otomatis mengubah SPJ -> `Perbaikan` (tak ada popup interaktif); bulk menandai `spj_perbaikan: true` pada respons.
+- **Transisi status SPJ**: `RequestStatusService::TRANSITIONS` — `Perbaikan` hanya -> `Dikirim ke PPK` (tidak lagi ke Selesai); `Selesai` hanya dari `Dikirim ke PPK`. View `status-workflow` dan kanban FPA membaca map yang sama.
+- **Kanban JS** (`partials/kanban-checklist.blade.php`): `requestStatus` divisi `sendPatch(confirmSpj)` + `handleResult`; modal baru `showSjpConfirmModal(title, message, onConfirm)`; ok-button `#laporan-modal-ok` direset tiap modal.
+- **Testing**: `tests/Feature/FpaKanbanStatusValidationFlowTest.php` (11 kasus: template HONOR; Dokumentasi blokir kanban (Lengkap & Perbaikan); bebas saat Dokumentasi Lengkap/Perbaikan; dropdown status_block + link "Lengkapi Dokumentasi"; SPJ confirm popup kanban; SPJ confirm + apply (checklist+SPJ+history); dropdown auto SPJ->Perbaikan; bulk auto SPJ->Perbaikan; bulk=single message parity untuk blokir ST) + update `RequestStatusTest` (Perbaikan tak bisa Selesai, harus balik Dikirim ke PPK dulu). **143 tests PASS (504 assertions)**.

@@ -21,7 +21,7 @@ class RequestStatusService
     public const TRANSITIONS = [
         'Persiapan' => ['Dikirim ke PPK'],
         'Dikirim ke PPK' => ['Selesai', 'Perbaikan'],
-        'Perbaikan' => ['Dikirim ke PPK', 'Selesai'],
+        'Perbaikan' => ['Dikirim ke PPK'],
         'Selesai' => [],
     ];
 
