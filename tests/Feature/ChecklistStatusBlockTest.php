@@ -161,6 +161,50 @@ class ChecklistStatusBlockTest extends TestCase
         $this->assertEquals('Lengkap', $this->pengeluaranChecklist->fresh()->status);
     }
 
+    /* ---------- Dropdown: Surat Tugas ke Lengkap saat isian belum lengkap ---------- */
+
+    public function test_dropdown_surat_tugas_lengkap_incomplete_tampilkan_error_inline(): void
+    {
+        $response = $this->actingAs($this->user)
+            ->from(route('checklists.edit', $this->stChecklist->id))
+            ->put(route('checklists.update', $this->stChecklist->id), [
+                'status' => 'Lengkap',
+                'catatan' => null,
+            ]);
+
+        $response->assertRedirect(route('checklists.edit', $this->stChecklist->id));
+        $response->assertSessionHas('error');
+        $this->assertStringContainsString('Nomor Surat Tugas', session('error'));
+        $this->assertStringContainsString('Tanggal Surat Tugas', session('error'));
+        $this->assertStringContainsString('Isi Tugas', session('error'));
+        $this->assertStringContainsString('minimal 1 Pelaksana', session('error'));
+
+        // Status di DB tidak berubah dan bukan "Lengkap".
+        $this->assertEquals('Belum Lengkap', $this->stChecklist->fresh()->status);
+
+        // Status tidak dipertahankan via old() sehingga dropdown kembali ke nilai DB.
+        $oldInput = $this->app['session']->get('_old_input', []);
+        $this->assertArrayNotHasKey('status', $oldInput);
+    }
+
+    public function test_dropdown_surat_tugas_lengkap_incomplete_renders_inline_error(): void
+    {
+        $this->actingAs($this->user)
+            ->from(route('checklists.edit', $this->stChecklist->id))
+            ->put(route('checklists.update', $this->stChecklist->id), [
+                'status' => 'Lengkap',
+                'catatan' => null,
+            ]);
+
+        // Request berikutnya mengonsumsi flash session sehingga pesan error tampil di halaman.
+        $response = $this->actingAs($this->user)
+            ->get(route('checklists.edit', $this->stChecklist->id));
+
+        $response->assertOk();
+        $response->assertSee('Surat Tugas belum lengkap');
+        $response->assertSee('minimal 1 Pelaksana');
+    }
+
     /* ---------- Dropdown Laporan Perjalanan: aturan pengumpulan ---------- */
 
     public function test_dropdown_laporan_lengkap_semua_belum_kumpul_tetap_belum_ada(): void

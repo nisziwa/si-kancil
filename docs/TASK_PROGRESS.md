@@ -453,5 +453,17 @@ Ringkasan Perubahan:
   - Gate ST dependen: status dikembalikan ke semula + `back()` dengan `session('status_block')` [title "Status Tidak Dapat Diperbarui", pesan ST, link "Lengkapi Surat Tugas" -> edit ST].
   - Laporan Perjalanan -> Lengkap saat tidak semua terkumpul: TIDAK diubah diam-diam lagi; tetap di halaman. Semua belum kumpul -> status **Belum Ada**; sebagian -> otomatis **Belum Lengkap**; `status_block` memuat pesan ("...seluruh pelaksana belum mengumpulkan laporan perjalanan." / "...masih terdapat X pelaksana yang belum mengumpulkan laporan perjalanan."). `guardTravelReportLengkap()` dihapus diganti helper `allTravelReportCollected`/`notCollectedCount`/`pelaksanaCount`/`collectedCount`.
   - Modal popup global baru `#app-modal` + `window.appModalShow()` / `window.askConfirm()` di `checklists/edit.blade.php`; otomatis tampil saat ada `session('status_block')`; menggantikan `alert()` (flash) & `confirm()` (revert pelaksana ber-file).
-- **Automated testing**: `tests/Feature/ChecklistStatusBlockTest.php` (12 kasus): kanban ST -> Lengkap diminta konfirmasi; kanban Laporan diblokir saat ST Belum Ada (semua target) & Belum Lengkap (non-Belum Lengkap); kanban Pengeluaran Riil diblokir; kanban dependen bebas saat ST Lengkap/Perlu Perbaikan; dropdown Laporan Lengkap semua belum kumpul -> Belum Ada; sebagian -> Belum Lengkap; dropdown blokir ST (Laporan & Pengeluaran Riil) dengan link; dropdown ikut flow normal saat ST Lengkap.
-- **Verifikasi**: `php artisan test` **130 tests PASS (445 assertions)**; `npm run build` dan `php artisan view:cache` sukses.
+- **Automated testing**: `tests/Feature/ChecklistStatusBlockTest.php` (14 kasus + 2 : kanban ST -> Lengkap diminta konfirmasi; kanban Laporan diblokir saat ST Belum Ada (semua target) & Belum Lengkap (non-Belum Lengkap); kanban Pengeluaran Riil diblokir; kanban dependen bebas saat ST Lengkap/Perlu Perbaikan; dropdown Laporan Lengkap semua belum kumpul -> Belum Ada; sebagian -> Belum Lengkap; dropdown blokir ST (Laporan & Pengeluaran Riil) dengan link; dropdown ikut flow normal saat ST Lengkap; dropdown ST -> Lengkap incomplete tampil error inline; GET edit merender error inline.
+- **Verifikasi**: `php artisan test` **132 tests PASS (457 assertions)**; `npm run build` dan `php artisan view:cache` sukses.
+
+## Hotfix: Dropdown Surat Tugas ke "Lengkap" saat isian belum lengkap (Issue #20 follow-up)
+Status: Completed
+- Gejala: mengubah status Surat Tugas via dropdown dari "Belum Lengkap" ke "Lengkap" saat isian (nomor, tanggal, isi tugas, pelaksana) belum terisi **tidak menampilkan pesan apa pun**; dropdown tampak berada di "Lengkap" namun kembali ke "Belum Lengkap" setelah reload.
+- Akar masalah ganda:
+  1. Controller memang mencegah simpan & mengirim pesan lewat `session('error')` (`SpjChecklistController@update`, blok ST -> Lengkap), **tetapi view `checklists/edit.blade.php` hanya merender `$errors` (bag validasi), tidak pernah merender `session('error')`** sehingga pesan hilang.
+  2. `withInput()` mempertahankan `old('status')='Lengkap'`, sehingga dropdown sengaja tetap tampil "Lengkap" meski DB masih "Belum Lengkap" -> terlihat "berubah balik" setelah reload nyata.
+- Perbaikan:
+  - `checklists/edit.blade.php`: tambah render `session('error')` sebagai alert merah inline di atas form (sebelum bag `$errors`) untuk semua jenis alert.
+  - `SpjChecklistController@update`: `back()->withInput($request->except('status'))->with('error', ...)` — isian lain dipertahankan, tetapi **status tidak dipertahankan** (dropdown kembali ke nilai DB), konsisten dengan pesan error.
+  - `tests/Feature/ChecklistStatusBlockTest.php`: 2 test baru (flash `error` berisi 4 field yang kurang + `_old_input` tidak memuat `status`; GET edit merender pesan inline).
+- **Verifikasi**: **132 tests PASS (457 assertions)**.

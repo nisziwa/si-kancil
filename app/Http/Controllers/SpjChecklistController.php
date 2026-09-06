@@ -112,7 +112,7 @@ class SpjChecklistController extends Controller
 
             if ($missing !== []) {
                 return back()
-                    ->withInput()
+                    ->withInput($request->except('status'))
                     ->with('error', SuratTugasService::completenessMessage($missing));
             }
         }
