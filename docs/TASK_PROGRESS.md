@@ -402,3 +402,17 @@ Generated PDF
 - Controller MasterPokController config-driven, tab whitelist (invalid -> 404), tidak ada model dinamis dari URL.
 - Flow existing (TravelReportController searchPok/pokDetail, TravelReportService, generate dokumen) **tidak diubah**; pok_rincian_id tetap.
 - Automated testing: +	ests/Feature/MasterPokCrudTest.php (9 tes: invalid tab 404, default aktif, toggle nonaktif/aktif, index aktif-only, show_inactive, child tanpa parent ditolak, duplicate rincian kombinasi sama ditolak, rincian sama cabang beda boleh, edit). Seluruh **118 tests PASS (406 assertions)**.
+
+## UI Standard Freeze
+- **Tujuan**: menyamakan struktur halaman, tabel, form, dan interaksi di seluruh menu; mencegah setiap modul membuat variasi UI sendiri.
+- **Referensi existing**: halaman SK Rate & Master POK (halaman dengan tabel + search + pagination + form create/edit).
+- **Komponen yang dibekukan (baru, di esources/views/components/ui/)**:
+  - x-ui.card - container kartu putih (shadow, rounded, opsional padding).
+  - x-ui.alert - flash success/danger/info.
+  - x-ui.btn - tombol/link variants: primary, secondary, muted, edit, success, warn, danger; size sm/md.
+  - x-ui.badge - indikator status (success/danger/info).
+  - x-ui.th - header kolom tabel (align kiri/kanan, konsisten).
+  - x-ui.state - state standar: empty ("Belum ada data."), loading ("Memuat data..."), error ("Terjadi kesalahan.").
+- **Dibekukan**: navbar/sidebar (posisi, nama, urutan, active state, responsive), page layout (header slot -> content card -> table/form), page header (title kiri + action button kanan), button standard, table standard (action kolom kanan, pungination via $rows->links()), search/filter (kotak di card, posisi seragam), form standard (label -> input -> error), state standar.
+- **Aturan fitur baru**: wajib gunakan komponen x-ui.* di atas; tidak boleh membuat variasi button/badge/empty-state sendiri; ikuti struktur SK Rate/Master POK bila ragu; refactor modul lama ke standar ini dilakukan bertahap, bukan wajib menyentuh semua.
+- Diterapkan pada halaman SK Rate (index/create/edit) & Master POK (index/create/edit). Seluruh **118 tests PASS (406 assertions)**.

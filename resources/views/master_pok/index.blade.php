@@ -4,9 +4,9 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('Master POK') }}
             </h2>
-            <a href="{{ route('master-pok.create', ['tab' => $tab]) }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm shadow">
+            <x-ui.btn variant="primary" :href="route('master-pok.create', ['tab' => $tab])">
                 + Tambah {{ $config['label'] }}
-            </a>
+            </x-ui.btn>
         </div>
     </x-slot>
 
@@ -14,14 +14,10 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
             @if(session('success'))
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
-                    {{ session('success') }}
-                </div>
+                <x-ui.alert type="success">{{ session('success') }}</x-ui.alert>
             @endif
             @if(session('error'))
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-                    {{ session('error') }}
-                </div>
+                <x-ui.alert type="danger">{{ session('error') }}</x-ui.alert>
             @endif
 
             <!-- Tabs -->
@@ -45,7 +41,7 @@
             </div>
 
             <!-- Search, filter & tampil nonaktif -->
-            <div class="bg-white p-4 rounded-lg shadow-sm">
+            <x-ui.card class="p-4">
                 <form action="{{ route('master-pok.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                     <input type="hidden" name="tab" value="{{ $tab }}">
 
@@ -76,20 +72,20 @@
                         </label>
                     </div>
                 </form>
-            </div>
+            </x-ui.card>
 
             <!-- Tabel data -->
-            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <x-ui.card class="overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left font-semibold text-gray-600 uppercase text-xs">No</th>
+                                <x-ui.th>No</x-ui.th>
                                 @foreach($config['columns'] as $col)
-                                    <th class="px-6 py-3 text-left font-semibold text-gray-600 uppercase text-xs">{{ $col['label'] }}</th>
+                                    <x-ui.th>{{ $col['label'] }}</x-ui.th>
                                 @endforeach
-                                <th class="px-6 py-3 text-left font-semibold text-gray-600 uppercase text-xs">Status</th>
-                                <th class="px-6 py-3 text-right font-semibold text-gray-600 uppercase text-xs">Aksi</th>
+                                <x-ui.th>Status</x-ui.th>
+                                <x-ui.th align="right">Aksi</x-ui.th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -107,15 +103,15 @@
                                     @endforeach
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @if($row->is_active)
-                                            <span class="inline-flex items-center text-xs font-semibold text-green-700 bg-green-50 px-2.5 py-1 rounded border border-green-300">Aktif</span>
+                                            <x-ui.badge variant="success">Aktif</x-ui.badge>
                                         @else
-                                            <span class="inline-flex items-center text-xs font-semibold text-red-700 bg-red-50 px-2.5 py-1 rounded border border-red-300">Tidak Aktif</span>
+                                            <x-ui.badge variant="danger">Tidak Aktif</x-ui.badge>
                                         @endif
                                     </td>
                                     <td class="px-6 py-4 text-right whitespace-nowrap space-x-2">
-                                        <a href="{{ route('master-pok.edit', ['tab' => $tab, 'id' => $row->id]) }}" class="inline-flex items-center text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1.5 rounded border border-indigo-300 hover:bg-indigo-100">
+                                        <x-ui.btn variant="edit" size="sm" :href="route('master-pok.edit', ['tab' => $tab, 'id' => $row->id])">
                                             Edit
-                                        </a>
+                                        </x-ui.btn>
                                         <form action="{{ route('master-pok.toggle', ['tab' => $tab, 'id' => $row->id]) }}" method="POST" class="inline"
                                               onsubmit="return confirm('{{ $row->is_active ? 'Nonaktifkan' : 'Aktifkan kembali' }} {{ $config['label'] }} ini?')">
                                             @csrf
@@ -127,21 +123,17 @@
                                                 <input type="hidden" name="search" value="{{ request('search') }}">
                                             @endif
                                             @if($row->is_active)
-                                                <button type="submit" class="inline-flex items-center text-xs font-semibold text-orange-700 bg-orange-50 px-2.5 py-1.5 rounded border border-orange-300 hover:bg-orange-100">
-                                                    Nonaktifkan
-                                                </button>
+                                                <x-ui.btn variant="warn" size="sm" type="submit">Nonaktifkan</x-ui.btn>
                                             @else
-                                                <button type="submit" class="inline-flex items-center text-xs font-semibold text-green-700 bg-green-50 px-2.5 py-1.5 rounded border border-green-300 hover:bg-green-100">
-                                                    Aktifkan kembali
-                                                </button>
+                                                <x-ui.btn variant="success" size="sm" type="submit">Aktifkan kembali</x-ui.btn>
                                             @endif
                                         </form>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ count($config['columns']) + 3 }}" class="px-6 py-8 text-center text-gray-500 italic">
-                                        Belum ada data {{ $config['label'] }}.
+                                    <td colspan="{{ count($config['columns']) + 3 }}">
+                                        <x-ui.state kind="empty">{{ 'Belum ada data '.$config['label'].'.' }}</x-ui.state>
                                     </td>
                                 </tr>
                             @endforelse
@@ -154,7 +146,7 @@
                         {{ $rows->links() }}
                     </div>
                 @endif
-            </div>
+            </x-ui.card>
 
         </div>
     </div>

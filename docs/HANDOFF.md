@@ -208,3 +208,10 @@ Generated PDF
 - **Aturan unik**: Rincian POK unique berdasarkan kombinasi semua FK + rincian, bukan teks saja (nama rincian yang sama di cabang berbeda diizinkan).
 - **Routing**: 6 route master-pok.* dalam grup auth; tab whitelist, invalid tab bort(404); controller config-driven tanpa model dinamis dari URL.
 - **Testing**: 	ests/Feature/MasterPokCrudTest.php (9 tes). Seluruh **118 tests PASS (406 assertions)**.
+
+## UI Standard Freeze
+- Komponen UI global baru (anonymous Blade) di esources/views/components/ui/: x-ui.card, x-ui.alert, x-ui.btn (variants primary/secondary/muted/edit/success/warn/danger, size sm/md), x-ui.badge, x-ui.th, x-ui.state (empty/loading/error).
+- Standar dibekukan: navbar, page layout (header -> card -> table/form), page header (title + aksi kanan), button, table (aksi kanan, pagination), search/filter (card seragam), form (label -> input -> error), dan state standar.
+- Refensi pola: halaman SK Rate & Master POK. Diterapkan penuh di keduanya (index/create/edit). Modul lain dimigrasi bertahap.
+- Aturan: fitur baru WAJIB memakai x-ui.*, dilarang membuat variasi UI sendiri. Detail: lihat docs/TASK_PROGRESS.md > "UI Standard Freeze".
+- Testing: **118 tests PASS (406 assertions)**.

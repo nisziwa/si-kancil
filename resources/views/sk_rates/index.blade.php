@@ -4,9 +4,9 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('Master SK Rate Perjalanan') }}
             </h2>
-            <a href="{{ route('sk-rates.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm shadow">
+            <x-ui.btn variant="primary" :href="route('sk-rates.create')">
                 + Tambah SK Rate
-            </a>
+            </x-ui.btn>
         </div>
     </x-slot>
 
@@ -14,18 +14,14 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
             @if(session('success'))
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
-                    {{ session('success') }}
-                </div>
+                <x-ui.alert type="success">{{ session('success') }}</x-ui.alert>
             @endif
             @if(session('error'))
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-                    {{ session('error') }}
-                </div>
+                <x-ui.alert type="danger">{{ session('error') }}</x-ui.alert>
             @endif
 
             <!-- Search -->
-            <div class="bg-white p-4 rounded-lg shadow-sm">
+            <x-ui.card class="p-4">
                 <form action="{{ route('sk-rates.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                     <div class="sm:col-span-2">
                         <label for="search" class="block text-xs font-semibold text-gray-600 uppercase">Cari Kecamatan / Ibukota / Keterangan</label>
@@ -40,20 +36,20 @@
                         </a>
                     </div>
                 </form>
-            </div>
+            </x-ui.card>
 
             <!-- List SK Rate -->
-            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <x-ui.card class="overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left font-semibold text-gray-600 uppercase text-xs">No</th>
-                                <th class="px-6 py-3 text-left font-semibold text-gray-600 uppercase text-xs">Kecamatan</th>
-                                <th class="px-6 py-3 text-left font-semibold text-gray-600 uppercase text-xs">Ibukota Kecamatan</th>
-                                <th class="px-6 py-3 text-left font-semibold text-gray-600 uppercase text-xs">Besaran Biaya Transport</th>
-                                <th class="px-6 py-3 text-left font-semibold text-gray-600 uppercase text-xs">Keterangan</th>
-                                <th class="px-6 py-3 text-right font-semibold text-gray-600 uppercase text-xs">Aksi</th>
+                                <x-ui.th>No</x-ui.th>
+                                <x-ui.th>Kecamatan</x-ui.th>
+                                <x-ui.th>Ibukota Kecamatan</x-ui.th>
+                                <x-ui.th>Besaran Biaya Transport</x-ui.th>
+                                <x-ui.th>Keterangan</x-ui.th>
+                                <x-ui.th align="right">Aksi</x-ui.th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -65,22 +61,22 @@
                                     <td class="px-6 py-4 text-gray-800 whitespace-nowrap">Rp {{ number_format($rate->besaran_biaya_transport, 0, ',', '.') }}</td>
                                     <td class="px-6 py-4 text-gray-500">{{ $rate->keterangan ?: '-' }}</td>
                                     <td class="px-6 py-4 text-right whitespace-nowrap space-x-2">
-                                        <a href="{{ route('sk-rates.edit', $rate->id) }}" class="inline-flex items-center text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1.5 rounded border border-indigo-300 hover:bg-indigo-100">
+                                        <x-ui.btn variant="edit" size="sm" :href="route('sk-rates.edit', $rate->id)">
                                             Edit
-                                        </a>
+                                        </x-ui.btn>
                                         <form action="{{ route('sk-rates.destroy', $rate->id) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SK Rate ini?')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="inline-flex items-center text-xs font-semibold text-red-700 bg-red-50 px-2.5 py-1.5 rounded border border-red-300 hover:bg-red-100">
+                                            <x-ui.btn variant="danger" size="sm" type="submit">
                                                 Hapus
-                                            </button>
+                                            </x-ui.btn>
                                         </form>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-6 py-8 text-center text-gray-500 italic">
-                                        Belum ada data SK Rate Perjalanan.
+                                    <td colspan="6">
+                                        <x-ui.state kind="empty">Belum ada data SK Rate Perjalanan.</x-ui.state>
                                     </td>
                                 </tr>
                             @endforelse
@@ -93,7 +89,7 @@
                         {{ $rates->links() }}
                     </div>
                 @endif
-            </div>
+            </x-ui.card>
 
         </div>
     </div>

@@ -367,3 +367,11 @@ Generated PDF
 - **Keamanan**: MasterPokController config-driven; tab whitelist -> invalid tab bort(404); mapping model hanya dari konstanta internal, tidak pernah dari input URL.
 - **Non-pertimbangan**: TravelReportController (searchPok/pokDetail), TravelReportService, dan generate dokumen existing **tidak diubah**. Snapshot text POK pada dokumen adalah improvement terpisah.
 - **Dokumen terkait**: outes/web.php, layouts/navigation.blade.php, view esources/views/master_pok/*, 	ests/Feature/MasterPokCrudTest.php. Hasil: **118 tests PASS (406 assertions)**.
+
+## UI Standard Freeze
+- **Tujuan**: konsistensi tampilan/interaksi di seluruh aplikasi; fitur baru mengikuti pola existing, tidak membuat variasi.
+- **Referensi**: halaman SK Rate & Master POK (tabel + search + pagination + form create/edit).
+- **Komponen beku**: x-ui.card, x-ui.alert, x-ui.btn, x-ui.badge, x-ui.th, x-ui.state di esources/views/components/ui/.
+- **Layout beku**: header (title kiri, aksi kanan) -> content card -> table/form; navbar tidak berubah.
+- **Aturan dev**: pakai x-ui.*; tombol Edit/Aktifkan/Nonaktifkan = variant dit/success/warn size sm; empty = x-ui.state kind="empty"; flash = x-ui.alert; header kolom = x-ui.th; pagination = $rows->links().
+- **Scope**: diterapkan pada SK Rate & Master POK; refactor modul lain bertahap (tidak dipaksakan, menghindari risiko regression).
