@@ -325,7 +325,7 @@
                         const checked = row.querySelector('.pelaksana-check').checked;
                         if (!checked) return;
                         const kecamatan = row.querySelector('select.pelaksana-input').value;
-                        const tanggal = row.querySelector('input[type=date].pelaksana-input').value;
+                        const tanggal = row.querySelector('input[name*="[tanggal_perjalanan]"]').value;
                         if (!kecamatan || !tanggal) {
                             missing = true;
                             row.classList.add('bg-red-50');
