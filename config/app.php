@@ -67,6 +67,8 @@ return [
 
     'timezone' => 'UTC',
 
+    'libreoffice_path' => env('LIBREOFFICE_PATH', 'soffice'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

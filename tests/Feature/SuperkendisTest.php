@@ -11,6 +11,7 @@ use App\Models\Superkendis;
 use App\Models\SuratTugasDetail;
 use App\Models\SuratTugasPelaksana;
 use App\Models\User;
+use App\Services\DocxPdfConverter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -154,6 +155,10 @@ class SuperkendisTest extends TestCase
 
     public function test_generate_superkendis_pdf(): void
     {
+        if (! DocxPdfConverter::available()) {
+            $this->markTestSkipped('LibreOffice/soffice tidak tersedia pada mesin ini.');
+        }
+
         $pelaksana = SuratTugasPelaksana::first();
 
         $response = $this->actingAs($this->user)->post(

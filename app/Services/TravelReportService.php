@@ -8,9 +8,8 @@ use App\Models\TravelReport;
 use App\Support\Tanggal;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
-use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\Style\Font;
-use PhpOffice\PhpWord\Writer\PDF;
+use RuntimeException;
 
 /**
  * Generator dokumen Laporan Perjalanan (Laporan Pendataan / Laporan Pengawasan
@@ -87,9 +86,14 @@ class TravelReportService
         $writer->save($tempDocx);
 
         if ($format === 'pdf') {
-            $this->configurePdfRenderer();
-            $pdfWriter = IOFactory::createWriter(IOFactory::load($tempDocx), 'PDF');
-            $pdfWriter->save($path);
+            try {
+                $pdf = (new DocxPdfConverter)->convert($tempDocx);
+            } catch (RuntimeException $e) {
+                @unlink($tempDocx);
+                throw $e;
+            }
+            copy($pdf, $path);
+            @unlink($pdf);
             @unlink($tempDocx);
 
             return;
@@ -157,11 +161,5 @@ class TravelReportService
     protected function normal(): array
     {
         return ['name' => 'Times New Roman', 'size' => 12];
-    }
-
-    protected function configurePdfRenderer(): void
-    {
-        Settings::setPdfRendererName(Settings::PDF_RENDERER_DOMPDF);
-        Settings::setPdfRendererPath(base_path('vendor/dompdf/dompdf/src/Dompdf.php'));
     }
 }

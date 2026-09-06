@@ -6,16 +6,15 @@ use App\Models\ChecklistHistory;
 use App\Models\Request as FpaRequest;
 use App\Models\SkRatePerjalanan;
 use App\Models\Superkendis;
+use App\Services\DocxPdfConverter;
 use App\Support\Tanggal;
 use App\Support\Terbilang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use PhpOffice\PhpWord\IOFactory;
-use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\Shared\ZipArchive;
 use PhpOffice\PhpWord\TemplateProcessor;
-use PhpOffice\PhpWord\Writer\PDF;
+use RuntimeException;
 
 class SuperkendisController extends Controller
 {
@@ -613,16 +612,16 @@ class SuperkendisController extends Controller
 
     /**
      * Menyalin/hasil akhir dokumen. Untuk DOCX langsung dikirim; untuk PDF,
-     * load hasil DOCX (struktur utuh) lalu dikonversi ke PDF.
+     * konversi DOCX (struktur utuh) ke PDF via LibreOffice headless.
      */
     protected function downloadFinal(string $path, string $filename, string $format, string $pathFormat)
     {
         if ($format === 'pdf') {
-            $this->configurePdfRenderer();
-            $writer = $this->pdfWriter($path);
-            $pdf = storage_path('app/superkendis-'.uniqid().'.pdf');
-            $writer->save($pdf);
-            @unlink($path);
+            try {
+                $pdf = $this->convertDocxToPdf($path);
+            } catch (RuntimeException $e) {
+                abort(500, $e->getMessage());
+            }
 
             return response()->download($pdf, $filename)->deleteFileAfterSend(true);
         }
@@ -636,9 +635,14 @@ class SuperkendisController extends Controller
         $this->fillTemplate($data, $tempDocx);
 
         if ($format === 'pdf') {
-            $this->configurePdfRenderer();
-            $writer = $this->pdfWriter($tempDocx);
-            $writer->save($path);
+            try {
+                $pdf = $this->convertDocxToPdf($tempDocx);
+            } catch (RuntimeException $e) {
+                @unlink($tempDocx);
+                abort(500, $e->getMessage());
+            }
+            copy($pdf, $path);
+            @unlink($pdf);
             @unlink($tempDocx);
 
             return;
@@ -649,47 +653,12 @@ class SuperkendisController extends Controller
     }
 
     /**
-     * Bangun writer PDF dari DOCX yang sudah terisi. Menggunakan API resmi
-     * editCallback PhpWord untuk menghapus CSS border default tebal (table/td
-     * 1px solid black) yang disuntikkan writer HTML, sehingga border PDF
-     * mengikuti template DOCX (hanya tabel yang memang perlu garis).
+     * Konversi DOCX ke PDF memakai LibreOffice headless agar layout
+     * persis dengan template Word (bukan render HTML seperti DomPDF).
      */
-    protected function pdfWriter(string $docxPath): PDF
+    protected function convertDocxToPdf(string $docxPath): string
     {
-        $writer = IOFactory::createWriter(IOFactory::load($docxPath), 'PDF');
-        $writer->setEditCallback(fn (string $html): string => $this->stripDefaultTableBorders($html));
-
-        return $writer;
-    }
-
-    /**
-     * Hapus CSS global bawaan PhpWord yang memberi border tebal ke SEMUA tabel
-     * dan sel: `table {border: 1px solid black; ...}` dan `td {border: 1px solid
-     * black;}`. Perbaiki juga agar border sel menyatu (collapse) seperti di Word.
-     */
-    protected function stripDefaultTableBorders(string $html): string
-    {
-        // table: buang `border: 1px solid black;`, aktifkan collapse.
-        $html = preg_replace(
-            '/table\s*\{[^}]*border\s*:\s*1px\s+solid\s+black;[^}]*\}/i',
-            'table { border-collapse: collapse; border-spacing: 0px; width: 100%; }',
-            $html
-        );
-
-        // td: buang border default sama sekali.
-        $html = preg_replace(
-            '/td\s*\{[^}]*border\s*:\s*1px\s+solid\s+black;[^}]*\}/i',
-            'td { }',
-            $html
-        );
-
-        return $html;
-    }
-
-    protected function configurePdfRenderer(): void
-    {
-        Settings::setPdfRendererName(Settings::PDF_RENDERER_DOMPDF);
-        Settings::setPdfRendererPath(base_path('vendor/dompdf/dompdf/src/Dompdf.php'));
+        return (new DocxPdfConverter)->convert($docxPath);
     }
 
     protected function slug(string $name): string

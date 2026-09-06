@@ -292,3 +292,47 @@ Status: Completed
 ## Hard refresh note for "simpan perubahan ga jalan"
 - The current blade structure is verified correct (DOMDocument confirms the single save button is inside the main form; only status is required and always has a value; backend save covered by tests).
 - If the button still appears unresponsive in the browser, it is the STALE page from before commit c9cbffa — do a hard refresh (Ctrl+F5) or clear the site cache.
+
+---
+
+## Migration DOCX PDF Rendering to LibreOffice
+
+### Masalah DomPDF
+- PDF hasil DomPDF (via PHPWord PDF Writer) tidak mempertahankan layout Word:
+  - tabel & border berubah (writer HTML menyuntikkan CSS `table/td 1px solid black`).
+  - alignment & margin bergeser.
+  - tanda tangan dapat berpindah posisi.
+
+### Alasan Migrasi
+- DOCX hasil TemplateProcessor sudah 100% sesuai template Word, tetapi konversi HTML `->` PDF menghancurkan layout.
+- LibreOffice headless merender DOCX secara native sehingga hasil PDF identik dengan Word.
+
+### Flow Baru
+```
+Template DOCX
+    |
+PHPWord TemplateProcessor (fillTemplate + cleanupTemplate)
+    |
+Generated DOCX
+    |
+LibreOffice Headless (soffice --headless --convert-to pdf --outdir)
+    |
+Generated PDF
+```
+
+### Dependency LibreOffice
+- Server wajib memiliki LibreOffice (`soffice`).
+- Lokasi binary dikonfigurasi via env `LIBREOFFICE_PATH` (default `soffice`).
+  - Linux: `/usr/bin/soffice`
+  - Windows: `C:\Program Files\LibreOffice\program\soffice.exe`
+- Install Ubuntu: `sudo apt install libreoffice`; cek: `soffice --version`.
+- Windows: installer dari https://www.libreoffice.org.
+
+### Cara Menjalankan Converter
+- Service baru: `app/Services/DocxPdfConverter.php` `->` `convert(string $docxPath): string`.
+- Dipakai oleh `SuperkendisController@convertDocxToPdf` dan `TravelReportService@write` (format `pdf`).
+- `DocxPdfConverter::available()` untuk cek ketersediaan (test otomatis di-skip bila tidak ada).
+
+### Troubleshooting
+- `LibreOffice/soffice belum tersedia pada server.` -> install LibreOffice atau set `LIBREOFFICE_PATH`.
+- `Gagal melakukan konversi dokumen DOCX ke PDF.` -> pastikan file DOCX valid dan folder output writable; jalankan soffice manual untuk melihat error asli.
