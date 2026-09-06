@@ -258,8 +258,13 @@
                                 </table>
                             </div>
                             <p class="text-xs text-gray-500 mt-2">
-                                Checklist ini otomatis menjadi <strong>Lengkap</strong> setelah seluruh Superkendis pelaksana digenerate (lihat halaman <a href="{{ route('requests.superkendis', $checklist->request_id) }}" class="text-indigo-600 hover:underline">Generate Superkendis</a>).
+                                Checklist ini otomatis menjadi <strong>Lengkap</strong> setelah seluruh Superkendis pelaksana digenerate. Gunakan form di bawah (Generate Superkendis per Pelaksana) untuk membuat/memperbarui dokumen.
                             </p>
+                            <div class="mt-3">
+                                <a href="#superkendis-generate" class="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm">
+                                    Generate / Kelola Superkendis ↓
+                                </a>
+                            </div>
                         @else
                             <p class="text-gray-500 italic text-sm">Isi terlebih dahulu checklist <strong>Surat Tugas</strong> supaya daftar pelaksana tersedia, lalu generate Superkendis di halaman FPA.</p>
                         @endif
@@ -375,6 +380,16 @@
                     </button>
                 </div>
             </form>
+
+            @if(str_contains($checklist->nama_dokumen, 'Pengeluaran Riil'))
+                {{-- Form Generate Superkendis di luar form utama (card inline, hindari nested <form>) --}}
+                @include('partials.superkendis-form', [
+                    'superkendisDone' => $superkendisDone,
+                    'stChecklist' => $stChecklist,
+                    'kecamatans' => $kecamatans,
+                    'selectedPelaksanaIds' => $selectedPelaksanaIds,
+                ])
+            @endif
 
             @if(str_contains($checklist->nama_dokumen, 'Laporan Perjalanan'))
                 <!-- Modal Generate Laporan Perjalanan (di luar form utama agar tidak merusak form simpan) -->

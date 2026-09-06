@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ChecklistHistory;
+use App\Models\SkRatePerjalanan;
 use App\Models\SpjChecklist;
 use App\Models\SuratTugasDetail;
 use App\Models\SuratTugasPelaksana;
@@ -42,7 +43,22 @@ class SpjChecklistController extends Controller
             ->get()
             ->keyBy('surat_tugas_pelaksana_id');
 
-        return view('checklists.edit', compact('checklist', 'stDetail', 'stPelaksanas', 'travelReports'));
+        // Data pendukung form Generate Superkendis yang di-share di halaman
+        // Kelola Dokumen (khusus checklist "Pengeluaran Riil + Surat Non Kendaraan Dinas").
+        $superkendisDone = $stChecklist && $stChecklist->status === 'Lengkap';
+        $selectedPelaksanaIds = SuperkendisController::parseSelectedPelaksanaIds(request('pelaksana'));
+        $kecamatans = SkRatePerjalanan::orderBy('kecamatan')->get();
+
+        return view('checklists.edit', compact(
+            'checklist',
+            'stDetail',
+            'stPelaksanas',
+            'stChecklist',
+            'travelReports',
+            'superkendisDone',
+            'selectedPelaksanaIds',
+            'kecamatans'
+        ));
     }
 
     public function update(Request $request, $id)

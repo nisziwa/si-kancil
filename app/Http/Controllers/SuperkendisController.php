@@ -39,6 +39,21 @@ class SuperkendisController extends Controller
     const INTEGRASI_CHECKLIST = 'Pengeluaran Riil + Surat Non Kendaraan Dinas';
 
     /**
+     * Normalisasi parameter ?pelaksana=12 dan ?pelaksana[]=12 menjadi array id.
+     */
+    public static function parseSelectedPelaksanaIds(mixed $selected): array
+    {
+        if (! is_array($selected)) {
+            $selected = $selected === null ? [] : [$selected];
+        }
+
+        return collect($selected)
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
      * Ringkasan Superkendis untuk halaman detail FPA.
      */
     public function index($requestId)
@@ -55,15 +70,7 @@ class SuperkendisController extends Controller
 
         $kecamatans = SkRatePerjalanan::orderBy('kecamatan')->get();
 
-        // Normalisasi ?pelaksana=12 dan ?pelaksana[]=12 menjadi array.
-        $selected = request('pelaksana', []);
-        if (! is_array($selected)) {
-            $selected = [$selected];
-        }
-        $selectedPelaksanaIds = collect($selected)
-            ->map(fn ($id) => (int) $id)
-            ->values()
-            ->all();
+        $selectedPelaksanaIds = self::parseSelectedPelaksanaIds(request('pelaksana'));
 
         return view('requests.superkendis', compact(
             'requestModel',

@@ -136,6 +136,47 @@ class SuperkendisTest extends TestCase
         );
     }
 
+    public function test_checklist_edit_pengeluaran_riil_shows_superkendis_form(): void
+    {
+        $pelaksana = SuratTugasPelaksana::first();
+        $realChecklist = SpjChecklist::create([
+            'request_id' => $this->fpaRequest->id,
+            'nama_dokumen' => 'Pengeluaran Riil + Surat Non Kendaraan Dinas',
+            'status' => 'Belum Ada',
+        ]);
+
+        // Surat Tugas sudah Lengkap (setUp) -> form Generate Superkendis muncul
+        // langsung di halaman Kelola Dokumen (card inline, di luar form utama).
+        $response = $this->actingAs($this->user)->get(route('checklists.edit', $realChecklist->id));
+        $response->assertOk();
+
+        $html = $response->getContent();
+        $this->assertStringContainsString('id="superkendis-generate"', $html);
+        $this->assertStringContainsString('id="superkendis-form"', $html);
+        $this->assertStringContainsString('id="select-all"', $html);
+        $this->assertStringContainsString('Generate / Kelola Superkendis', $html);
+        $this->assertStringContainsString('name="pelaksana['.$pelaksana->id.'][kecamatan]"', $html);
+        $this->assertStringContainsString('name="pelaksana['.$pelaksana->id.'][tanggal_perjalanan]"', $html);
+    }
+
+    public function test_checklist_edit_pengeluaran_riil_hides_superkendis_form_when_st_belum_lengkap(): void
+    {
+        $this->stChecklist->update(['status' => 'Belum Ada']);
+        $realChecklist = SpjChecklist::create([
+            'request_id' => $this->fpaRequest->id,
+            'nama_dokumen' => 'Pengeluaran Riil + Surat Non Kendaraan Dinas',
+            'status' => 'Belum Ada',
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('checklists.edit', $realChecklist->id));
+        $response->assertOk();
+
+        $html = $response->getContent();
+        $this->assertStringNotContainsString('id="superkendis-form"', $html);
+        $this->assertStringNotContainsString('id="select-all"', $html);
+        $this->assertStringContainsString('Belum ada pelaksana Surat Tugas yang lengkap untuk digenerate.', $html);
+    }
+
     public function test_generate_superkendis_docx(): void
     {
         $pelaksana = SuratTugasPelaksana::first();

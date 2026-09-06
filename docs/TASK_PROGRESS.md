@@ -344,3 +344,12 @@ Generated PDF
 ### Troubleshooting
 - `LibreOffice/soffice belum tersedia pada server.` -> install LibreOffice atau set `LIBREOFFICE_PATH`.
 - `Gagal melakukan konversi dokumen DOCX ke PDF.` -> pastikan file DOCX valid dan folder output writable; jalankan soffice manual untuk melihat error asli.
+
+---
+
+## Sprint Note - Generate Superkendis di Kelola Dokumen (Pengeluaran Riil)
+- Form Generate Superkendis di-extract ke partial `resources/views/partials/superkendis-form.blade.php` (tabel checkbox+input, format DOCX/PDF, metode pisah/gabung, prefill, dan seluruh JS-nya).
+- Halaman `requests/superkendis.blade.php` dan `checklists/edit.blade.php` (card inline di luar form utama - hindari nested <form>) memakai partial yang sama (satu sumber kode).
+- Kartu "Detail Pengeluaran Riil & Surat Non Kendaraan Dinas" menampilkan tombol "Generate / Kelola Superkendis" yang scroll ke form di bawah.
+- `SpjChecklistController@edit` kini memasok `$superkendisDone`, `$selectedPelaksanaIds` (helper statis `SuperkendisController::parseSelectedPelaksanaIds`), dan `$kecamatans`.
+- Automated testing: `SuperkendisTest` baru (form tampil saat ST Lengkap, form disembunyikan saat ST belum Lengkap). Seluruh 107 tests PASS (361 assertions).
